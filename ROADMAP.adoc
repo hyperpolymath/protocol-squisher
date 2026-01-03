@@ -1,0 +1,281 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2025 hyperpolymath
+= Protocol Squisher Roadmap
+:toc: macro
+:toclevels: 3
+:icons: font
+
+[.lead]
+**From concept to rethinking the world's data exchange**
+
+toc::[]
+
+== Vision Horizon
+
+=== The End State (3-5 years)
+
+**"Any data format can talk to any other data format. Always."**
+
+- 50+ serialization formats supported
+- Formal verification for all adapters
+- Security protocol bridging (TLS, Noise, WireGuard)
+- FFI replacement for 80% of use cases
+- Industry-standard interop layer
+- Self-improving through continuous learning
+
+=== The Inflection Point (1-2 years)
+
+**"Python and Rust developers never write FFI code again"**
+
+- Python ↔ Rust is production-ready
+- 10+ major format pairs supported
+- Empirical compatibility database from 10,000+ schemas
+- Community contributions exceed core team
+- First major company adopts for production
+
+=== The MVP (3-6 months)
+
+**"One working demo that proves the invariant"**
+
+- Python (Pydantic) ↔ Rust (serde)
+- JSON fallback guarantees transport
+- Basic adapter generation
+- Property-based test coverage
+- Clear documentation of losses
+
+== Phase 0: Foundation (Weeks 1-4)
+
+**Goal:** Core infrastructure and IR design
+
+=== Week 1: Canonical IR
+- [ ] Design intermediate representation
+- [ ] Implement type system (primitives, containers, composites)
+- [ ] Constraint representation
+- [ ] IR ↔ JSON serialization (for tooling)
+- [ ] Property-based tests for IR invariants
+
+**Deliverable:** `protocol-squisher-ir` crate with comprehensive tests
+
+=== Week 2: First Analyzer (Rust)
+- [ ] Parse Rust source files (`syn` crate)
+- [ ] Extract serde types
+- [ ] Convert to IR
+- [ ] Handle common patterns (Option, Vec, HashMap)
+- [ ] Test against real serde examples
+
+**Deliverable:** `protocol-squisher-rust-analyzer` crate
+
+=== Week 3: Second Analyzer (Python)
+- [ ] Python introspection script for Pydantic
+- [ ] Parse introspection output in Rust
+- [ ] Convert to IR
+- [ ] Handle Python type hints
+- [ ] Test against real Pydantic models
+
+**Deliverable:** `protocol-squisher-python-analyzer` crate
+
+=== Week 4: Compatibility Engine
+- [ ] IR comparison algorithm
+- [ ] Type compatibility rules
+- [ ] Classification (Concorde/Wheelbarrow/etc.)
+- [ ] Loss documentation
+- [ ] Performance estimation
+
+**Deliverable:** `protocol-squisher-compat` crate with scoring system
+
+== Phase 1: Minimum Viable Demo (Weeks 5-12)
+
+**Goal:** Python ↔ Rust adapter that always works
+
+=== Weeks 5-6: JSON Fallback
+- [ ] JSON serialization for all IR types
+- [ ] Rust → JSON → Python path
+- [ ] Python → JSON → Rust path
+- [ ] Prove transport always succeeds
+- [ ] Benchmark overhead
+
+**Deliverable:** The guaranteed wheelbarrow. Slow but unbreakable.
+
+=== Weeks 7-8: PyO3 Codegen
+- [ ] Generate PyO3 wrapper code
+- [ ] Handle type conversions
+- [ ] Error handling
+- [ ] Memory management
+- [ ] Generated code passes clippy/mypy
+
+**Deliverable:** `protocol-squisher-pyo3-codegen` crate
+
+=== Weeks 9-10: Optimization Layer
+- [ ] Detect when zero-copy possible
+- [ ] Generate optimized paths
+- [ ] Benchmark against JSON fallback
+- [ ] Document when optimizations apply
+
+**Deliverable:** Concorde-class adapters for compatible types
+
+=== Weeks 11-12: Polish & Demo
+- [ ] CLI tool (`protocol-squish` binary)
+- [ ] End-to-end examples
+- [ ] Performance benchmarks
+- [ ] Documentation
+- [ ] HN launch post
+
+**Deliverable:** Public demo, first users
+
+== Phase 2: Format Expansion (Months 4-6)
+
+**Goal:** Support 10+ serialization formats
+
+=== Priority Targets
+
+[cols="1,1,1",options="header"]
+|===
+|Format Pair |Impact |Difficulty
+
+|**Cap'n Proto ↔ Factor**
+|FormDB use case, hard problem
+|High (dynamic ↔ zero-copy)
+
+|**Protobuf ↔ JSON**
+|Massive existing need
+|Low (well-understood)
+
+|**Thrift ↔ Avro**
+|Enterprise adoption
+|Medium (both schema-based)
+
+|**MessagePack ↔ serde**
+|Rust ecosystem
+|Low (similar models)
+
+|**Excel ↔ Protobuf**
+|Business world
+|Medium (type inference)
+
+|**GraphQL ↔ PostgreSQL**
+|Web development
+|Medium (schema translation)
+|===
+
+=== Continuous Learning System
+
+- [ ] Elixir OTP crawler for GitHub schemas
+- [ ] Parallel schema parsing
+- [ ] Empirical compatibility database
+- [ ] Pattern extraction
+- [ ] Feed patterns back to synthesis layer
+
+**Deliverable:** Self-improving system
+
+== Phase 3: Advanced Features (Months 7-12)
+
+=== Formal Verification
+- [ ] miniKanren adapter synthesis
+- [ ] Correctness proofs
+- [ ] Exhaustive property testing
+- [ ] Fuzzing infrastructure
+
+=== Security Protocol Support
+- [ ] TLS version bridging
+- [ ] Protocol family translation (TLS ↔ Noise)
+- [ ] Security property verification
+- [ ] Rejection of unsafe combinations
+
+=== FFI Replacement
+- [ ] Function call bridging
+- [ ] Memory ownership semantics
+- [ ] Callback support
+- [ ] Performance competitive with manual FFI
+
+=== Performance Optimization
+- [ ] Zero-copy where possible
+- [ ] SIMD for compatible types
+- [ ] Lazy deserialization
+- [ ] Streaming support
+
+**Deliverable:** Production-grade system
+
+== Phase 4: Ecosystem Growth (Year 2+)
+
+=== Developer Experience
+- [ ] IDE plugins (LSP for adapter previews)
+- [ ] Interactive compatibility explorer
+- [ ] Web playground
+- [ ] Adapter marketplace
+
+=== Enterprise Features
+- [ ] Schema registry integration
+- [ ] Version migration tools
+- [ ] Audit logging
+- [ ] Governance policies
+
+=== Research Directions
+- [ ] AI-assisted optimization
+- [ ] Novel transformation primitives (cut, splice, reify)
+- [ ] Distributed protocol squishing
+- [ ] Hardware acceleration
+
+== Success Metrics
+
+=== MVP Success (Month 3)
+- [ ] 1,000+ GitHub stars
+- [ ] 10+ external contributors
+- [ ] 100+ real-world schemas tested
+- [ ] 0 invariant violations found
+
+=== Inflection Point (Month 12)
+- [ ] 10,000+ GitHub stars
+- [ ] 100+ contributors
+- [ ] 5+ companies using in production
+- [ ] Featured in major tech publications
+
+=== End State (Year 3+)
+- [ ] De facto standard for polyglot systems
+- [ ] Taught in university systems courses
+- [ ] Referenced in RFCs and standards
+- [ ] Every major framework has integration
+
+== Anti-Goals
+
+**Things we explicitly won't do:**
+
+- ❌ Optimize before proving correctness
+- ❌ Support every format before validating approach
+- ❌ Compromise the invariant for performance
+- ❌ Become a full RPC framework (stay focused on data)
+- ❌ Vendor lock-in (always open source, always portable)
+
+== Open Questions
+
+**Things we need to figure out:**
+
+1. **Naming:** Should generated code reference "squisher"? Or be invisible?
+2. **Ownership:** For FFI, who owns the data after crossing boundary?
+3. **Versioning:** How to handle schema evolution in adapters?
+4. **Caching:** Can we cache generated adapters safely?
+5. **Distribution:** Crate, binary, service, or all three?
+
+== Contributing to the Roadmap
+
+**This roadmap is not set in stone.**
+
+If you see:
+- A missing format pair that would be impactful
+- A hard problem we haven't considered
+- A better ordering of phases
+- A use case we haven't imagined
+
+→ Open an issue or MR. This is a collaborative exploration.
+
+== Timeline Caveats
+
+**These are estimates, not commitments.**
+
+Hard problems will surface. The invariant might break (we'll fix it or document impossibility). Real-world use cases will reshape priorities.
+
+**The only fixed points:**
+1. MVP must prove the invariant
+2. Python ↔ Rust comes first (maximum impact)
+3. We ship incrementally, not big-bang
+
+Everything else is negotiable based on what we learn.

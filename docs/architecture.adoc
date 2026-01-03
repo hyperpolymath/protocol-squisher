@@ -1,0 +1,1342 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2025 hyperpolymath
+= Protocol Squisher Architecture
+:toc: macro
+:toclevels: 4
+:icons: font
+:source-highlighter: rouge
+
+[.lead]
+**Technical deep dive: How universal protocol interoperability actually works**
+
+____
+This document explains the internal architecture of Protocol Squisher. Read this if you want to understand how it works, contribute code, or extend it with new formats.
+____
+
+toc::[]
+
+== System Overview
+
+=== The Core Pipeline
+```
+┌──────────────┐
+│ Source       │
+│ Schema       │  (e.g., Python Pydantic model)
+└──────┬───────┘
+       │
+       ▼
+┌──────────────────────────────────────────┐
+│ ANALYZER                                 │
+│ - Parse schema                           │
+│ - Extract type information               │
+│ - Identify constraints                   │
+└──────┬───────────────────────────────────┘
+       │
+       ▼
+┌──────────────────────────────────────────┐
+│ CANONICAL IR (Intermediate Rep)          │
+│ - Language-agnostic type system          │
+│ - Semantic preservation                  │
+│ - Constraint representation              │
+└──────┬───────────────────────────────────┘
+       │                    ┌─────────────┐
+       │                    │ Target      │
+       │                    │ Schema      │
+       │                    └──────┬──────┘
+       │                           │
+       │                           ▼
+       │                    ┌─────────────────┐
+       │                    │ ANALYZER        │
+       │                    └──────┬──────────┘
+       │                           │
+       ▼                           ▼
+┌────────────────────────────────────────────┐
+│ COMPATIBILITY ENGINE                       │
+│ - Compare IR schemas                       │
+│ - Score compatibility (0-100%)             │
+│ - Classify transport class                 │
+│ - Document losses                          │
+└──────┬─────────────────────────────────────┘
+       │
+       ▼
+┌────────────────────────────────────────────┐
+│ SYNTHESIS LAYER                            │
+│ - miniKanren constraint solving            │
+│ - Adapter strategy selection               │
+│ - Transformation primitive composition     │
+│ - Correctness proof generation             │
+└──────┬─────────────────────────────────────┘
+       │
+       ▼
+┌────────────────────────────────────────────┐
+│ CODE GENERATOR                             │
+│ - Emit target language code                │
+│ - Apply optimizations                      │
+│ - Generate tests                           │
+│ - Document conversions                     │
+└──────┬─────────────────────────────────────┘
+       │
+       ▼
+┌──────────────┐
+│ Generated    │
+│ Adapter Code │
+└──────────────┘
+```
+
+=== Directory Structure
+```
+protocol-squisher/
+├── core/
+│   ├── ir/              # Canonical intermediate representation
+│   ├── compat/          # Compatibility analysis engine
+│   └── primitives/      # Transformation primitives (cut, splice, etc.)
+│
+├── analyzers/
+│   ├── rust-serde/      # Rust serde type analyzer
+│   ├── python-pydantic/ # Python Pydantic analyzer
+│   ├── protobuf/        # Protocol Buffers analyzer
+│   ├── capnproto/       # Cap'n Proto analyzer
+│   └── ...              # More format analyzers
+│
+├── synthesis/
+│   ├── miniKanren/      # Constraint-based adapter synthesis
+│   ├── strategies/      # Adapter strategy implementations
+│   └── optimizer/       # Optimization passes
+│
+├── codegen/
+│   ├── pyo3/            # PyO3 FFI code generation
+│   ├── rust/            # Rust code emission
+│   ├── c/               # C code emission
+│   └── templates/       # Code generation templates
+│
+├── verification/
+│   ├── proofs/          # Formal correctness proofs
+│   ├── property-tests/  # QuickCheck/PropEr tests
+│   └── fuzzing/         # Continuous fuzzing harness
+│
+├── explorer/            # (Elixir) GitHub schema crawler
+│   ├── crawler/         # Parallel schema discovery
+│   ├── parser/          # Format detection & parsing
+│   └── database/        # Empirical compatibility DB
+│
+├── cli/                 # Command-line interface
+└── docs/                # Documentation
+```
+
+== The IR (Intermediate Representation)
+
+=== Design Principles
+
+**The IR is the heart of Protocol Squisher.** It must:
+
+1. **Represent any serialization format** (universal)
+2. **Preserve semantic information** (not just syntax)
+3. **Support constraint reasoning** (for synthesis)
+4. **Be efficiently comparable** (for compatibility analysis)
+5. **Map bidirectionally** (lossless round-trip where possible)
+
+=== Type System
+```rust
+// core/ir/src/types.rs
+
+/// The canonical type system
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum Type {
+    // Primitives
+    Unit,                    // () / None / null / void
+    Bool,
+
+    // Integers (with explicit signedness and width)
+    I8, I16, I32, I64, I128,
+    U8, U16, U32, U64, U128,
+
+    // Floats
+    F32, F64,
+
+    // Arbitrary precision (for languages that support it)
+    BigInt,
+    BigDecimal,
+
+    // Text
+    String,     // UTF-8 string
+    Char,       // Single Unicode scalar
+
+    // Binary
+    Bytes,      // Arbitrary byte sequence
+
+    // Containers
+    Array {
+        element: Box<Type>,
+        length: Option<usize>,  // Some(n) = fixed, None = dynamic
+    },
+
+    List {
+        element: Box<Type>,     // Dynamically sized
+    },
+
+    Map {
+        key: Box<Type>,
+        value: Box<Type>,
+    },
+
+    Set {
+        element: Box<Type>,
+    },
+
+    // Composite types
+    Struct {
+        name: String,
+        fields: Vec<Field>,
+        recursive: bool,         // Self-referential?
+    },
+
+    Enum {
+        name: String,
+        variants: Vec<Variant>,
+    },
+
+    // Advanced types
+    Optional(Box<Type>),         // Option<T> / Maybe / nullable
+
+    Result {
+        ok: Box<Type>,
+        err: Box<Type>,
+    },
+
+    Tuple(Vec<Type>),            // Heterogeneous fixed-size
+
+    Function {                    // For languages with first-class functions
+        params: Vec<Type>,
+        return_type: Box<Type>,
+    },
+
+    // Meta-types (for reflection/dynamic languages)
+    Any,                         // Dynamic typing escape hatch
+
+    // References (for cycle handling)
+    Reference {
+        target: Box<Type>,
+        mutable: bool,
+    },
+
+    // Custom opaque type (for unrepresentable things)
+    Opaque {
+        name: String,
+        description: String,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Field {
+    pub name: String,
+    pub ty: Type,
+    pub required: bool,
+    pub default: Option<Value>,
+    pub constraints: Vec<Constraint>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum Variant {
+    Unit(String),                           // Rust: Variant
+    Tuple(String, Vec<Type>),               // Rust: Variant(T, U)
+    Struct(String, Vec<Field>),             // Rust: Variant { x: T }
+}
+```
+
+=== Constraints
+```rust
+// core/ir/src/constraints.rs
+
+/// Constraints that refine types
+#[derive(Debug, Clone, PartialEq)]
+pub enum Constraint {
+    // Numeric bounds
+    Range { min: Option<f64>, max: Option<f64> },
+
+    // String constraints
+    MinLength(usize),
+    MaxLength(usize),
+    Regex(String),
+
+    // Container constraints
+    MinItems(usize),
+    MaxItems(usize),
+    UniqueItems,
+
+    // Custom validation
+    Predicate {
+        name: String,
+        description: String,
+        // Future: executable constraint function
+    },
+
+    // Format hints
+    Format(FormatHint),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum FormatHint {
+    DateTime,
+    Date,
+    Time,
+    Email,
+    Uri,
+    Uuid,
+    IpAddress,
+    // ... extensible
+}
+```
+
+=== Schema Representation
+```rust
+// core/ir/src/schema.rs
+
+/// A complete schema (collection of types and constraints)
+#[derive(Debug, Clone)]
+pub struct Schema {
+    /// All type definitions
+    pub types: HashMap<String, TypeDef>,
+
+    /// Entry point type (optional)
+    pub root: Option<String>,
+
+    /// Global constraints
+    pub constraints: Vec<GlobalConstraint>,
+
+    /// Metadata
+    pub metadata: SchemaMetadata,
+}
+
+#[derive(Debug, Clone)]
+pub struct TypeDef {
+    pub name: String,
+    pub ty: Type,
+    pub documentation: Option<String>,
+    pub constraints: Vec<Constraint>,
+}
+
+#[derive(Debug, Clone)]
+pub struct SchemaMetadata {
+    pub source_format: String,           // "serde", "pydantic", etc.
+    pub version: Option<String>,
+    pub namespace: Option<String>,
+}
+```
+
+=== IR Examples
+
+**Rust serde struct → IR:**
+```rust
+// Rust source
+#[derive(Serialize, Deserialize)]
+struct User {
+    name: String,
+    age: u32,
+    #[serde(default)]
+    active: bool,
+}
+
+// IR representation
+Schema {
+    types: {
+        "User": TypeDef {
+            name: "User",
+            ty: Type::Struct {
+                name: "User",
+                fields: vec![
+                    Field {
+                        name: "name",
+                        ty: Type::String,
+                        required: true,
+                        default: None,
+                        constraints: vec![],
+                    },
+                    Field {
+                        name: "age",
+                        ty: Type::U32,
+                        required: true,
+                        default: None,
+                        constraints: vec![
+                            Constraint::Range { min: Some(0.0), max: Some(4294967295.0) }
+                        ],
+                    },
+                    Field {
+                        name: "active",
+                        ty: Type::Bool,
+                        required: false,
+                        default: Some(Value::Bool(false)),
+                        constraints: vec![],
+                    },
+                ],
+                recursive: false,
+            },
+        }
+    },
+    root: Some("User"),
+    metadata: SchemaMetadata {
+        source_format: "rust-serde",
+        version: None,
+        namespace: None,
+    },
+}
+```
+
+**Python Pydantic model → IR:**
+```python
+# Python source
+from pydantic import BaseModel, Field
+
+class User(BaseModel):
+    name: str
+    age: int = Field(ge=0, le=150)
+    active: bool = True
+
+# IR representation (same as Rust!)
+# This is the key: same semantic structure, different source
+```
+
+== Analyzer Architecture
+
+=== Analyzer Interface
+
+All analyzers implement this common interface:
+```rust
+// core/ir/src/analyzer.rs
+
+pub trait SchemaAnalyzer {
+    /// Parse a file and extract schema
+    fn analyze(&self, input: &Path) -> Result<Schema, AnalysisError>;
+
+    /// Analyze from source code string
+    fn analyze_source(&self, source: &str) -> Result<Schema, AnalysisError>;
+
+    /// Get analyzer metadata
+    fn metadata(&self) -> AnalyzerMetadata;
+}
+
+pub struct AnalyzerMetadata {
+    pub name: &'static str,
+    pub supported_extensions: &'static [&'static str],
+    pub format_version: &'static str,
+}
+```
+
+=== Rust Serde Analyzer
+```rust
+// analyzers/rust-serde/src/lib.rs
+
+use syn::{parse_file, Item, ItemStruct, ItemEnum};
+
+pub struct RustSerdeAnalyzer;
+
+impl SchemaAnalyzer for RustSerdeAnalyzer {
+    fn analyze(&self, input: &Path) -> Result<Schema, AnalysisError> {
+        let source = fs::read_to_string(input)?;
+        self.analyze_source(&source)
+    }
+
+    fn analyze_source(&self, source: &str) -> Result<Schema, AnalysisError> {
+        let ast = parse_file(source)?;
+
+        let mut types = HashMap::new();
+
+        for item in ast.items {
+            match item {
+                Item::Struct(s) if has_serde_attrs(&s.attrs) => {
+                    let type_def = self.extract_struct(s)?;
+                    types.insert(type_def.name.clone(), type_def);
+                }
+                Item::Enum(e) if has_serde_attrs(&e.attrs) => {
+                    let type_def = self.extract_enum(e)?;
+                    types.insert(type_def.name.clone(), type_def);
+                }
+                _ => {}
+            }
+        }
+
+        Ok(Schema {
+            types,
+            root: None,  // Infer from context
+            constraints: vec![],
+            metadata: SchemaMetadata {
+                source_format: "rust-serde".into(),
+                version: None,
+                namespace: None,
+            },
+        })
+    }
+}
+
+impl RustSerdeAnalyzer {
+    fn extract_struct(&self, s: ItemStruct) -> Result<TypeDef, AnalysisError> {
+        let fields = s.fields.iter().map(|f| {
+            Field {
+                name: f.ident.as_ref().unwrap().to_string(),
+                ty: self.rust_type_to_ir(&f.ty)?,
+                required: !self.has_default_attr(&f.attrs),
+                default: self.extract_default(&f.attrs),
+                constraints: self.extract_constraints(&f.attrs),
+            }
+        }).collect::<Result<Vec<_>, _>>()?;
+
+        Ok(TypeDef {
+            name: s.ident.to_string(),
+            ty: Type::Struct {
+                name: s.ident.to_string(),
+                fields,
+                recursive: self.check_recursive(&s),
+            },
+            documentation: self.extract_doc_comments(&s.attrs),
+            constraints: vec![],
+        })
+    }
+
+    fn rust_type_to_ir(&self, ty: &syn::Type) -> Result<Type, AnalysisError> {
+        // Map Rust types to IR types
+        // String -> Type::String
+        // u32 -> Type::U32
+        // Option<T> -> Type::Optional(T)
+        // Vec<T> -> Type::List(T)
+        // etc.
+    }
+}
+```
+
+=== Python Pydantic Analyzer
+```rust
+// analyzers/python-pydantic/src/lib.rs
+
+use serde::Deserialize;
+use std::process::Command;
+
+pub struct PythonPydanticAnalyzer;
+
+impl SchemaAnalyzer for PythonPydanticAnalyzer {
+    fn analyze(&self, input: &Path) -> Result<Schema, AnalysisError> {
+        // Run Python introspection script
+        let output = Command::new("python3")
+            .arg(concat!(env!("CARGO_MANIFEST_DIR"), "/scripts/introspect.py"))
+            .arg(input)
+            .output()?;
+
+        if !output.status.success() {
+            return Err(AnalysisError::IntrospectionFailed(
+                String::from_utf8_lossy(&output.stderr).into()
+            ));
+        }
+
+        // Parse JSON output from Python
+        let python_schema: PythonSchemaRepr =
+            serde_json::from_slice(&output.stdout)?;
+
+        // Convert to IR
+        Ok(self.python_to_ir(python_schema))
+    }
+}
+
+#[derive(Deserialize)]
+struct PythonSchemaRepr {
+    models: Vec<PythonModel>,
+}
+
+#[derive(Deserialize)]
+struct PythonModel {
+    name: String,
+    fields: Vec<PythonField>,
+}
+
+impl PythonPydanticAnalyzer {
+    fn python_to_ir(&self, repr: PythonSchemaRepr) -> Schema {
+        let types = repr.models.into_iter().map(|model| {
+            let fields = model.fields.into_iter().map(|f| {
+                Field {
+                    name: f.name,
+                    ty: self.python_type_to_ir(&f.type_annotation),
+                    required: f.required,
+                    default: f.default.map(|v| self.parse_default_value(&v)),
+                    constraints: self.extract_pydantic_validators(&f.validators),
+                }
+            }).collect();
+
+            (model.name.clone(), TypeDef {
+                name: model.name,
+                ty: Type::Struct {
+                    name: model.name.clone(),
+                    fields,
+                    recursive: false,  // Detect separately
+                },
+                documentation: None,
+                constraints: vec![],
+            })
+        }).collect();
+
+        Schema {
+            types,
+            root: None,
+            constraints: vec![],
+            metadata: SchemaMetadata {
+                source_format: "python-pydantic".into(),
+                version: None,
+                namespace: None,
+            },
+        }
+    }
+}
+```
+
+**The Python introspection script:**
+```python
+# analyzers/python-pydantic/scripts/introspect.py
+
+import sys
+import json
+import importlib.util
+from pathlib import Path
+from typing import get_type_hints
+from pydantic import BaseModel
+
+def introspect_module(filepath):
+    """Load Python module and extract Pydantic models"""
+    spec = importlib.util.spec_from_file_location("user_module", filepath)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    models = []
+
+    for name in dir(module):
+        obj = getattr(module, name)
+        if isinstance(obj, type) and issubclass(obj, BaseModel) and obj != BaseModel:
+            models.append(extract_model_schema(obj))
+
+    return {"models": models}
+
+def extract_model_schema(model_class):
+    """Extract schema from a Pydantic model"""
+    fields = []
+
+    for field_name, field in model_class.model_fields.items():
+        fields.append({
+            "name": field_name,
+            "type_annotation": str(field.annotation),
+            "required": field.is_required(),
+            "default": repr(field.default) if field.default is not None else None,
+            "validators": [v.__name__ for v in field.metadata],
+        })
+
+    return {
+        "name": model_class.__name__,
+        "fields": fields,
+    }
+
+if __name__ == "__main__":
+    result = introspect_module(sys.argv[1])
+    print(json.dumps(result, indent=2))
+```
+
+== Compatibility Engine
+
+=== Compatibility Scoring
+```rust
+// core/compat/src/lib.rs
+
+#[derive(Debug, Clone)]
+pub struct CompatibilityReport {
+    /// Overall compatibility score (0.0 - 1.0)
+    pub score: f64,
+
+    /// Classification
+    pub class: TransportClass,
+
+    /// Field-by-field analysis
+    pub field_reports: Vec<FieldCompatibility>,
+
+    /// Documented losses
+    pub losses: Vec<DataLoss>,
+
+    /// Performance estimate
+    pub estimated_overhead: f64,  // Multiplier (1.0 = same, 2.0 = 2x slower)
+
+    /// Recommended strategy
+    pub strategy: AdapterStrategy,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TransportClass {
+    /// Near-zero-copy, <5% overhead, >95% type fidelity
+    Concorde,
+
+    /// Good performance, <25% overhead, >80% type fidelity
+    SolidTransport,
+
+    /// Moderate overhead, <100% overhead, >50% type fidelity
+    WorkingAdapter,
+
+    /// Slow but functional, >100% overhead, <50% type fidelity
+    Wheelbarrow,
+
+    /// Cannot bridge (security violation, fundamental incompatibility)
+    Rejected,
+}
+
+#[derive(Debug, Clone)]
+pub struct FieldCompatibility {
+    pub source_field: String,
+    pub target_field: Option<String>,  // None if no match
+    pub type_compatible: bool,
+    pub conversion_strategy: ConversionStrategy,
+    pub precision_loss: Option<PrecisionLoss>,
+}
+
+#[derive(Debug, Clone)]
+pub enum ConversionStrategy {
+    /// Direct copy (ideal)
+    Identity,
+
+    /// Safe widening (u32 -> u64)
+    Widen,
+
+    /// Lossy narrowing (u64 -> u32, may overflow)
+    Narrow { checked: bool },
+
+    /// String representation
+    Stringify,
+
+    /// JSON encoding
+    JsonEncode,
+
+    /// Custom function
+    Custom { name: String },
+}
+
+pub fn analyze_compatibility(
+    source: &Schema,
+    target: &Schema,
+) -> CompatibilityReport {
+    let mut total_score = 0.0;
+    let mut field_count = 0;
+    let mut field_reports = Vec::new();
+    let mut losses = Vec::new();
+
+    // Compare all types
+    for (name, source_type) in &source.types {
+        if let Some(target_type) = target.types.get(name) {
+            let field_compat = compare_types(&source_type.ty, &target_type.ty);
+            total_score += field_compat.score;
+            field_count += 1;
+
+            if let Some(loss) = field_compat.loss {
+                losses.push(loss);
+            }
+
+            field_reports.push(field_compat);
+        } else {
+            // Type missing in target - severe penalty
+            total_score += 0.0;
+            field_count += 1;
+            losses.push(DataLoss::MissingType(name.clone()));
+        }
+    }
+
+    let average_score = if field_count > 0 {
+        total_score / field_count as f64
+    } else {
+        0.0
+    };
+
+    let class = classify_transport(average_score, &losses);
+    let strategy = select_strategy(&class, source, target);
+    let overhead = estimate_overhead(&strategy);
+
+    CompatibilityReport {
+        score: average_score,
+        class,
+        field_reports,
+        losses,
+        estimated_overhead: overhead,
+        strategy,
+    }
+}
+
+fn compare_types(source: &Type, target: &Type) -> FieldCompatibility {
+    match (source, target) {
+        // Perfect match
+        (a, b) if a == b => FieldCompatibility {
+            type_compatible: true,
+            conversion_strategy: ConversionStrategy::Identity,
+            precision_loss: None,
+            score: 1.0,
+            loss: None,
+        },
+
+        // Safe widenings
+        (Type::U32, Type::U64) | (Type::I32, Type::I64) => FieldCompatibility {
+            type_compatible: true,
+            conversion_strategy: ConversionStrategy::Widen,
+            precision_loss: None,
+            score: 0.95,
+            loss: None,
+        },
+
+        // Lossy narrowings
+        (Type::U64, Type::U32) => FieldCompatibility {
+            type_compatible: true,
+            conversion_strategy: ConversionStrategy::Narrow { checked: true },
+            precision_loss: Some(PrecisionLoss::Overflow),
+            score: 0.6,
+            loss: Some(DataLoss::PossibleOverflow),
+        },
+
+        // Fallback: stringify
+        _ => FieldCompatibility {
+            type_compatible: false,
+            conversion_strategy: ConversionStrategy::Stringify,
+            precision_loss: Some(PrecisionLoss::TypeErased),
+            score: 0.3,
+            loss: Some(DataLoss::TypeInformation),
+        },
+    }
+}
+```
+
+== Synthesis Layer
+
+=== Adapter Strategies
+```rust
+// synthesis/strategies/src/lib.rs
+
+#[derive(Debug, Clone)]
+pub enum AdapterStrategy {
+    /// Direct zero-copy (best case)
+    ZeroCopy,
+
+    /// Schema-aware binary serialization
+    SchemaAware {
+        intermediate_format: IntermediateFormat,
+    },
+
+    /// Binary JSON (MessagePack, BSON)
+    BinaryJson,
+
+    /// JSON string (the wheelbarrow - always works)
+    JsonFallback,
+
+    /// Custom strategy
+    Custom {
+        name: String,
+        description: String,
+    },
+}
+
+#[derive(Debug, Clone)]
+pub enum IntermediateFormat {
+    MessagePack,
+    Bson,
+    Cbor,
+}
+```
+
+=== miniKanren Integration
+```rust
+// synthesis/miniKanren/src/lib.rs
+
+/// Synthesize adapter using constraint-based reasoning
+pub fn synthesize_adapter(
+    source: &Schema,
+    target: &Schema,
+    compat: &CompatibilityReport,
+) -> Result<GeneratedAdapter, SynthesisError> {
+    // This is where miniKanren reasoning happens
+    // For now, stub with rule-based approach
+
+    let strategy = &compat.strategy;
+
+    match strategy {
+        AdapterStrategy::ZeroCopy => {
+            generate_zero_copy_adapter(source, target)
+        }
+        AdapterStrategy::SchemaAware { intermediate_format } => {
+            generate_schema_aware_adapter(source, target, intermediate_format)
+        }
+        AdapterStrategy::JsonFallback => {
+            generate_json_fallback(source, target)
+        }
+        _ => unimplemented!("Strategy not yet implemented"),
+    }
+}
+
+fn generate_json_fallback(
+    source: &Schema,
+    target: &Schema,
+) -> Result<GeneratedAdapter, SynthesisError> {
+    // This ALWAYS succeeds - the invariant guarantee
+
+    Ok(GeneratedAdapter {
+        source_schema: source.clone(),
+        target_schema: target.clone(),
+        code: generate_json_adapter_code(source, target),
+        tests: generate_json_adapter_tests(source, target),
+        documentation: document_json_adapter(source, target),
+        metadata: AdapterMetadata {
+            strategy: AdapterStrategy::JsonFallback,
+            transport_class: TransportClass::Wheelbarrow,
+            guarantees: vec![
+                "Always transports".into(),
+                "May lose type information".into(),
+                "Performance: ~100x slower than optimal".into(),
+            ],
+        },
+    })
+}
+```
+
+== Transformation Primitives
+
+The operations that exist in NEITHER source NOR target, but are needed for bridging.
+```rust
+// core/primitives/src/lib.rs
+
+/// Transformation primitives for bridging incompatible formats
+pub trait TransformPrimitive {
+    type Input;
+    type Output;
+
+    fn apply(&self, input: Self::Input) -> Result<Self::Output, TransformError>;
+    fn prove_correct(&self) -> Option<CorrectnessProof>;
+}
+
+/// Break circular references in a graph
+pub struct Cut {
+    /// Where to break the cycle
+    pub cut_points: Vec<CutPoint>,
+}
+
+#[derive(Debug, Clone)]
+pub struct CutPoint {
+    /// Type being cut
+    pub type_name: String,
+
+    /// Field causing circularity
+    pub field_name: String,
+
+    /// Reconstruction strategy
+    pub reconstruction: ReconstructionStrategy,
+}
+
+#[derive(Debug, Clone)]
+pub enum ReconstructionStrategy {
+    /// Add index-based reference table
+    ReferenceTable,
+
+    /// Flatten to parent-child relationships
+    Denormalize,
+
+    /// Serialize as opaque blob
+    OpaqueBlob,
+}
+
+impl TransformPrimitive for Cut {
+    type Input = Type;
+    type Output = (Type, ReconstructionMetadata);
+
+    fn apply(&self, input: Self::Input) -> Result<Self::Output, TransformError> {
+        // Detect cycles
+        let cycles = detect_cycles(&input)?;
+
+        // Break at specified points
+        let (linearized, metadata) = break_cycles(&input, &self.cut_points)?;
+
+        Ok((linearized, metadata))
+    }
+}
+
+/// Splice out parts of a structure
+pub struct Splice {
+    pub removal_pattern: RemovalPattern,
+}
+
+/// Linearize graph to sequence
+pub struct Linearize {
+    pub traversal: TraversalOrder,
+}
+
+#[derive(Debug, Clone)]
+pub enum TraversalOrder {
+    DepthFirst,
+    BreadthFirst,
+    Topological,
+}
+
+/// Reify implicit structure (make it explicit)
+pub struct Reify {
+    pub aspect: ReifyAspect,
+}
+
+#[derive(Debug, Clone)]
+pub enum ReifyAspect {
+    /// Add length fields to arrays
+    Lengths,
+
+    /// Add type tags to unions
+    TypeTags,
+
+    /// Add presence flags to optionals
+    PresenceFlags,
+}
+```
+
+== Code Generation
+```rust
+// codegen/src/lib.rs
+
+pub struct GeneratedAdapter {
+    pub source_schema: Schema,
+    pub target_schema: Schema,
+    pub code: String,
+    pub tests: String,
+    pub documentation: String,
+    pub metadata: AdapterMetadata,
+}
+
+pub struct AdapterMetadata {
+    pub strategy: AdapterStrategy,
+    pub transport_class: TransportClass,
+    pub guarantees: Vec<String>,
+}
+
+/// Generate PyO3 adapter code
+pub fn generate_pyo3_adapter(
+    source: &Schema,  // Python
+    target: &Schema,  // Rust
+    compat: &CompatibilityReport,
+) -> Result<GeneratedAdapter, CodegenError> {
+    let mut code = String::new();
+
+    // Preamble
+    code.push_str("use pyo3::prelude::*;\n");
+    code.push_str("use serde::{Serialize, Deserialize};\n\n");
+    code.push_str("// AUTO-GENERATED by protocol-squisher\n");
+    code.push_str(&format!("// Transport Class: {:?}\n", compat.class));
+    code.push_str(&format!("// Compatibility Score: {:.1}%\n\n", compat.score * 100.0));
+
+    // Generate wrapper types
+    for (name, type_def) in &source.types {
+        code.push_str(&generate_pyclass(type_def, target)?);
+    }
+
+    // Generate conversion functions
+    code.push_str(&generate_conversion_fns(source, target, compat)?);
+
+    // Generate Python module
+    code.push_str(&generate_module_init(source)?);
+
+    Ok(GeneratedAdapter {
+        source_schema: source.clone(),
+        target_schema: target.clone(),
+        code,
+        tests: generate_tests(source, target),
+        documentation: generate_docs(compat),
+        metadata: AdapterMetadata {
+            strategy: compat.strategy.clone(),
+            transport_class: compat.class,
+            guarantees: vec![
+                "Transport always succeeds".into(),
+                format!("Estimated overhead: {:.0}%",
+                    (compat.estimated_overhead - 1.0) * 100.0),
+            ],
+        },
+    })
+}
+```
+
+== Verification Strategy
+```rust
+// verification/src/lib.rs
+
+/// Verify adapter correctness
+pub fn verify_adapter(adapter: &GeneratedAdapter) -> VerificationReport {
+    let mut report = VerificationReport::new();
+
+    // 1. Type safety check
+    report.add_check(verify_type_safety(adapter));
+
+    // 2. Property-based testing
+    report.add_check(run_property_tests(adapter));
+
+    // 3. Roundtrip verification
+    report.add_check(verify_roundtrip(adapter));
+
+    // 4. Performance benchmarking
+    report.add_check(benchmark_adapter(adapter));
+
+    report
+}
+
+fn verify_roundtrip(adapter: &GeneratedAdapter) -> CheckResult {
+    // For compatible types, verify: source → target → source = identity
+    // For incompatible types, verify: documented losses match reality
+    unimplemented!()
+}
+
+fn run_property_tests(adapter: &GeneratedAdapter) -> CheckResult {
+    // Generate random data conforming to source schema
+    // Pass through adapter
+    // Verify constraints on target schema
+    // QuickCheck/PropEr style
+    unimplemented!()
+}
+```
+
+== Extension Points
+
+=== Adding a New Format Analyzer
+```rust
+// 1. Implement SchemaAnalyzer trait
+pub struct MyFormatAnalyzer;
+
+impl SchemaAnalyzer for MyFormatAnalyzer {
+    fn analyze(&self, input: &Path) -> Result<Schema, AnalysisError> {
+        // Parse your format
+        // Convert to IR
+    }
+}
+
+// 2. Register in analyzer registry
+pub fn register_analyzers() -> AnalyzerRegistry {
+    let mut registry = AnalyzerRegistry::new();
+    registry.register(Box::new(RustSerdeAnalyzer));
+    registry.register(Box::new(PythonPydanticAnalyzer));
+    registry.register(Box::new(MyFormatAnalyzer));  // Your analyzer
+    registry
+}
+```
+
+=== Adding a New Adapter Strategy
+```rust
+// synthesis/strategies/src/custom.rs
+
+pub fn my_custom_strategy(
+    source: &Schema,
+    target: &Schema,
+) -> Result<GeneratedAdapter, SynthesisError> {
+    // Implement your strategy
+    // Must guarantee transport (the invariant!)
+}
+```
+
+== Performance Considerations
+
+=== Hot Paths
+
+1. **IR comparison** (compatibility scoring) - called frequently
+2. **Code generation** - cached, not hot
+3. **Generated adapter execution** - depends on strategy
+
+=== Optimization Opportunities
+
+**Caching:**
+- Schema parsing results
+- Compatibility reports
+- Generated adapters (keyed by schema hashes)
+
+**Parallelization:**
+- Schema crawler (Elixir OTP)
+- Batch compatibility analysis
+- Property test execution
+
+**Zero-Copy Paths:**
+- Detect when source and target are ABI-compatible
+- Generate memcpy-based adapters
+
+== Security Model
+
+=== Trust Boundaries
+```
+┌─────────────────────────────────┐
+│ USER SCHEMAS (untrusted input)  │
+└──────────────┬──────────────────┘
+               │
+               ▼
+┌──────────────────────────────────┐
+│ ANALYZERS (sandboxed parsing)    │
+│ - Limit recursion depth          │
+│ - Timeout on parse                │
+│ - Reject malicious schemas        │
+└──────────────┬───────────────────┘
+               │
+               ▼
+┌──────────────────────────────────┐
+│ IR (validated, safe)              │
+└──────────────┬───────────────────┘
+               │
+               ▼
+┌──────────────────────────────────┐
+│ CODEGEN (generates safe code)    │
+│ - No unsafe blocks                │
+│ - All conversions checked         │
+│ - Generated code passes lints     │
+└───────────────────────────────────┘
+```
+
+=== Security Invariants
+
+1. **No arbitrary code execution** from schemas
+2. **Denial of service protection** (parsing timeouts, recursion limits)
+3. **Generated code is memory-safe** (no unsafe, bounds checks)
+4. **Clear trust boundaries** (user schemas vs. generated code)
+
+== Testing Strategy
+```
+┌─────────────────────────────────────┐
+│ UNIT TESTS                          │
+│ - IR type conversions               │
+│ - Compatibility scoring             │
+│ - Individual analyzers              │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│ INTEGRATION TESTS                   │
+│ - End-to-end: source → IR → target │
+│ - Real schemas from popular libs   │
+│ - Roundtrip verification            │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│ PROPERTY-BASED TESTS                │
+│ - QuickCheck: random schemas        │
+│ - Invariant: adapter always works   │
+│ - Fuzz: malformed schemas           │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│ PERFORMANCE BENCHMARKS              │
+│ - Adapter execution overhead        │
+│ - Code generation time              │
+│ - Compatibility scoring speed       │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│ CONTINUOUS FUZZING                  │
+│ - GitHub schema corpus              │
+│ - Mutation-based fuzzing            │
+│ - Crash detection                   │
+└─────────────────────────────────────┘
+```
+
+== Build Integration
+
+=== As Cargo Build Dependency
+```toml
+# Cargo.toml
+[build-dependencies]
+protocol-squisher = "0.1"
+
+# build.rs
+fn main() {
+    protocol_squisher::generate()
+        .python_source("../python/models.py")
+        .rust_target("src/bindings.rs")
+        .build()
+        .expect("Failed to generate adapter");
+}
+```
+
+=== As CLI Tool
+```bash
+# One-time generation
+$ protocol-squish generate \
+    --source python:models.py \
+    --target rust:types.rs \
+    --output ./generated/
+
+# Watch mode (regenerate on change)
+$ protocol-squish watch \
+    --source python:models.py \
+    --target rust:types.rs
+```
+
+=== As Service (Future)
+```bash
+# Remote adapter generation
+$ curl -X POST https://api.protocol-squisher.dev/generate \
+    -F "source=@schema_a.proto" \
+    -F "target=@schema_b.thrift" \
+    -o adapter.rs
+```
+
+== Future Architecture Evolution
+
+=== Phase 2: Distributed Synthesis
+```
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│ Worker 1     │     │ Worker 2     │     │ Worker 3     │
+│ (analyzes)   │     │ (synthesizes)│     │ (verifies)   │
+└──────┬───────┘     └──────┬───────┘     └──────┬───────┘
+       │                    │                    │
+       └────────────────────┼────────────────────┘
+                            │
+                      ┌─────▼──────┐
+                      │ Coordinator│
+                      │ (Elixir)   │
+                      └────────────┘
+```
+
+=== Phase 3: AI-Assisted Optimization
+```
+┌──────────────────────────────────┐
+│ ML MODEL                         │
+│ - Trained on GitHub schemas      │
+│ - Suggests optimization patterns │
+│ - Predicts performance           │
+└──────────────┬───────────────────┘
+               │
+               ▼
+┌──────────────────────────────────┐
+│ SYNTHESIS LAYER                  │
+│ - Uses ML suggestions            │
+│ - Verifies with miniKanren       │
+│ - Best of both worlds            │
+└──────────────────────────────────┘
+```
+
+== Key Architectural Decisions
+
+=== Why Rust for Core?
+
+1. **Performance** - Parsing and code generation are hot paths
+2. **Type safety** - Prevents bugs in critical IR transformations
+3. **Tooling** - `syn` for Rust parsing, great ecosystem
+4. **Target output** - Generating Rust code from Rust is natural
+
+=== Why Elixir for Explorer?
+
+1. **OTP supervision** - Perfect for long-running crawler
+2. **Concurrency** - Parallel schema parsing
+3. **Fault tolerance** - Crashes don't kill the system
+4. **Pattern matching** - Great for schema analysis
+
+=== Why miniKanren for Synthesis?
+
+1. **Relational** - Naturally expresses type compatibility
+2. **Exhaustive search** - Finds optimal adapter
+3. **Proof generation** - Can prove correctness
+4. **Declarative** - Easier to reason about than imperative
+
+=== Why JSON as Universal Fallback?
+
+1. **Universal support** - Every language has JSON
+2. **Human-readable** - Easy debugging
+3. **Well-specified** - No ambiguity
+4. **Proven** - Decades of production use
+
+---
+
+**This architecture is designed to:**
+
+1. Guarantee the invariant ("if it compiles, it carries")
+2. Scale to 100+ serialization formats
+3. Be formally verifiable
+4. Optimize the common cases
+5. Fail gracefully on edge cases
+6. Be extensible by community
+
+**Next steps:** Start implementing the IR and first analyzer (Rust serde).

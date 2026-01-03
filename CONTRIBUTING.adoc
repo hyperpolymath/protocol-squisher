@@ -1,0 +1,45 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2025 hyperpolymath
+= Contributing Guide
+
+== Getting Started
+
+1. Fork the repository
+2. Create a feature branch from `main`
+3. Sign off commits (`git commit -s`)
+4. Submit a pull request
+
+== Especially Valuable Contributions
+
+* New format analyzers (see `crates/protocol-squisher-*-analyzer`)
+* Real-world schema examples for testing
+* Edge cases that break the invariant
+* Performance optimizations (after correctness is proven)
+
+== Commit Guidelines
+
+* Conventional commits: `type(scope): description`
+* Sign all commits (DCO required)
+* Atomic, focused commits
+
+== Testing
+
+All adapters must pass property-based testing:
+
+[source,bash]
+----
+cargo test
+cargo test --all-features
+----
+
+== The Invariant
+
+Every contribution must maintain the core invariant:
+
+____
+If it compiles, it carries. Every adapter guarantees transport.
+____
+
+== License
+
+Contributions licensed under AGPL-3.0-or-later.

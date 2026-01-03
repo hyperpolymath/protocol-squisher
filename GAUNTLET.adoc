@@ -1,0 +1,246 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2025 hyperpolymath
+= The Gauntlet
+:toc: macro
+:toclevels: 3
+:icons: font
+
+[.lead]
+**The hard problems between here and universal data interop**
+
+____
+This document exists to be honest about difficulty. If Protocol Squisher is going to succeed, we must face these challenges head-on, not discover them later and be surprised.
+____
+
+toc::[]
+
+== The Invariant Challenges
+
+=== Challenge 1: Proving "Always Works"
+
+**The Claim:** For any two schemas, we can generate an adapter that guarantees transport.
+
+**The Hard Part:** What if schemas are fundamentally incompatible?
+
+**Example:**
+[source]
+----
+// Schema A: Rust with dependent types
+struct Vector<const N: usize> {
+    data: [f64; N]
+}
+
+// Schema B: Python with no size constraints
+class Vector:
+    data: list[float]
+----
+
+**Resolution Strategy:**
+
+1. **Lossy transport is still transport** - We can always go A→B (lose size info)
+2. **Document the loss** - "Warning: size constraint `N` not preserved"
+3. **Provide runtime checks** - "Optional: validate `len(data) == N` on receipt"
+4. **JSON fallback** - Serialize to JSON, deserialize with validation
+
+=== Challenge 2: Circular References
+
+**The Problem:** Some formats support cycles, others don't.
+
+**Example:**
+[source,rust]
+----
+// Rust with Rc
+struct Node {
+    value: i32,
+    next: Option<Rc<RefCell<Node>>>
+}
+----
+
+**Cap'n Proto:** No cycles allowed - strictly tree-structured.
+
+**Resolution Strategy:**
+
+1. **Detect cycles at analysis time**
+2. **Flatten to tree + reference table**
+3. **Reconstruct cycles on receipt (if target supports)**
+4. **Or: reject with clear error if no safe transform exists**
+
+=== Challenge 3: Type System Gaps
+
+**The Problem:** Type systems have different expressiveness.
+
+[cols="1,1,1",options="header"]
+|===
+|Feature |Rust |Python
+
+|Sum types
+|`enum` with data
+|Union types (3.10+)
+
+|Generics
+|Full monomorphization
+|Type erasure
+
+|Refinement types
+|No (third-party)
+|No
+
+|Dependent types
+|Const generics only
+|No
+|===
+
+**Resolution Strategy:**
+
+1. **Map to closest equivalent**
+2. **Runtime validation for lost guarantees**
+3. **Generated documentation of semantic differences**
+
+=== Challenge 4: Performance vs. Correctness
+
+**The Tension:** Zero-copy is fast but limits what we can transform.
+
+**Example:**
+- Cap'n Proto: Zero-copy, but strict memory layout
+- JSON: Flexible, but always copies
+
+**Resolution Strategy:**
+
+1. **Concorde class** - Zero-copy when formats align
+2. **Economy class** - Copy when necessary, still fast
+3. **Wheelbarrow class** - JSON fallback, always works
+
+The invariant is more important than performance. We optimize *after* proving correctness.
+
+== Technical Challenges
+
+=== Challenge 5: Schema Discovery
+
+**The Problem:** Not all formats have explicit schemas.
+
+- **JSON:** Schema-less by default
+- **Python:** Type hints are optional
+- **JavaScript:** Good luck
+
+**Resolution Strategy:**
+
+1. **Require explicit schema** for untyped formats
+2. **Infer from examples** (with caveats)
+3. **Runtime schema extraction** (Pydantic introspection)
+
+=== Challenge 6: Version Evolution
+
+**The Problem:** Schemas change over time.
+
+**Scenarios:**
+- Field added (usually safe)
+- Field removed (data loss)
+- Type changed (complex)
+- Semantic change (invisible)
+
+**Resolution Strategy:**
+
+1. **Version-aware adapters** - Generate for specific version pairs
+2. **Migration paths** - A v1 → A v2 → B
+3. **Compatibility matrices** - Document what works with what
+
+=== Challenge 7: Error Handling
+
+**The Problem:** Different formats have different error models.
+
+- **Rust:** `Result<T, E>` with typed errors
+- **Python:** Exceptions
+- **Protobuf:** Default values on missing fields
+
+**Resolution Strategy:**
+
+1. **Map to target idiom** - Rust errors become Python exceptions
+2. **Preserve error information** - Don't lose the "why"
+3. **Document semantics** - "Rust `None` becomes Python `None`, not missing"
+
+== Philosophical Challenges
+
+=== Challenge 8: What is "Equivalence"?
+
+**The Question:** When are two values "the same"?
+
+**Examples:**
+- `NaN != NaN` in IEEE 754
+- `{a: 1, b: 2}` vs `{b: 2, a: 1}` - Same in JSON?
+- Unicode normalization - `é` vs `e` + combining accent
+
+**Resolution Strategy:**
+
+1. **Define equivalence per type**
+2. **Document edge cases**
+3. **Provide configuration** - "Use Unicode NFC normalization"
+
+=== Challenge 9: Semantic Preservation
+
+**The Problem:** Syntax can be identical, semantics different.
+
+**Example:**
+[source]
+----
+// Rust: seconds since Unix epoch
+struct Timestamp(i64);
+
+// Python: could be anything
+timestamp: int
+----
+
+**Resolution Strategy:**
+
+1. **Semantic annotations** - `@unit("seconds")` `@epoch("unix")`
+2. **Convention detection** - Recognize common patterns
+3. **User documentation** - Require explicit semantic mapping
+
+=== Challenge 10: The Halting Problem
+
+**The Problem:** Some transformations require arbitrary computation.
+
+**Example:** Dependent types that require theorem proving.
+
+**Resolution Strategy:**
+
+1. **Bound computation** - Time/space limits on analysis
+2. **Reject undecidable** - "Cannot prove equivalence; manual adapter required"
+3. **Escape hatch** - Allow user-provided transformation logic
+
+== The Meta-Challenge
+
+=== We Don't Know What We Don't Know
+
+The hardest problems are the ones we haven't discovered yet.
+
+**Mitigation:**
+
+1. **Extensive testing** - Property-based, fuzzing, real-world schemas
+2. **Community feedback** - Users find edge cases we miss
+3. **Honest documentation** - Say "we don't know" when we don't
+4. **Incremental claims** - Start narrow, expand carefully
+
+== Success Criteria
+
+**We've "won" when:**
+
+1. The invariant holds for every tested schema pair
+2. Users trust the "TRANSPORT VIABLE: ✓" message
+3. The community contributes more analyzers than we do
+4. Protocol Squisher is boring infrastructure, not a research project
+
+== Contributing to the Gauntlet
+
+**Found a hard problem we missed?**
+
+Open an issue with:
+1. The format pair
+2. The problematic schema
+3. Why you think it breaks the invariant
+
+We'll either:
+- Add it to this document
+- Find a solution
+- Document why it's impossible
+
+No problem too hard, no edge case too obscure.

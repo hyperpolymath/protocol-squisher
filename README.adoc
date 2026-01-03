@@ -1,0 +1,160 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2025 hyperpolymath
+= Protocol Squisher
+:toc: macro
+:toclevels: 3
+:icons: font
+
+[.lead]
+**Universal protocol interoperability through automatic adapter synthesis.**
+
+____
+*The Invariant:* If it compiles, it carries.
+
+Every data serialization format can talk to every other format. Always. Even if slow. Even if lossy. But it *will* transport.
+____
+
+toc::[]
+
+== The Problem
+
+You have a Factor serialization library. Your colleague has a Cap'n Proto service. You need them to talk.
+
+**Current options:**
+
+1. Write a manual adapter (hours/days of work)
+2. Use JSON as lingua franca (slow, lossy, manual)
+3. Rewrite one side (expensive, political nightmare)
+4. Give up
+
+**What if there was another way?**
+
+== The Solution
+
+Protocol Squisher analyzes two incompatible serialization formats and synthesizes the *minimum viable adapter* that guarantees transport.
+
+[source,bash]
+----
+$ protocol-squish analyze factor-schema.factor capnproto-schema.capnp
+
+Compatibility Analysis:
+  Transport Class: Wheelbarrow (47% type fidelity)
+  Estimated Overhead: -60% performance
+  Losses: circular references, some type precision
+
+TRANSPORT VIABLE: ✓
+
+$ protocol-squish generate --output ./adapter/
+
+Generated:
+  ✓ adapter.rs (1,247 lines)
+  ✓ tests.rs (894 lines)
+  ✓ README.md
+
+Adapter guarantees:
+  [PROVEN] All data that enters will exit
+  [PROVEN] No undefined behavior
+  [DOCUMENTED] Type conversions and losses
+----
+
+== Transport Classes
+
+Protocol Squisher classifies every format pair into transport classes:
+
+[cols="1,2,2",options="header"]
+|===
+|Class |Description |Example
+
+|**Concorde**
+|Zero-copy, full fidelity, maximum performance
+|serde ↔ serde (same Rust types)
+
+|**Business Class**
+|Minor overhead, full fidelity
+|Protobuf ↔ Thrift (similar models)
+
+|**Economy**
+|Moderate overhead, documented losses
+|JSON ↔ MessagePack
+
+|**Wheelbarrow**
+|High overhead, significant losses, but *it works*
+|Factor ↔ Cap'n Proto
+|===
+
+== The Invariant
+
+**Every adapter we generate maintains this invariant:**
+
+____
+For any valid input `x` in format A, there exists a valid output `y` in format B such that `squish(x) = y`.
+
+If A cannot represent some value from B, we document the loss *before* you use the adapter.
+____
+
+We achieve this through:
+
+1. **Canonical IR**: Every format maps to our intermediate representation
+2. **Compatibility Analysis**: Before generating, we prove transport is possible
+3. **JSON Fallback**: When all else fails, JSON becomes the wheelbarrow
+4. **Property-Based Testing**: Exhaustive verification of adapter correctness
+
+== Quick Start
+
+[source,bash]
+----
+# Install
+cargo install protocol-squisher
+
+# Analyze compatibility
+protocol-squish analyze schema-a.rs schema-b.py
+
+# Generate adapter
+protocol-squish generate --from rust --to python --output ./adapter/
+
+# Use in your code
+use adapter::Squisher;
+let python_data = Squisher::to_python(&rust_struct)?;
+----
+
+== Supported Formats
+
+=== Currently Supported
+- Rust (serde)
+- Python (Pydantic)
+- JSON
+
+=== Coming Soon
+- Cap'n Proto
+- Protobuf
+- Thrift
+- Avro
+- MessagePack
+- Factor
+
+See link:ROADMAP.adoc[ROADMAP.adoc] for the full expansion plan.
+
+== Documentation
+
+- link:ROADMAP.adoc[Roadmap] - Where we're going
+- link:GAUNTLET.adoc[The Gauntlet] - Hard problems we're solving
+- link:docs/architecture.adoc[Architecture] - How it works
+- link:docs/ir-spec.adoc[IR Specification] - The intermediate representation
+
+== Contributing
+
+We welcome contributions! See link:CONTRIBUTING.adoc[CONTRIBUTING.adoc].
+
+**Especially valuable:**
+- New format analyzers
+- Real-world schema examples
+- Edge cases that break the invariant
+- Performance optimizations
+
+== License
+
+AGPL-3.0-or-later. See link:LICENSE[LICENSE].
+
+== Acknowledgments
+
+Inspired by the frustration of every polyglot developer who has ever had to bridge two serialization formats manually.
