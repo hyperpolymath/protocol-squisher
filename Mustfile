@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Mustfile - deployment state contract
+# See: https://github.com/hyperpolymath/mustfile
+
+version: 1
+
+checks:
+  - name: lint
+    run: just lint
+  - name: test
+    run: just test
+  - name: format
+    run: just fmt
