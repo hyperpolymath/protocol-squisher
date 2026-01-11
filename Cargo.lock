@@ -175,7 +175,11 @@ name = "protocol-squisher"
 version = "0.1.0"
 dependencies = [
  "proptest",
+ "protocol-squisher-compat",
  "protocol-squisher-ir",
+ "protocol-squisher-pyo3-codegen",
+ "protocol-squisher-python-analyzer",
+ "protocol-squisher-rust-analyzer",
  "serde",
  "serde_json",
 ]

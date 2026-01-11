@@ -49,3 +49,15 @@ members = [
 
 [dependencies.protocol-squisher-ir]
 path = "crates/protocol-squisher-ir"
+
+[dependencies.protocol-squisher-rust-analyzer]
+path = "crates/protocol-squisher-rust-analyzer"
+
+[dependencies.protocol-squisher-python-analyzer]
+path = "crates/protocol-squisher-python-analyzer"
+
+[dependencies.protocol-squisher-compat]
+path = "crates/protocol-squisher-compat"
+
+[dependencies.protocol-squisher-pyo3-codegen]
+path = "crates/protocol-squisher-pyo3-codegen"

@@ -16,6 +16,22 @@ pub mod ir {
     pub use protocol_squisher_ir::*;
 }
 
+pub mod rust_analyzer {
+    pub use protocol_squisher_rust_analyzer::*;
+}
+
+pub mod python_analyzer {
+    pub use protocol_squisher_python_analyzer::*;
+}
+
+pub mod compat {
+    pub use protocol_squisher_compat::*;
+}
+
+pub mod pyo3_codegen {
+    pub use protocol_squisher_pyo3_codegen::*;
+}
+
 /// Transport class classification for adapter quality
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum TransportClass {

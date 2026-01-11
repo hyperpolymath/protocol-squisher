@@ -5,10 +5,18 @@
 //!
 //! ```bash
 //! protocol-squish analyze schema-a.rs schema-b.py
-//! protocol-squish generate --from rust --to python --output ./adapter/
+//! protocol-squish generate --from schema.rs --output ./bindings/
+//! protocol-squish compare schema-a.rs schema-b.rs
 //! ```
 
+use protocol_squisher::compat::{CompatibilityAnalyzer, TransportClass, LossSeverity};
+use protocol_squisher::ir::IrSchema;
+use protocol_squisher::pyo3_codegen::{generate_module, ModuleGenConfig};
+use protocol_squisher::python_analyzer::PythonAnalyzer;
+use protocol_squisher::rust_analyzer::RustAnalyzer;
 use std::env;
+use std::fs;
+use std::path::Path;
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
@@ -21,6 +29,7 @@ fn main() -> ExitCode {
 
     match args[1].as_str() {
         "analyze" => cmd_analyze(&args[2..]),
+        "compare" => cmd_compare(&args[2..]),
         "generate" => cmd_generate(&args[2..]),
         "version" | "--version" | "-V" => {
             println!("protocol-squish {}", env!("CARGO_PKG_VERSION"));
@@ -47,51 +56,372 @@ USAGE:
     protocol-squish <COMMAND> [OPTIONS]
 
 COMMANDS:
-    analyze     Analyze compatibility between two schemas
-    generate    Generate adapter code between formats
+    analyze     Parse a schema file and show its IR representation
+    compare     Compare two schemas for compatibility
+    generate    Generate PyO3 binding code from a Rust schema
     version     Show version information
     help        Show this help message
 
 EXAMPLES:
-    protocol-squish analyze schema.rs model.py
-    protocol-squish generate --from rust --to python -o ./adapter/
+    protocol-squish analyze models.rs
+    protocol-squish analyze models.py
+    protocol-squish compare rust_types.rs python_models.py
+    protocol-squish generate --from schema.rs --module my_bindings -o ./src/
 
 The Invariant: If it compiles, it carries.
 "#
     );
 }
 
+/// Analyze a single schema file and display its IR
 fn cmd_analyze(args: &[String]) -> ExitCode {
-    if args.len() < 2 {
-        eprintln!("Usage: protocol-squish analyze <schema-a> <schema-b>");
+    if args.is_empty() {
+        eprintln!("Usage: protocol-squish analyze <schema-file>");
+        eprintln!();
+        eprintln!("Supported formats:");
+        eprintln!("  .rs   - Rust (serde derive)");
+        eprintln!("  .py   - Python (Pydantic models)");
+        eprintln!("  .json - Pydantic introspection JSON");
         return ExitCode::from(1);
     }
 
-    let schema_a = &args[0];
-    let schema_b = &args[1];
+    let path = &args[0];
 
-    println!("Analyzing compatibility...");
-    println!("  Source: {schema_a}");
-    println!("  Target: {schema_b}");
+    match analyze_file(path) {
+        Ok(schema) => {
+            println!("=== Schema Analysis: {} ===", path);
+            println!();
+            println!("Name: {}", schema.name);
+            println!("Source: {}", schema.source_format);
+            println!("Types: {}", schema.types.len());
+            println!();
+
+            for (name, type_def) in &schema.types {
+                println!("  {} - {:?}", name, type_def_summary(type_def));
+            }
+
+            if !schema.roots.is_empty() {
+                println!();
+                println!("Root types: {:?}", schema.roots);
+            }
+
+            println!();
+            println!("Full IR (JSON):");
+            match serde_json::to_string_pretty(&schema) {
+                Ok(json) => println!("{}", json),
+                Err(e) => eprintln!("Failed to serialize IR: {}", e),
+            }
+
+            ExitCode::SUCCESS
+        }
+        Err(e) => {
+            eprintln!("Error analyzing {}: {}", path, e);
+            ExitCode::from(1)
+        }
+    }
+}
+
+/// Compare two schemas for compatibility
+fn cmd_compare(args: &[String]) -> ExitCode {
+    if args.len() < 2 {
+        eprintln!("Usage: protocol-squish compare <schema-a> <schema-b>");
+        return ExitCode::from(1);
+    }
+
+    let path_a = &args[0];
+    let path_b = &args[1];
+
+    let schema_a = match analyze_file(path_a) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("Error analyzing {}: {}", path_a, e);
+            return ExitCode::from(1);
+        }
+    };
+
+    let schema_b = match analyze_file(path_b) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("Error analyzing {}: {}", path_b, e);
+            return ExitCode::from(1);
+        }
+    };
+
+    println!("=== Compatibility Analysis ===");
+    println!();
+    println!("Source: {} ({} types)", path_a, schema_a.types.len());
+    println!("Target: {} ({} types)", path_b, schema_b.types.len());
     println!();
 
-    // TODO: Implement actual analysis
-    println!("Compatibility Analysis:");
-    println!("  Transport Class: Economy (placeholder)");
-    println!("  Estimated Overhead: TBD");
-    println!("  Losses: TBD");
+    let analyzer = CompatibilityAnalyzer::new();
+    let result = analyzer.compare(&schema_a, &schema_b);
+
+    // Display transport class with emoji
+    let class_display = match result.class {
+        TransportClass::Concorde => "Concorde (zero-copy, full fidelity)",
+        TransportClass::BusinessClass => "Business Class (minor overhead)",
+        TransportClass::Economy => "Economy (moderate overhead)",
+        TransportClass::Wheelbarrow => "Wheelbarrow (high overhead, but works)",
+        TransportClass::Incompatible => "Incompatible (cannot transport)",
+    };
+
+    println!("Transport Class: {}", class_display);
     println!();
-    println!("TRANSPORT VIABLE: ✓");
+
+    // Display losses
+    if result.all_losses.is_empty() {
+        println!("Losses: None (lossless conversion)");
+    } else {
+        println!("Losses ({}):", result.all_losses.len());
+        for loss in &result.all_losses {
+            let severity_icon = match loss.severity {
+                LossSeverity::Info => "[info]",
+                LossSeverity::Minor => "[minor]",
+                LossSeverity::Moderate => "[moderate]",
+                LossSeverity::Major => "[MAJOR]",
+                LossSeverity::Critical => "[CRITICAL]",
+            };
+            println!(
+                "  {} {:?} at {}: {}",
+                severity_icon, loss.kind, loss.path, loss.description
+            );
+        }
+    }
+
     println!();
-    println!("(Analysis engine not yet implemented - see ROADMAP.adoc Phase 0)");
+
+    // Summary
+    if result.is_compatible() {
+        println!("TRANSPORT VIABLE");
+        if result.all_losses.is_empty() {
+            println!("   Perfect fidelity - no data loss");
+        } else {
+            println!("   {} documented loss(es)", result.all_losses.len());
+        }
+    } else {
+        println!("TRANSPORT NOT VIABLE");
+        println!("   Schemas are incompatible");
+    }
 
     ExitCode::SUCCESS
 }
 
+/// Generate PyO3 bindings from a Rust schema
 fn cmd_generate(args: &[String]) -> ExitCode {
-    println!("Generate command received with args: {args:?}");
+    let mut from_path: Option<String> = None;
+    let mut module_name = "generated".to_string();
+    let mut output_path: Option<String> = None;
+
+    // Parse arguments
+    let mut i = 0;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--from" | "-f" => {
+                if i + 1 < args.len() {
+                    from_path = Some(args[i + 1].clone());
+                    i += 2;
+                } else {
+                    eprintln!("--from requires a path argument");
+                    return ExitCode::from(1);
+                }
+            }
+            "--module" | "-m" => {
+                if i + 1 < args.len() {
+                    module_name = args[i + 1].clone();
+                    i += 2;
+                } else {
+                    eprintln!("--module requires a name argument");
+                    return ExitCode::from(1);
+                }
+            }
+            "--output" | "-o" => {
+                if i + 1 < args.len() {
+                    output_path = Some(args[i + 1].clone());
+                    i += 2;
+                } else {
+                    eprintln!("--output requires a path argument");
+                    return ExitCode::from(1);
+                }
+            }
+            other => {
+                // Positional argument - treat as from_path if not set
+                if from_path.is_none() {
+                    from_path = Some(other.to_string());
+                }
+                i += 1;
+            }
+        }
+    }
+
+    let from_path = match from_path {
+        Some(p) => p,
+        None => {
+            eprintln!("Usage: protocol-squish generate --from <schema.rs> [--module name] [--output dir]");
+            return ExitCode::from(1);
+        }
+    };
+
+    // Analyze the source schema
+    let schema = match analyze_file(&from_path) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("Error analyzing {}: {}", from_path, e);
+            return ExitCode::from(1);
+        }
+    };
+
+    println!("=== PyO3 Code Generation ===");
     println!();
-    println!("(Code generation not yet implemented - see ROADMAP.adoc Phase 1)");
+    println!("Source: {} ({} types)", from_path, schema.types.len());
+    println!("Module: {}", module_name);
+    println!();
+
+    // Generate code
+    let config = ModuleGenConfig::new(&module_name)
+        .with_doc(format!("Generated from {} by protocol-squisher", from_path));
+    let result = generate_module(&schema, &config);
+
+    // Output
+    if let Some(output_dir) = output_path {
+        let output_path = Path::new(&output_dir);
+
+        // Create directory if needed
+        if let Err(e) = fs::create_dir_all(output_path) {
+            eprintln!("Failed to create output directory: {}", e);
+            return ExitCode::from(1);
+        }
+
+        // Write Rust code
+        let rust_path = output_path.join(format!("{}.rs", module_name));
+        if let Err(e) = fs::write(&rust_path, &result.rust_code) {
+            eprintln!("Failed to write {}: {}", rust_path.display(), e);
+            return ExitCode::from(1);
+        }
+        println!("Generated: {}", rust_path.display());
+
+        // Write Python stubs if available
+        if let Some(stub) = &result.python_stub {
+            let stub_path = output_path.join(format!("{}.pyi", module_name));
+            if let Err(e) = fs::write(&stub_path, stub) {
+                eprintln!("Failed to write {}: {}", stub_path.display(), e);
+                return ExitCode::from(1);
+            }
+            println!("Generated: {}", stub_path.display());
+        }
+
+        println!();
+        println!("Types generated: {:?}", result.generated_types);
+
+        if !result.missing_types.is_empty() {
+            println!("⚠️  Missing types (referenced but not defined): {:?}", result.missing_types);
+        }
+    } else {
+        // Print to stdout
+        println!("--- Rust Code ({}.rs) ---", module_name);
+        println!("{}", result.rust_code);
+
+        if let Some(stub) = &result.python_stub {
+            println!();
+            println!("--- Python Stub ({}.pyi) ---", module_name);
+            println!("{}", stub);
+        }
+    }
 
     ExitCode::SUCCESS
+}
+
+/// Analyze a file and return its IR schema
+fn analyze_file(path: &str) -> Result<IrSchema, String> {
+    let path_obj = Path::new(path);
+    let extension = path_obj
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("");
+
+    match extension {
+        "rs" => analyze_rust(path),
+        "py" => analyze_python(path),
+        "json" => analyze_python_json(path),
+        _ => Err(format!(
+            "Unknown file extension: .{} (expected .rs, .py, or .json)",
+            extension
+        )),
+    }
+}
+
+/// Analyze a Rust file
+fn analyze_rust(path: &str) -> Result<IrSchema, String> {
+    let content = fs::read_to_string(path)
+        .map_err(|e| format!("Failed to read {}: {}", path, e))?;
+
+    let analyzer = RustAnalyzer::new();
+    analyzer
+        .analyze_source(&content)
+        .map_err(|e| format!("Failed to analyze Rust: {}", e))
+}
+
+/// Analyze a Python file (runs introspection)
+fn analyze_python(path: &str) -> Result<IrSchema, String> {
+    // Check if Python is available
+    let _analyzer = PythonAnalyzer::new();
+
+    // Read the Python file
+    let _content = fs::read_to_string(path)
+        .map_err(|e| format!("Failed to read {}: {}", path, e))?;
+
+    // For now, we need to run the Python introspection externally
+    // and feed the JSON output to analyze_json
+    Err(format!(
+        "Direct Python file analysis not yet implemented.\n\
+         Please run the introspection script manually:\n\
+         \n\
+         python3 -c \"\n\
+         import sys\n\
+         sys.path.insert(0, '.')\n\
+         exec(open('{}').read())\n\
+         # Then run introspection on your models\n\
+         \" > introspection.json\n\
+         \n\
+         Then analyze the JSON output:\n\
+         protocol-squish analyze introspection.json\n\
+         \n\
+         Alternatively, if you have Pydantic introspection JSON, use:\n\
+         protocol-squish analyze {}.json",
+        path,
+        path.trim_end_matches(".py")
+    ))
+}
+
+/// Analyze Pydantic introspection JSON
+fn analyze_python_json(path: &str) -> Result<IrSchema, String> {
+    let content = fs::read_to_string(path)
+        .map_err(|e| format!("Failed to read {}: {}", path, e))?;
+
+    let analyzer = PythonAnalyzer::new();
+    analyzer
+        .analyze_json(&content)
+        .map_err(|e| format!("Failed to analyze Python JSON: {}", e))
+}
+
+/// Get a brief summary of a type definition
+fn type_def_summary(type_def: &protocol_squisher::ir::TypeDef) -> &'static str {
+    match type_def {
+        protocol_squisher::ir::TypeDef::Struct(s) => {
+            if s.fields.is_empty() {
+                "struct (empty)"
+            } else {
+                "struct"
+            }
+        }
+        protocol_squisher::ir::TypeDef::Enum(e) => {
+            if e.variants.iter().all(|v| v.payload.is_none()) {
+                "enum (simple)"
+            } else {
+                "enum (complex)"
+            }
+        }
+        protocol_squisher::ir::TypeDef::Alias(_) => "alias",
+        protocol_squisher::ir::TypeDef::Newtype(_) => "newtype",
+        protocol_squisher::ir::TypeDef::Union(_) => "union",
+    }
 }
