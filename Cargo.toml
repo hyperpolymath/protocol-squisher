@@ -18,7 +18,7 @@ serde_json = "1.0"
 
 [dev-dependencies]
 # Property-based testing
-proptest = "1.4"
+proptest = "1.4.0"
 
 [[bin]]
 name = "protocol-squish"
@@ -41,8 +41,11 @@ debug = true
 [workspace]
 members = [
   "crates/protocol-squisher-ir",
-  "crates/protocol-squisher-rust-analyzer",
-  "crates/protocol-squisher-python-analyzer",
-  "crates/protocol-squisher-compat",
-  "crates/protocol-squisher-pyo3-codegen",
+  # Phase 0 Week 2: "crates/protocol-squisher-rust-analyzer",
+  # Phase 0 Week 3: "crates/protocol-squisher-python-analyzer",
+  # Phase 0 Week 4: "crates/protocol-squisher-compat",
+  # Phase 1: "crates/protocol-squisher-pyo3-codegen",
 ]
+
+[dependencies.protocol-squisher-ir]
+path = "crates/protocol-squisher-ir"
