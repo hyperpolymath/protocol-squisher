@@ -43,7 +43,7 @@ members = [
   "crates/protocol-squisher-ir",
   "crates/protocol-squisher-rust-analyzer",
   "crates/protocol-squisher-python-analyzer",
-  # Phase 0 Week 4: "crates/protocol-squisher-compat",
+  "crates/protocol-squisher-compat",
   # Phase 1: "crates/protocol-squisher-pyo3-codegen",
 ]
 
