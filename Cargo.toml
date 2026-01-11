@@ -44,7 +44,7 @@ members = [
   "crates/protocol-squisher-rust-analyzer",
   "crates/protocol-squisher-python-analyzer",
   "crates/protocol-squisher-compat",
-  # Phase 1: "crates/protocol-squisher-pyo3-codegen",
+  "crates/protocol-squisher-pyo3-codegen",
 ]
 
 [dependencies.protocol-squisher-ir]

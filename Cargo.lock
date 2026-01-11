@@ -200,6 +200,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "protocol-squisher-pyo3-codegen"
+version = "0.1.0"
+dependencies = [
+ "proptest",
+ "protocol-squisher-ir",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "protocol-squisher-python-analyzer"
 version = "0.1.0"
 dependencies = [
