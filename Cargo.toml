@@ -42,7 +42,7 @@ debug = true
 members = [
   "crates/protocol-squisher-ir",
   "crates/protocol-squisher-rust-analyzer",
-  # Phase 0 Week 3: "crates/protocol-squisher-python-analyzer",
+  "crates/protocol-squisher-python-analyzer",
   # Phase 0 Week 4: "crates/protocol-squisher-compat",
   # Phase 1: "crates/protocol-squisher-pyo3-codegen",
 ]
