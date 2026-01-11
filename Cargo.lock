@@ -190,6 +190,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "protocol-squisher-rust-analyzer"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "proptest",
+ "protocol-squisher-ir",
+ "quote",
+ "serde",
+ "serde_json",
+ "syn",
+]
+
+[[package]]
 name = "quick-error"
 version = "1.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"

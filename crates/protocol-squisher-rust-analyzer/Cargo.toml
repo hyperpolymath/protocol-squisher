@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: PMPL-1.0
+
+[package]
+name = "protocol-squisher-rust-analyzer"
+version = "0.1.0"
+edition = "2021"
+authors = ["hyperpolymath"]
+license = "PMPL-1.0"
+description = "Rust/serde schema analyzer for protocol-squisher"
+repository = "https://github.com/hyperpolymath/protocol-squisher"
+keywords = ["rust", "serde", "analyzer", "schema", "parser"]
+categories = ["development-tools", "parser-implementations"]
+rust-version = "1.75"
+
+[dependencies]
+protocol-squisher-ir = { path = "../protocol-squisher-ir" }
+syn = { version = "2.0", features = ["full", "parsing", "visit"] }
+quote = "1.0"
+proc-macro2 = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[dev-dependencies]
+proptest = "1.4.0"

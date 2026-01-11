@@ -1,0 +1,476 @@
+// SPDX-License-Identifier: PMPL-1.0
+// SPDX-FileCopyrightText: 2025 hyperpolymath
+
+//! # Protocol Squisher Rust Analyzer
+//!
+//! Analyzes Rust source files to extract serde-compatible type definitions
+//! and convert them to the canonical IR.
+//!
+//! ## Supported Patterns
+//!
+//! - `#[derive(Serialize, Deserialize)]` structs and enums
+//! - Common serde attributes (`#[serde(rename = "...")]`, etc.)
+//! - Standard library types (Option, Vec, HashMap, etc.)
+//! - Custom newtypes and type aliases
+//!
+//! ## Usage
+//!
+//! ```rust,ignore
+//! use protocol_squisher_rust_analyzer::RustAnalyzer;
+//!
+//! let source = r#"
+//!     #[derive(Serialize, Deserialize)]
+//!     struct User {
+//!         id: u64,
+//!         name: String,
+//!     }
+//! "#;
+//!
+//! let analyzer = RustAnalyzer::new();
+//! let schema = analyzer.analyze_source(source)?;
+//! ```
+
+use protocol_squisher_ir::{
+    Constraint, FieldDef, FieldMetadata, IrSchema,
+    StructDef, TypeDef, TypeMetadata, EnumDef, VariantDef,
+    VariantPayload, TagStyle,
+};
+
+mod parser;
+mod converter;
+mod attributes;
+
+pub use parser::*;
+pub use converter::*;
+pub use attributes::*;
+
+/// Errors that can occur during Rust analysis
+#[derive(Debug, Clone)]
+pub enum AnalyzerError {
+    /// Failed to parse Rust source
+    ParseError(String),
+    /// Unsupported Rust construct
+    UnsupportedConstruct(String),
+    /// Missing required derive
+    MissingDerive(String),
+    /// Invalid serde attribute
+    InvalidAttribute(String),
+}
+
+impl std::fmt::Display for AnalyzerError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AnalyzerError::ParseError(msg) => write!(f, "Parse error: {msg}"),
+            AnalyzerError::UnsupportedConstruct(msg) => write!(f, "Unsupported: {msg}"),
+            AnalyzerError::MissingDerive(msg) => write!(f, "Missing derive: {msg}"),
+            AnalyzerError::InvalidAttribute(msg) => write!(f, "Invalid attribute: {msg}"),
+        }
+    }
+}
+
+impl std::error::Error for AnalyzerError {}
+
+/// Rust source analyzer
+pub struct RustAnalyzer {
+    /// Whether to require serde derives
+    require_serde: bool,
+    /// Whether to include private fields
+    include_private: bool,
+}
+
+impl Default for RustAnalyzer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl RustAnalyzer {
+    /// Create a new analyzer with default settings
+    pub fn new() -> Self {
+        Self {
+            require_serde: true,
+            include_private: false,
+        }
+    }
+
+    /// Set whether to require serde derives
+    pub fn require_serde(mut self, require: bool) -> Self {
+        self.require_serde = require;
+        self
+    }
+
+    /// Set whether to include private fields
+    pub fn include_private(mut self, include: bool) -> Self {
+        self.include_private = include;
+        self
+    }
+
+    /// Analyze Rust source code and extract schema
+    pub fn analyze_source(&self, source: &str) -> Result<IrSchema, AnalyzerError> {
+        let file = syn::parse_file(source)
+            .map_err(|e| AnalyzerError::ParseError(e.to_string()))?;
+
+        let mut schema = IrSchema::new("rust-schema", "rust-serde");
+
+        for item in &file.items {
+            match item {
+                syn::Item::Struct(item_struct) => {
+                    if let Some(type_def) = self.analyze_struct(item_struct)? {
+                        let name = item_struct.ident.to_string();
+                        schema.add_type(name.clone(), type_def);
+                        schema.add_root(name);
+                    }
+                }
+                syn::Item::Enum(item_enum) => {
+                    if let Some(type_def) = self.analyze_enum(item_enum)? {
+                        let name = item_enum.ident.to_string();
+                        schema.add_type(name.clone(), type_def);
+                        schema.add_root(name);
+                    }
+                }
+                syn::Item::Type(item_type) => {
+                    if let Some(type_def) = self.analyze_type_alias(item_type)? {
+                        let name = item_type.ident.to_string();
+                        schema.add_type(name, type_def);
+                    }
+                }
+                _ => {} // Skip other items
+            }
+        }
+
+        Ok(schema)
+    }
+
+    /// Analyze a struct definition
+    fn analyze_struct(&self, item: &syn::ItemStruct) -> Result<Option<TypeDef>, AnalyzerError> {
+        let attrs = SerdeAttributes::from_attrs(&item.attrs);
+
+        // Check for serde derives if required
+        if self.require_serde && !has_serde_derive(&item.attrs) {
+            return Ok(None);
+        }
+
+        let fields = match &item.fields {
+            syn::Fields::Named(named) => {
+                self.analyze_named_fields(&named.named, &attrs)?
+            }
+            syn::Fields::Unnamed(unnamed) => {
+                // Tuple struct - convert to newtype if single field
+                if unnamed.unnamed.len() == 1 {
+                    let field = unnamed.unnamed.first().unwrap();
+                    let inner_type = convert_type(&field.ty)?;
+                    return Ok(Some(TypeDef::Newtype(protocol_squisher_ir::NewtypeDef {
+                        name: item.ident.to_string(),
+                        inner: inner_type,
+                        constraints: vec![],
+                        metadata: TypeMetadata {
+                            doc: extract_doc_comment(&item.attrs),
+                            ..Default::default()
+                        },
+                    })));
+                }
+                return Err(AnalyzerError::UnsupportedConstruct(
+                    "Tuple structs with multiple fields not yet supported".to_string()
+                ));
+            }
+            syn::Fields::Unit => {
+                // Unit struct
+                vec![]
+            }
+        };
+
+        Ok(Some(TypeDef::Struct(StructDef {
+            name: item.ident.to_string(),
+            fields,
+            metadata: TypeMetadata {
+                doc: extract_doc_comment(&item.attrs),
+                serde_hints: attrs.to_hints(),
+                ..Default::default()
+            },
+        })))
+    }
+
+    /// Analyze named fields
+    fn analyze_named_fields(
+        &self,
+        fields: &syn::punctuated::Punctuated<syn::Field, syn::token::Comma>,
+        _parent_attrs: &SerdeAttributes,
+    ) -> Result<Vec<FieldDef>, AnalyzerError> {
+        let mut result = Vec::new();
+
+        for field in fields {
+            // Skip private fields if not including them
+            if !self.include_private {
+                if let syn::Visibility::Inherited = field.vis {
+                    // Private field, but we'll include it anyway for serde
+                    // (serde serializes private fields by default)
+                }
+            }
+
+            let field_attrs = SerdeAttributes::from_attrs(&field.attrs);
+
+            // Skip fields marked with #[serde(skip)]
+            if field_attrs.skip {
+                continue;
+            }
+
+            let name = field.ident.as_ref()
+                .map(|i| i.to_string())
+                .unwrap_or_default();
+
+            let ty = convert_type(&field.ty)?;
+            let optional = is_option_type(&field.ty) || field_attrs.default;
+
+            result.push(FieldDef {
+                name: field_attrs.rename.clone().unwrap_or(name),
+                ty,
+                optional,
+                constraints: extract_field_constraints(&field.attrs),
+                metadata: FieldMetadata {
+                    doc: extract_doc_comment(&field.attrs),
+                    default: field_attrs.default_value.clone(),
+                    aliases: field_attrs.aliases.clone(),
+                    flatten: field_attrs.flatten,
+                    skip: field_attrs.skip,
+                    serde_hints: field_attrs.to_hints(),
+                },
+            });
+        }
+
+        Ok(result)
+    }
+
+    /// Analyze an enum definition
+    fn analyze_enum(&self, item: &syn::ItemEnum) -> Result<Option<TypeDef>, AnalyzerError> {
+        let attrs = SerdeAttributes::from_attrs(&item.attrs);
+
+        if self.require_serde && !has_serde_derive(&item.attrs) {
+            return Ok(None);
+        }
+
+        let mut variants = Vec::new();
+
+        for variant in &item.variants {
+            let variant_attrs = SerdeAttributes::from_attrs(&variant.attrs);
+
+            let payload = match &variant.fields {
+                syn::Fields::Named(named) => {
+                    let fields = self.analyze_named_fields(&named.named, &attrs)?;
+                    Some(VariantPayload::Struct(fields))
+                }
+                syn::Fields::Unnamed(unnamed) => {
+                    let types: Result<Vec<_>, _> = unnamed.unnamed.iter()
+                        .map(|f| convert_type(&f.ty))
+                        .collect();
+                    Some(VariantPayload::Tuple(types?))
+                }
+                syn::Fields::Unit => None,
+            };
+
+            variants.push(VariantDef {
+                name: variant_attrs.rename.clone()
+                    .unwrap_or_else(|| variant.ident.to_string()),
+                payload,
+                metadata: protocol_squisher_ir::VariantMetadata {
+                    doc: extract_doc_comment(&variant.attrs),
+                    aliases: variant_attrs.aliases.clone(),
+                    serde_hints: variant_attrs.to_hints(),
+                },
+            });
+        }
+
+        let tag_style = determine_tag_style(&attrs);
+
+        Ok(Some(TypeDef::Enum(EnumDef {
+            name: item.ident.to_string(),
+            variants,
+            tag_style,
+            metadata: TypeMetadata {
+                doc: extract_doc_comment(&item.attrs),
+                serde_hints: attrs.to_hints(),
+                ..Default::default()
+            },
+        })))
+    }
+
+    /// Analyze a type alias
+    fn analyze_type_alias(&self, item: &syn::ItemType) -> Result<Option<TypeDef>, AnalyzerError> {
+        let target = convert_type(&item.ty)?;
+
+        Ok(Some(TypeDef::Alias(protocol_squisher_ir::AliasDef {
+            name: item.ident.to_string(),
+            target,
+            metadata: TypeMetadata {
+                doc: extract_doc_comment(&item.attrs),
+                ..Default::default()
+            },
+        })))
+    }
+}
+
+/// Check if a type has serde derive macros
+fn has_serde_derive(attrs: &[syn::Attribute]) -> bool {
+    for attr in attrs {
+        if attr.path().is_ident("derive") {
+            if let Ok(nested) = attr.parse_args_with(
+                syn::punctuated::Punctuated::<syn::Path, syn::Token![,]>::parse_terminated
+            ) {
+                for path in nested {
+                    let ident = path.segments.last()
+                        .map(|s| s.ident.to_string())
+                        .unwrap_or_default();
+                    if ident == "Serialize" || ident == "Deserialize" {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    false
+}
+
+/// Extract doc comments from attributes
+fn extract_doc_comment(attrs: &[syn::Attribute]) -> Option<String> {
+    let docs: Vec<String> = attrs.iter()
+        .filter_map(|attr| {
+            if attr.path().is_ident("doc") {
+                if let syn::Meta::NameValue(nv) = &attr.meta {
+                    if let syn::Expr::Lit(syn::ExprLit { lit: syn::Lit::Str(s), .. }) = &nv.value {
+                        return Some(s.value().trim().to_string());
+                    }
+                }
+            }
+            None
+        })
+        .collect();
+
+    if docs.is_empty() {
+        None
+    } else {
+        Some(docs.join("\n"))
+    }
+}
+
+/// Check if a type is Option<T>
+fn is_option_type(ty: &syn::Type) -> bool {
+    if let syn::Type::Path(type_path) = ty {
+        if let Some(segment) = type_path.path.segments.last() {
+            return segment.ident == "Option";
+        }
+    }
+    false
+}
+
+/// Extract field constraints from attributes (e.g., validator crate)
+fn extract_field_constraints(_attrs: &[syn::Attribute]) -> Vec<Constraint> {
+    // TODO: Parse validator attributes like #[validate(length(min = 1))]
+    vec![]
+}
+
+/// Determine tag style from serde attributes
+fn determine_tag_style(attrs: &SerdeAttributes) -> TagStyle {
+    if attrs.untagged {
+        TagStyle::Untagged
+    } else if let Some(ref tag) = attrs.tag {
+        if let Some(ref content) = attrs.content {
+            TagStyle::Adjacent {
+                tag_field: tag.clone(),
+                content_field: content.clone(),
+            }
+        } else {
+            TagStyle::Internal {
+                tag_field: tag.clone(),
+            }
+        }
+    } else {
+        TagStyle::External
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_simple_struct() {
+        let source = r#"
+            #[derive(Serialize, Deserialize)]
+            struct User {
+                id: u64,
+                name: String,
+            }
+        "#;
+
+        let analyzer = RustAnalyzer::new();
+        let schema = analyzer.analyze_source(source).unwrap();
+
+        assert_eq!(schema.types.len(), 1);
+        assert!(schema.types.contains_key("User"));
+    }
+
+    #[test]
+    fn test_optional_field() {
+        let source = r#"
+            #[derive(Serialize, Deserialize)]
+            struct Config {
+                required: String,
+                optional: Option<i32>,
+            }
+        "#;
+
+        let analyzer = RustAnalyzer::new();
+        let schema = analyzer.analyze_source(source).unwrap();
+
+        if let Some(TypeDef::Struct(s)) = schema.types.get("Config") {
+            assert_eq!(s.fields.len(), 2);
+            assert!(!s.fields[0].optional);
+            assert!(s.fields[1].optional);
+        } else {
+            panic!("Expected struct Config");
+        }
+    }
+
+    #[test]
+    fn test_enum_variants() {
+        let source = r#"
+            #[derive(Serialize, Deserialize)]
+            enum Status {
+                Active,
+                Inactive,
+                Pending { reason: String },
+            }
+        "#;
+
+        let analyzer = RustAnalyzer::new();
+        let schema = analyzer.analyze_source(source).unwrap();
+
+        if let Some(TypeDef::Enum(e)) = schema.types.get("Status") {
+            assert_eq!(e.variants.len(), 3);
+            assert!(e.variants[0].payload.is_none()); // Unit variant
+            assert!(e.variants[2].payload.is_some()); // Struct variant
+        } else {
+            panic!("Expected enum Status");
+        }
+    }
+
+    #[test]
+    fn test_skip_non_serde() {
+        let source = r#"
+            struct NotSerde {
+                field: i32,
+            }
+
+            #[derive(Serialize, Deserialize)]
+            struct IsSerde {
+                field: i32,
+            }
+        "#;
+
+        let analyzer = RustAnalyzer::new();
+        let schema = analyzer.analyze_source(source).unwrap();
+
+        assert_eq!(schema.types.len(), 1);
+        assert!(schema.types.contains_key("IsSerde"));
+        assert!(!schema.types.contains_key("NotSerde"));
+    }
+}
