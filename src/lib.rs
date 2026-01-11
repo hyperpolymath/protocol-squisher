@@ -32,6 +32,10 @@ pub mod pyo3_codegen {
     pub use protocol_squisher_pyo3_codegen::*;
 }
 
+pub mod json_fallback {
+    pub use protocol_squisher_json_fallback::*;
+}
+
 /// Transport class classification for adapter quality
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum TransportClass {
