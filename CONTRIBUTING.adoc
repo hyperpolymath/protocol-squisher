@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: PMPL-1.0
 // SPDX-FileCopyrightText: 2025 hyperpolymath
 = Contributing Guide
 
@@ -42,4 +42,4 @@ ____
 
 == License
 
-Contributions licensed under AGPL-3.0-or-later.
+Contributions licensed under PMPL-1.0-or-later.
