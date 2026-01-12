@@ -26,7 +26,7 @@
 
 (define current-position
   '((phase . "phase-2-multi-format-analyzers")
-    (overall-completion . 90)
+    (overall-completion . 95)
     (components
      ((protocol-squisher-ir . 95)
       (protocol-squisher-cli . 100)
@@ -36,7 +36,7 @@
       (protocol-squisher-pyo3-codegen . 100)
       (protocol-squisher-json-fallback . 100)
       (protocol-squisher-optimizer . 80)
-      (protocol-squisher-json-schema-analyzer . 0)))
+      (protocol-squisher-json-schema-analyzer . 95)))
     (working-features
      ("IR type system (primitives, containers, composites)"
       "IR constraint system"
@@ -66,7 +66,9 @@
       "Code generation for optimized adapters"
       "Criterion benchmarks (11-106x faster than JSON fallback)"
       "Real-world schema testing (GitHub API: Rust, Python, JSON)"
-      "134 total tests across workspace"))))
+      "JSON Schema analyzer (draft-07, draft-2019-09, draft-2020-12)"
+      "JSON Schema to IR conversion"
+      "163 total tests across workspace"))))
 
 (define route-to-mvp
   '((milestones
@@ -104,7 +106,8 @@
         (done "compare command - schema compatibility with losses")
         (done "generate command - PyO3 binding generation")
         (done "Sample schemas for testing")
-        (done "103 total tests across workspace")))))))
+        (done "JSON Schema analyzer crate")
+        (done "163 total tests across workspace")))))))
 
 (define blockers-and-issues
   '((critical . ())
@@ -114,11 +117,11 @@
 
 (define critical-next-actions
   '((immediate
-     ("JSON Schema analyzer crate"
-      "Support draft-07, draft-2019-09, draft-2020-12"))
-    (this-week
      ("Protobuf analyzer crate"
-      "End-to-end Rust<->Python interop demo"))
+      "Support proto2 and proto3 syntax"))
+    (this-week
+     ("End-to-end Rust<->Python interop demo"
+      "Integration tests with actual PyO3 bindings"))
     (this-month
      ("CLI polish and documentation"
       "Publish to crates.io"
@@ -128,7 +131,7 @@
 
 (define session-history
   '(((date . "2026-01-12")
-     (duration . "1 session")
+     (duration . "2 sessions")
      (accomplishments
       ("Completed optimization layer with zero-copy detection"
        "Added criterion benchmarks (11-106x faster than JSON)"
@@ -137,7 +140,18 @@
        "Created github_api.py (Python Pydantic schema)"
        "Created github_api.json (Python introspection format)"
        "Fixed unused imports in optimizer crate"
-       "134 total tests across workspace"
+       ;; JSON Schema analyzer
+       "Implemented protocol-squisher-json-schema-analyzer crate"
+       "JSON Schema parsing for draft-07, draft-2019-09, draft-2020-12"
+       "Schema version detection from $schema URI"
+       "Object type to IR struct conversion"
+       "Enum type conversion (string and numeric values)"
+       "oneOf composition as tagged unions"
+       "$ref reference resolution (local definitions)"
+       "Constraint extraction (min/max, length, pattern, items)"
+       "Format hint handling (date-time, uuid, uri, byte)"
+       "29 passing tests in json-schema-analyzer"
+       "163 total tests across workspace"
        "All CLI commands tested: analyze, compare, generate")))
     ((date . "2026-01-11")
      (duration . "6 sessions")
