@@ -103,8 +103,7 @@
 (define blockers-and-issues
   '((critical . ())
     (high . ())
-    (medium
-     (("rust-version" . "Using Rust 1.75, some deps require newer")))
+    (medium . ())
     (low . ())))
 
 (define critical-next-actions
