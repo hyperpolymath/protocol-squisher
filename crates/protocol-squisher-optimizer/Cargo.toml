@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: PMPL-1.0
+# SPDX-FileCopyrightText: 2025 hyperpolymath
+
+[package]
+name = "protocol-squisher-optimizer"
+version = "0.1.0"
+edition = "2021"
+license = "PMPL-1.0"
+description = "Optimization layer for protocol-squisher - Concorde-class adapters"
+repository = "https://github.com/hyperpolymath/protocol-squisher"
+keywords = ["serialization", "interoperability", "optimization", "zero-copy"]
+categories = ["development-tools", "encoding"]
+
+[dependencies]
+protocol-squisher-ir = { path = "../protocol-squisher-ir" }
+protocol-squisher-compat = { path = "../protocol-squisher-compat" }
+
+[dev-dependencies]
+serde_json = "1.0"
