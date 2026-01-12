@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: PMPL-1.0
+# SPDX-FileCopyrightText: 2025 hyperpolymath
+
+[package]
+name = "protocol-squisher-protobuf-analyzer"
+version = "0.1.0"
+edition = "2021"
+authors = ["hyperpolymath"]
+license = "PMPL-1.0"
+description = "Protobuf schema analyzer for protocol-squisher"
+repository = "https://github.com/hyperpolymath/protocol-squisher"
+keywords = ["protobuf", "proto", "schema", "analyzer"]
+categories = ["development-tools", "parsing"]
+
+[dependencies]
+protocol-squisher-ir = { path = "../protocol-squisher-ir" }
+thiserror = "1.0"
+# Simple regex-based parsing for proto files
+regex = "1.10"
+
+[dev-dependencies]
+pretty_assertions = "1.4"

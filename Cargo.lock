@@ -579,6 +579,7 @@ dependencies = [
  "protocol-squisher-json-fallback",
  "protocol-squisher-json-schema-analyzer",
  "protocol-squisher-optimizer",
+ "protocol-squisher-protobuf-analyzer",
  "protocol-squisher-pyo3-codegen",
  "protocol-squisher-python-analyzer",
  "protocol-squisher-rust-analyzer",
@@ -634,6 +635,16 @@ dependencies = [
  "protocol-squisher-compat",
  "protocol-squisher-ir",
  "serde_json",
+]
+
+[[package]]
+name = "protocol-squisher-protobuf-analyzer"
+version = "0.1.0"
+dependencies = [
+ "pretty_assertions",
+ "protocol-squisher-ir",
+ "regex",
+ "thiserror",
 ]
 
 [[package]]
