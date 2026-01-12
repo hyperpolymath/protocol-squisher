@@ -25,15 +25,17 @@
     (tech-stack . (rust serde proptest))))
 
 (define current-position
-  '((phase . "phase-2-cli-integration-complete")
-    (overall-completion . 100)
+  '((phase . "phase-1-optimization-layer")
+    (overall-completion . 85)
     (components
      ((protocol-squisher-ir . 95)
       (protocol-squisher-cli . 100)
       (protocol-squisher-rust-analyzer . 95)
       (protocol-squisher-python-analyzer . 90)
       (protocol-squisher-compat . 95)
-      (protocol-squisher-pyo3-codegen . 100)))
+      (protocol-squisher-pyo3-codegen . 100)
+      (protocol-squisher-json-fallback . 100)
+      (protocol-squisher-optimizer . 20)))
     (working-features
      ("IR type system (primitives, containers, composites)"
       "IR constraint system"
@@ -107,15 +109,20 @@
 
 (define critical-next-actions
   '((immediate
-     ("Test with real-world protocol schemas"
-      "Add more error handling edge cases"))
+     ("Complete optimization layer (protocol-squisher-optimizer)"
+      "Detect zero-copy opportunities"
+      "Benchmark against JSON fallback"))
     (this-week
-     ("JSON Schema analyzer"
-      "Protobuf analyzer"))
+     ("Test with real-world protocol schemas"
+      "JSON Schema analyzer"
+      "Performance benchmarks"))
     (this-month
      ("Full end-to-end Rust<->Python interop demo"
-      "Publish to crates.io"
-      "Documentation and examples"))))
+      "Protobuf analyzer"
+      "CLI polish and documentation"
+      "Publish to crates.io"))
+    (out-of-scope
+     ("Semantic transport layer - separate project (see proven/SafeForth)"))))
 
 (define session-history
   '(((date . "2026-01-11")

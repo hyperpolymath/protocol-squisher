@@ -17,7 +17,7 @@
 //! - **ContainerMatch**: Same container type, optimize inner elements
 //! - **Fallback**: Use JSON serialization (always works)
 
-use protocol_squisher_compat::{CompatibilityAnalyzer, CompatibilityResult, TransportClass};
+use protocol_squisher_compat::TransportClass;
 use protocol_squisher_ir::{
     ContainerType, IrSchema, IrType, PrimitiveType, SpecialType, TypeDef, TypeId,
 };
@@ -125,8 +125,6 @@ pub struct VariantMapping {
 pub struct Optimizer {
     /// Cached conversion paths
     cache: HashMap<(TypeId, TypeId), ConversionPath>,
-    /// Compatibility analyzer for fallback decisions
-    compat: CompatibilityAnalyzer,
 }
 
 impl Optimizer {
