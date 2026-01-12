@@ -53,6 +53,7 @@ members = [
   "crates/protocol-squisher-pyo3-codegen",
   "crates/protocol-squisher-json-fallback",
   "crates/protocol-squisher-optimizer",
+  "crates/protocol-squisher-json-schema-analyzer",
 ]
 
 [dependencies.protocol-squisher-ir]
@@ -75,3 +76,6 @@ path = "crates/protocol-squisher-json-fallback"
 
 [dependencies.protocol-squisher-optimizer]
 path = "crates/protocol-squisher-optimizer"
+
+[dependencies.protocol-squisher-json-schema-analyzer]
+path = "crates/protocol-squisher-json-schema-analyzer"
