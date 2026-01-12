@@ -64,6 +64,9 @@ members = [
   "crates/protocol-squisher-json-schema-analyzer",
   "crates/protocol-squisher-protobuf-analyzer",
 ]
+exclude = [
+  "tests/pyo3-integration",  # Standalone maturin project for integration tests
+]
 
 [dependencies.protocol-squisher-ir]
 path = "crates/protocol-squisher-ir"

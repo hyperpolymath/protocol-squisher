@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: PMPL-1.0
+# SPDX-FileCopyrightText: 2025 hyperpolymath
+
+[build-system]
+requires = ["maturin>=1.4,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "pyo3-integration-test"
+version = "0.1.0"
+description = "Integration test for protocol-squisher PyO3 code generation"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.optional-dependencies]
+test = ["pytest>=7.0"]
+
+[tool.maturin]
+features = ["pyo3/extension-module"]
+python-source = "python"
+module-name = "pyo3_integration_test"
+
+[tool.pytest.ini_options]
+testpaths = ["python/tests"]

@@ -59,3 +59,9 @@ htmlcov/
 /tmp/
 *.tmp
 *.bak
+
+# PyO3 integration test venv
+tests/pyo3-integration/.venv/
+tests/pyo3-integration/target/
+tests/pyo3-integration/.pytest_cache/
+tests/pyo3-integration/__pycache__/

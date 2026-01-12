@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: PMPL-1.0
+# SPDX-FileCopyrightText: 2025 hyperpolymath
+
+[package]
+name = "pyo3-integration-test"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+name = "pyo3_integration_test"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.27", features = ["extension-module"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
