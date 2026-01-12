@@ -5,7 +5,7 @@
 //!
 //! Generates Rust code for conversion paths that avoid JSON fallback.
 
-use crate::{ConversionPath, ConversionStrategy, OptimizationLevel, FieldMapping};
+use crate::{ConversionPath, ConversionStrategy, FieldMapping};
 
 /// Configuration for code generation
 #[derive(Debug, Clone)]

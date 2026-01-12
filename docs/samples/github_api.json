@@ -1,0 +1,167 @@
+{
+  "module": "github_api",
+  "pydantic_version": 2,
+  "types": [
+    {
+      "kind": "enum",
+      "name": "UserType",
+      "module": "github_api",
+      "variants": [
+        {"name": "user", "value": "User"},
+        {"name": "organization", "value": "Organization"},
+        {"name": "bot", "value": "Bot"}
+      ]
+    },
+    {
+      "kind": "model",
+      "name": "User",
+      "module": "github_api",
+      "fields": [
+        {"name": "id", "type": {"kind": "primitive", "type": "int"}, "optional": false},
+        {"name": "login", "type": {"kind": "primitive", "type": "str"}, "optional": false},
+        {"name": "avatar_url", "type": {"kind": "primitive", "type": "str"}, "optional": false},
+        {"name": "type", "type": {"kind": "enum", "name": "UserType", "module": "github_api", "variants": []}, "optional": false},
+        {"name": "site_admin", "type": {"kind": "primitive", "type": "bool"}, "optional": false}
+      ],
+      "config": {}
+    },
+    {
+      "kind": "model",
+      "name": "Label",
+      "module": "github_api",
+      "fields": [
+        {"name": "id", "type": {"kind": "primitive", "type": "int"}, "optional": false},
+        {"name": "name", "type": {"kind": "primitive", "type": "str"}, "optional": false},
+        {"name": "color", "type": {"kind": "primitive", "type": "str"}, "optional": false},
+        {"name": "description", "type": {"kind": "optional", "inner": {"kind": "primitive", "type": "str"}}, "optional": true}
+      ],
+      "config": {}
+    },
+    {
+      "kind": "enum",
+      "name": "MilestoneState",
+      "module": "github_api",
+      "variants": [
+        {"name": "open", "value": "open"},
+        {"name": "closed", "value": "closed"}
+      ]
+    },
+    {
+      "kind": "model",
+      "name": "Milestone",
+      "module": "github_api",
+      "fields": [
+        {"name": "id", "type": {"kind": "primitive", "type": "int"}, "optional": false},
+        {"name": "number", "type": {"kind": "primitive", "type": "int"}, "optional": false},
+        {"name": "title", "type": {"kind": "primitive", "type": "str"}, "optional": false},
+        {"name": "description", "type": {"kind": "optional", "inner": {"kind": "primitive", "type": "str"}}, "optional": true},
+        {"name": "state", "type": {"kind": "enum", "name": "MilestoneState", "module": "github_api", "variants": []}, "optional": false},
+        {"name": "open_issues", "type": {"kind": "primitive", "type": "int"}, "optional": false},
+        {"name": "closed_issues", "type": {"kind": "primitive", "type": "int"}, "optional": false},
+        {"name": "due_on", "type": {"kind": "optional", "inner": {"kind": "primitive", "type": "str"}}, "optional": true}
+      ],
+      "config": {}
+    },
+    {
+      "kind": "enum",
+      "name": "IssueState",
+      "module": "github_api",
+      "variants": [
+        {"name": "open", "value": "open"},
+        {"name": "closed", "value": "closed"}
+      ]
+    },
+    {
+      "kind": "model",
+      "name": "Issue",
+      "module": "github_api",
+      "fields": [
+        {"name": "id", "type": {"kind": "primitive", "type": "int"}, "optional": false},
+        {"name": "number", "type": {"kind": "primitive", "type": "int"}, "optional": false},
+        {"name": "title", "type": {"kind": "primitive", "type": "str"}, "optional": false},
+        {"name": "body", "type": {"kind": "optional", "inner": {"kind": "primitive", "type": "str"}}, "optional": true},
+        {"name": "state", "type": {"kind": "enum", "name": "IssueState", "module": "github_api", "variants": []}, "optional": false},
+        {"name": "user", "type": {"kind": "reference", "name": "User", "module": "github_api"}, "optional": false},
+        {"name": "labels", "type": {"kind": "list", "inner": {"kind": "reference", "name": "Label", "module": "github_api"}}, "optional": false},
+        {"name": "assignees", "type": {"kind": "list", "inner": {"kind": "reference", "name": "User", "module": "github_api"}}, "optional": false},
+        {"name": "milestone", "type": {"kind": "optional", "inner": {"kind": "reference", "name": "Milestone", "module": "github_api"}}, "optional": true},
+        {"name": "comments", "type": {"kind": "primitive", "type": "int"}, "optional": false},
+        {"name": "closed_at", "type": {"kind": "optional", "inner": {"kind": "primitive", "type": "str"}}, "optional": true}
+      ],
+      "config": {}
+    },
+    {
+      "kind": "model",
+      "name": "Repository",
+      "module": "github_api",
+      "fields": [
+        {"name": "id", "type": {"kind": "primitive", "type": "int"}, "optional": false},
+        {"name": "name", "type": {"kind": "primitive", "type": "str"}, "optional": false},
+        {"name": "full_name", "type": {"kind": "primitive", "type": "str"}, "optional": false},
+        {"name": "description", "type": {"kind": "optional", "inner": {"kind": "primitive", "type": "str"}}, "optional": true},
+        {"name": "private", "type": {"kind": "primitive", "type": "bool"}, "optional": false},
+        {"name": "owner", "type": {"kind": "reference", "name": "User", "module": "github_api"}, "optional": false},
+        {"name": "html_url", "type": {"kind": "primitive", "type": "str"}, "optional": false},
+        {"name": "clone_url", "type": {"kind": "primitive", "type": "str"}, "optional": false},
+        {"name": "default_branch", "type": {"kind": "primitive", "type": "str"}, "optional": false},
+        {"name": "language", "type": {"kind": "optional", "inner": {"kind": "primitive", "type": "str"}}, "optional": true},
+        {"name": "stargazers_count", "type": {"kind": "primitive", "type": "int"}, "optional": false},
+        {"name": "forks_count", "type": {"kind": "primitive", "type": "int"}, "optional": false},
+        {"name": "open_issues_count", "type": {"kind": "primitive", "type": "int"}, "optional": false},
+        {"name": "topics", "type": {"kind": "list", "inner": {"kind": "primitive", "type": "str"}}, "optional": false},
+        {"name": "created_at", "type": {"kind": "primitive", "type": "str"}, "optional": false},
+        {"name": "updated_at", "type": {"kind": "primitive", "type": "str"}, "optional": false},
+        {"name": "pushed_at", "type": {"kind": "optional", "inner": {"kind": "primitive", "type": "str"}}, "optional": true}
+      ],
+      "config": {}
+    },
+    {
+      "kind": "model",
+      "name": "GitRef",
+      "module": "github_api",
+      "fields": [
+        {"name": "label", "type": {"kind": "primitive", "type": "str"}, "optional": false},
+        {"name": "ref", "type": {"kind": "primitive", "type": "str"}, "optional": false},
+        {"name": "sha", "type": {"kind": "primitive", "type": "str"}, "optional": false},
+        {"name": "user", "type": {"kind": "reference", "name": "User", "module": "github_api"}, "optional": false},
+        {"name": "repo", "type": {"kind": "reference", "name": "Repository", "module": "github_api"}, "optional": false}
+      ],
+      "config": {}
+    },
+    {
+      "kind": "enum",
+      "name": "PullRequestState",
+      "module": "github_api",
+      "variants": [
+        {"name": "open", "value": "open"},
+        {"name": "closed", "value": "closed"}
+      ]
+    },
+    {
+      "kind": "model",
+      "name": "PullRequest",
+      "module": "github_api",
+      "fields": [
+        {"name": "id", "type": {"kind": "primitive", "type": "int"}, "optional": false},
+        {"name": "number", "type": {"kind": "primitive", "type": "int"}, "optional": false},
+        {"name": "title", "type": {"kind": "primitive", "type": "str"}, "optional": false},
+        {"name": "body", "type": {"kind": "optional", "inner": {"kind": "primitive", "type": "str"}}, "optional": true},
+        {"name": "state", "type": {"kind": "enum", "name": "PullRequestState", "module": "github_api", "variants": []}, "optional": false},
+        {"name": "user", "type": {"kind": "reference", "name": "User", "module": "github_api"}, "optional": false},
+        {"name": "head", "type": {"kind": "reference", "name": "GitRef", "module": "github_api"}, "optional": false},
+        {"name": "base", "type": {"kind": "reference", "name": "GitRef", "module": "github_api"}, "optional": false},
+        {"name": "merged", "type": {"kind": "primitive", "type": "bool"}, "optional": false},
+        {"name": "mergeable", "type": {"kind": "optional", "inner": {"kind": "primitive", "type": "bool"}}, "optional": true},
+        {"name": "merged_by", "type": {"kind": "optional", "inner": {"kind": "reference", "name": "User", "module": "github_api"}}, "optional": true},
+        {"name": "comments", "type": {"kind": "primitive", "type": "int"}, "optional": false},
+        {"name": "commits", "type": {"kind": "primitive", "type": "int"}, "optional": false},
+        {"name": "additions", "type": {"kind": "primitive", "type": "int"}, "optional": false},
+        {"name": "deletions", "type": {"kind": "primitive", "type": "int"}, "optional": false},
+        {"name": "changed_files", "type": {"kind": "primitive", "type": "int"}, "optional": false},
+        {"name": "labels", "type": {"kind": "list", "inner": {"kind": "reference", "name": "Label", "module": "github_api"}}, "optional": false},
+        {"name": "requested_reviewers", "type": {"kind": "list", "inner": {"kind": "reference", "name": "User", "module": "github_api"}}, "optional": false}
+      ],
+      "config": {}
+    }
+  ]
+}

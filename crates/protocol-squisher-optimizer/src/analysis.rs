@@ -3,7 +3,7 @@
 
 //! Schema analysis for optimization opportunities
 
-use crate::{OptimizationLevel, OptimizationResult, Optimizer};
+use crate::{OptimizationLevel, OptimizationResult};
 use protocol_squisher_ir::{IrSchema, TypeId};
 use std::collections::HashMap;
 
