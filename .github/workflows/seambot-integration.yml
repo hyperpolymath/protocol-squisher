@@ -1,0 +1,124 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# seambot integration testing workflow
+# Runs end-to-end integration tests validating the full pipeline
+
+name: seambot Integration Testing
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'crates/protocol-squisher-integration-tests/**'
+      - 'crates/protocol-squisher-compat/**'
+      - 'crates/protocol-squisher-pyo3-codegen/**'
+      - 'crates/protocol-squisher-json-fallback/**'
+      - 'crates/protocol-squisher-rust-analyzer/**'
+      - 'crates/protocol-squisher-python-analyzer/**'
+      - 'ephapax-ir/**'
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run integration tests daily at 3 AM UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  integration-tests:
+    name: End-to-End Integration Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@6d9817901c499d6b02debbb57edb38d33daa680b # stable
+        with:
+          toolchain: stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@ad397744b0d591a723ab90405b7247fac0e6b8db # v2.7.5
+        with:
+          key: integration-tests
+
+      - name: Run integration tests
+        run: cargo test -p protocol-squisher-integration-tests --verbose
+        env:
+          RUST_BACKTRACE: 1
+
+      - name: Run all component tests
+        run: |
+          cargo test -p protocol-squisher-ephapax-ir --verbose
+          cargo test -p protocol-squisher-compat --verbose
+          cargo test -p protocol-squisher-pyo3-codegen --verbose
+          cargo test -p protocol-squisher-json-fallback --verbose
+          cargo test -p protocol-squisher-rust-analyzer --verbose
+          cargo test -p protocol-squisher-python-analyzer --verbose
+
+  quality-validation:
+    name: Integration Quality Metrics
+    runs-on: ubuntu-latest
+    needs: integration-tests
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@6d9817901c499d6b02debbb57edb38d33daa680b # stable
+        with:
+          toolchain: stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@ad397744b0d591a723ab90405b7247fac0e6b8db # v2.7.5
+
+      - name: Check test coverage
+        run: |
+          echo "Integration test count:"
+          cargo test -p protocol-squisher-integration-tests -- --list | grep -c "test" || true
+          echo ""
+          echo "Total test count across pipeline:"
+          cargo test --workspace -- --list 2>/dev/null | grep -c "test" || true
+
+      - name: Validate pipeline components
+        run: |
+          echo "Validating pipeline components exist..."
+          test -f crates/protocol-squisher-integration-tests/Cargo.toml
+          test -f crates/protocol-squisher-compat/src/ephapax_engine.rs
+          test -f crates/protocol-squisher-pyo3-codegen/src/optimized_gen.rs
+          test -f crates/protocol-squisher-json-fallback/src/ephapax_fallback.rs
+          echo "✓ All pipeline components present"
+
+  seambot-report:
+    name: seambot Integration Report
+    runs-on: ubuntu-latest
+    needs: [integration-tests, quality-validation]
+    if: always()
+
+    steps:
+      - name: Generate integration test report
+        run: |
+          echo "# seambot Integration Test Report"
+          echo ""
+          echo "**Status**: ${{ needs.integration-tests.result }}"
+          echo ""
+          echo "## Pipeline Components Tested"
+          echo "- ephapax IR (Idris2 + Rust FFI)"
+          echo "- Compatibility engine"
+          echo "- PyO3 code generation"
+          echo "- JSON fallback mechanism"
+          echo "- Rust analyzer"
+          echo "- Python analyzer"
+          echo ""
+          echo "## Test Scenarios Validated"
+          echo "- Zero-copy conversion (Concorde)"
+          echo "- Mixed conversion strategy"
+          echo "- JSON fallback generation (Wheelbarrow)"
+          echo "- Full pipeline workflow"
+          echo "- Quality metrics validation"
+          echo "- Code generation quality"
+          echo "- Transport class consistency"
+          echo ""
+          echo "**Integration Status**: ${{ needs.integration-tests.result == 'success' && '✓ PASS' || '✗ FAIL' }}"

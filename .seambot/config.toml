@@ -1,0 +1,81 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# seambot configuration for protocol-squisher integration testing
+
+[seambot]
+name = "protocol-squisher-integration"
+version = "1.0.0"
+description = "End-to-end integration testing for protocol-squisher pipeline"
+
+[testing]
+# Integration test crate
+test_crate = "protocol-squisher-integration-tests"
+
+# Required components for integration
+required_components = [
+    "protocol-squisher-ephapax-ir",
+    "protocol-squisher-compat",
+    "protocol-squisher-pyo3-codegen",
+    "protocol-squisher-json-fallback",
+    "protocol-squisher-rust-analyzer",
+    "protocol-squisher-python-analyzer",
+]
+
+# Test scenarios
+[[scenarios]]
+name = "zero-copy-conversion"
+description = "Validate 100% Concorde (zero-copy) conversion"
+test = "test_e2e_zero_copy_conversion"
+expected_outcome = "all_concorde"
+
+[[scenarios]]
+name = "mixed-conversion"
+description = "Validate mixed Concorde + Wheelbarrow strategy"
+test = "test_e2e_mixed_conversion_strategy"
+expected_outcome = "strategic_mix"
+
+[[scenarios]]
+name = "json-fallback"
+description = "Validate JSON fallback for Wheelbarrow conversions"
+test = "test_e2e_json_fallback_generation"
+expected_outcome = "fallback_with_warnings"
+
+[[scenarios]]
+name = "full-pipeline"
+description = "Validate complete workflow with quality-based decisions"
+test = "test_e2e_full_pipeline"
+expected_outcome = "quality_driven_codegen"
+
+[[scenarios]]
+name = "quality-metrics"
+description = "Validate quality predicates (production ready, needs optimization)"
+test = "test_e2e_quality_metrics"
+expected_outcome = "accurate_metrics"
+
+[[scenarios]]
+name = "code-generation-quality"
+description = "Validate generated code quality and warnings"
+test = "test_e2e_code_generation_quality"
+expected_outcome = "quality_code_with_warnings"
+
+[[scenarios]]
+name = "transport-class-consistency"
+description = "Validate transport class agreement across components"
+test = "test_e2e_transport_class_consistency"
+expected_outcome = "consistent_classes"
+
+[quality_gates]
+# Minimum quality thresholds
+min_test_pass_rate = 100.0
+min_zero_copy_percentage = 0.0  # Variable per scenario
+min_production_readiness = 90.0  # For production-ready scenarios
+
+[notifications]
+# Notify on integration test failures
+notify_on_failure = true
+notify_channels = ["github-actions", "hypatia"]
+
+[integration]
+# Integration with gitbot-fleet
+gitbot_fleet_compatible = true
+rhodibot_compliance = true  # RSR compliance
+hypatia_compatible = true   # Neurosymbolic scanning
