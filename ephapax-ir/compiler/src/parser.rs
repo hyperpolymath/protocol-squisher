@@ -234,6 +234,8 @@ impl Parser {
             Token::Let => self.parse_let(),
             Token::If => self.parse_if(),
             Token::Match => self.parse_match(),
+            Token::For => self.parse_for(),
+            Token::While => self.parse_while(),
             _ => self.parse_logical_or(),
         }
     }
@@ -390,6 +392,76 @@ impl Parser {
         }
 
         Ok(Expr::Match { scrutinee, arms })
+    }
+
+    fn parse_for(&mut self) -> Result<Expr, String> {
+        self.expect(Token::For)?;
+
+        let var = match self.current() {
+            Token::Ident(s) => s.clone(),
+            _ => return Err("Expected variable name after 'for'".to_string()),
+        };
+        self.advance();
+
+        self.expect(Token::In)?;
+
+        // Parse iterable - need to be careful not to consume the { of the loop body
+        // Just parse a simple variable/call/literal, not a struct literal
+        let iterable = Box::new(match self.current() {
+            Token::Ident(name) => {
+                let n = name.clone();
+                self.advance();
+                // Check for function call
+                if self.current() == &Token::LParen {
+                    self.advance();
+                    let mut args = Vec::new();
+                    while self.current() != &Token::RParen {
+                        args.push(self.parse_expr()?);
+                        if self.current() == &Token::Comma {
+                            self.advance();
+                        } else if self.current() != &Token::RParen {
+                            return Err("Expected ',' or ')' in function call".to_string());
+                        }
+                    }
+                    self.expect(Token::RParen)?;
+                    Expr::Call { func: n, args }
+                } else {
+                    // Just a variable reference
+                    Expr::Var(n)
+                }
+            }
+            Token::LBracket => {
+                // Vec literal
+                self.advance();
+                let mut elements = Vec::new();
+                while self.current() != &Token::RBracket {
+                    elements.push(self.parse_expr()?);
+                    if self.current() == &Token::Comma {
+                        self.advance();
+                    } else if self.current() != &Token::RBracket {
+                        return Err("Expected ',' or ']' in vector literal".to_string());
+                    }
+                }
+                self.expect(Token::RBracket)?;
+                Expr::VecLit(elements)
+            }
+            _ => return Err("Expected iterable expression (variable, function call, or vector literal)".to_string()),
+        });
+
+        let body = Box::new(self.parse_block_expr()?);
+
+        Ok(Expr::For { var, iterable, body })
+    }
+
+    fn parse_while(&mut self) -> Result<Expr, String> {
+        self.expect(Token::While)?;
+
+        // Parse condition expression (use logical_or to avoid consuming block)
+        let cond = Box::new(self.parse_logical_or()?);
+
+        let body = Box::new(self.parse_block_expr()?);
+
+        Ok(Expr::While { cond, body })
     }
 
     fn parse_pattern(&mut self) -> Result<Pattern, String> {

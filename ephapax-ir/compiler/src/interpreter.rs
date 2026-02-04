@@ -341,6 +341,45 @@ impl Interpreter {
                 }
             }
 
+            Expr::For { var, iterable, body } => {
+                // Evaluate the iterable expression
+                let iterable_val = self.eval_expr(iterable, env)?;
+                let vec_data = iterable_val.as_vec()?;
+
+                // Execute body for each element
+                let mut last_result = Value::Int(0);
+                for elem in vec_data {
+                    // Create new environment with loop variable bound to element
+                    let mut loop_env = env.clone();
+                    loop_env.insert(var.clone(), elem.clone());
+
+                    // Execute loop body
+                    last_result = self.eval_expr(body, &mut loop_env)?;
+                }
+
+                // Return last result (or 0 if empty)
+                Ok(last_result)
+            }
+
+            Expr::While { cond, body } => {
+                let mut last_result = Value::Int(0);
+
+                loop {
+                    // Evaluate condition
+                    let cond_val = self.eval_expr(cond, env)?;
+                    let cond_bool = cond_val.as_bool()?;
+
+                    if !cond_bool {
+                        break;
+                    }
+
+                    // Execute body
+                    last_result = self.eval_expr(body, env)?;
+                }
+
+                Ok(last_result)
+            }
+
             Expr::Borrow(expr) => {
                 // In interpreter, borrow is a no-op (type-level only)
                 self.eval_expr(expr, env)

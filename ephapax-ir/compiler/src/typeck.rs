@@ -625,6 +625,49 @@ impl TypeChecker {
                 Ok(field_def.ty.clone())
             }
 
+            Expr::For { var, iterable, body } => {
+                // Check iterable is a Vec<T>
+                let iterable_ty = self.check_expr(iterable, env)?;
+                let elem_ty = match iterable_ty {
+                    Type::Vec(elem_ty) => elem_ty,
+                    _ => {
+                        return Err(TypeError::TypeMismatch {
+                            expected: Type::Vec(Box::new(Type::Infer)),
+                            found: iterable_ty,
+                            context: "for loop requires a vector".to_string(),
+                        });
+                    }
+                };
+
+                // Create new environment with loop variable bound to element type
+                let mut loop_env = env.clone();
+                loop_env.insert(var.clone(), *elem_ty);
+
+                // Check body in loop environment
+                self.check_expr(body, &mut loop_env)?;
+
+                // For loops return unit type (for now, i32 as placeholder)
+                Ok(Type::I32)
+            }
+
+            Expr::While { cond, body } => {
+                // Check condition is bool
+                let cond_ty = self.check_expr(cond, env)?;
+                if cond_ty != Type::Bool {
+                    return Err(TypeError::TypeMismatch {
+                        expected: Type::Bool,
+                        found: cond_ty,
+                        context: "while condition".to_string(),
+                    });
+                }
+
+                // Check body
+                self.check_expr(body, env)?;
+
+                // While loops return unit type (for now, i32 as placeholder)
+                Ok(Type::I32)
+            }
+
             Expr::Borrow(expr) => {
                 // Borrow creates a reference to the expression's type
                 let inner_ty = self.check_expr(expr, env)?;

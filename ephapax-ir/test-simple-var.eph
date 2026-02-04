@@ -1,0 +1,10 @@
+// Test simple variable reference
+
+fn test(v: Vec<i32>) -> i32 {
+    let x = v;
+    42
+}
+
+fn main() {
+    test([1, 2, 3])
+}

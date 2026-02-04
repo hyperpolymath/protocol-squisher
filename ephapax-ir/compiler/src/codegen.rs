@@ -229,6 +229,21 @@ impl WasmCodeGen {
                     .map_err(|e| e.to_string())?;
             }
 
+            Expr::For { var: _var, iterable: _iterable, body: _body } => {
+                // TODO: Implement for loops with WASM loop constructs
+                // Requires linear memory for vector iteration
+                // For now, return 0
+                writeln!(&mut self.wat, "{}(i32.const 0) ;; For loop (not yet implemented)", ind)
+                    .map_err(|e| e.to_string())?;
+            }
+
+            Expr::While { cond: _cond, body: _body } => {
+                // TODO: Implement while loops with WASM loop constructs
+                // For now, return 0
+                writeln!(&mut self.wat, "{}(i32.const 0) ;; While loop (not yet implemented)", ind)
+                    .map_err(|e| e.to_string())?;
+            }
+
             Expr::Borrow(expr) | Expr::Deref(expr) => {
                 // Borrow and deref are type-level only, pass through
                 self.generate_expr(expr, indent)?;

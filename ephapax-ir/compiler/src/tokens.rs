@@ -16,6 +16,9 @@ pub enum Token {
     False,
     Match,
     Struct,
+    For,
+    In,
+    While,
     Underscore, // _
 
     // Identifiers and literals
@@ -80,6 +83,9 @@ impl fmt::Display for Token {
             Token::False => write!(f, "false"),
             Token::Match => write!(f, "match"),
             Token::Struct => write!(f, "struct"),
+            Token::For => write!(f, "for"),
+            Token::In => write!(f, "in"),
+            Token::While => write!(f, "while"),
             Token::Underscore => write!(f, "_"),
             Token::Ident(s) => write!(f, "{}", s),
             Token::IntLit(n) => write!(f, "{}", n),
@@ -432,6 +438,9 @@ impl Lexer {
                         "false" => Token::False,
                         "match" => Token::Match,
                         "struct" => Token::Struct,
+                        "for" => Token::For,
+                        "in" => Token::In,
+                        "while" => Token::While,
                         "i32" => Token::I32,
                         "i64" => Token::I64,
                         "bool" => Token::Bool,

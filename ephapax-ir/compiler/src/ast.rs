@@ -127,6 +127,19 @@ pub enum Expr {
         body: Box<Expr>,
     },
 
+    // For loop (for var in iterable { body })
+    For {
+        var: String,
+        iterable: Box<Expr>,
+        body: Box<Expr>,
+    },
+
+    // While loop (while cond { body })
+    While {
+        cond: Box<Expr>,
+        body: Box<Expr>,
+    },
+
     // If expression
     If {
         cond: Box<Expr>,
@@ -270,6 +283,12 @@ impl fmt::Display for Expr {
             }
             Expr::Let { name, value, body } => {
                 write!(f, "(let {} = {} in {})", name, value, body)
+            }
+            Expr::For { var, iterable, body } => {
+                write!(f, "(for {} in {} {{ {} }})", var, iterable, body)
+            }
+            Expr::While { cond, body } => {
+                write!(f, "(while {} {{ {} }})", cond, body)
             }
             Expr::If {
                 cond,
