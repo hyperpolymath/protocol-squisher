@@ -165,8 +165,88 @@ impl Parser {
             Token::Let => self.parse_let(),
             Token::If => self.parse_if(),
             Token::Match => self.parse_match(),
-            _ => self.parse_comparison(),
+            _ => self.parse_logical_or(),
         }
+    }
+
+    fn parse_logical_or(&mut self) -> Result<Expr, String> {
+        let mut left = self.parse_logical_and()?;
+
+        while matches!(self.current(), Token::Or) {
+            self.advance();
+            let right = Box::new(self.parse_logical_and()?);
+            left = Expr::BinOp {
+                op: BinOp::Or,
+                left: Box::new(left),
+                right,
+            };
+        }
+
+        Ok(left)
+    }
+
+    fn parse_logical_and(&mut self) -> Result<Expr, String> {
+        let mut left = self.parse_bitwise_or()?;
+
+        while matches!(self.current(), Token::And) {
+            self.advance();
+            let right = Box::new(self.parse_bitwise_or()?);
+            left = Expr::BinOp {
+                op: BinOp::And,
+                left: Box::new(left),
+                right,
+            };
+        }
+
+        Ok(left)
+    }
+
+    fn parse_bitwise_or(&mut self) -> Result<Expr, String> {
+        let mut left = self.parse_bitwise_xor()?;
+
+        while matches!(self.current(), Token::Pipe) {
+            self.advance();
+            let right = Box::new(self.parse_bitwise_xor()?);
+            left = Expr::BinOp {
+                op: BinOp::BitOr,
+                left: Box::new(left),
+                right,
+            };
+        }
+
+        Ok(left)
+    }
+
+    fn parse_bitwise_xor(&mut self) -> Result<Expr, String> {
+        let mut left = self.parse_bitwise_and()?;
+
+        while matches!(self.current(), Token::Caret) {
+            self.advance();
+            let right = Box::new(self.parse_bitwise_and()?);
+            left = Expr::BinOp {
+                op: BinOp::BitXor,
+                left: Box::new(left),
+                right,
+            };
+        }
+
+        Ok(left)
+    }
+
+    fn parse_bitwise_and(&mut self) -> Result<Expr, String> {
+        let mut left = self.parse_comparison()?;
+
+        while matches!(self.current(), Token::Amp) {
+            self.advance();
+            let right = Box::new(self.parse_comparison()?);
+            left = Expr::BinOp {
+                op: BinOp::BitAnd,
+                left: Box::new(left),
+                right,
+            };
+        }
+
+        Ok(left)
     }
 
     fn parse_let(&mut self) -> Result<Expr, String> {
@@ -272,7 +352,7 @@ impl Parser {
     }
 
     fn parse_comparison(&mut self) -> Result<Expr, String> {
-        let mut left = self.parse_additive()?;
+        let mut left = self.parse_shift()?;
 
         while matches!(
             self.current(),
@@ -285,6 +365,28 @@ impl Parser {
                 Token::Gt => BinOp::Gt,
                 Token::Le => BinOp::Le,
                 Token::Ge => BinOp::Ge,
+                _ => unreachable!(),
+            };
+            self.advance();
+
+            let right = Box::new(self.parse_shift()?);
+            left = Expr::BinOp {
+                op,
+                left: Box::new(left),
+                right,
+            };
+        }
+
+        Ok(left)
+    }
+
+    fn parse_shift(&mut self) -> Result<Expr, String> {
+        let mut left = self.parse_additive()?;
+
+        while matches!(self.current(), Token::Shl | Token::Shr) {
+            let op = match self.current() {
+                Token::Shl => BinOp::Shl,
+                Token::Shr => BinOp::Shr,
                 _ => unreachable!(),
             };
             self.advance();

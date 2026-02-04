@@ -50,6 +50,13 @@ pub enum Token {
     Le,         // <=
     Ge,         // >=
     Assign,     // =
+    And,        // &&
+    Or,         // ||
+    Amp,        // & (bitwise AND or future borrow)
+    Pipe,       // |
+    Caret,      // ^
+    Shl,        // <<
+    Shr,        // >>
 
     // Special
     Eof,
@@ -273,6 +280,9 @@ impl Lexer {
                     if self.current() == Some('=') {
                         self.advance();
                         Token::Le
+                    } else if self.current() == Some('<') {
+                        self.advance();
+                        Token::Shl
                     } else {
                         Token::Lt
                     }
@@ -282,9 +292,34 @@ impl Lexer {
                     if self.current() == Some('=') {
                         self.advance();
                         Token::Ge
+                    } else if self.current() == Some('>') {
+                        self.advance();
+                        Token::Shr
                     } else {
                         Token::Gt
                     }
+                }
+                '&' => {
+                    self.advance();
+                    if self.current() == Some('&') {
+                        self.advance();
+                        Token::And
+                    } else {
+                        Token::Amp
+                    }
+                }
+                '|' => {
+                    self.advance();
+                    if self.current() == Some('|') {
+                        self.advance();
+                        Token::Or
+                    } else {
+                        Token::Pipe
+                    }
+                }
+                '^' => {
+                    self.advance();
+                    Token::Caret
                 }
                 _ if ch.is_ascii_digit() => {
                     let num = self.read_number();
