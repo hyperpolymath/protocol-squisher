@@ -15,11 +15,13 @@ use std::collections::{HashMap, HashSet};
 pub enum TypeError {
     VariableUsedTwice {
         var: String,
+        var_type: Type,
         first_use: String,
         second_use: String,
     },
     VariableNotUsed {
         var: String,
+        var_type: Type,
     },
     VariableNotFound {
         var: String,
@@ -41,24 +43,40 @@ impl std::fmt::Display for TypeError {
         match self {
             TypeError::VariableUsedTwice {
                 var,
+                var_type,
                 first_use,
                 second_use,
             } => {
                 write!(
                     f,
-                    "Linear type violation: variable '{}' used twice (first: {}, second: {})",
-                    var, first_use, second_use
-                )
+                    "Linear type violation: variable '{}' of type {} used twice (first: {}, second: {})",
+                    var, var_type, first_use, second_use
+                )?;
+                if var_type.is_copy() {
+                    write!(f, "\n  note: {} is a Copy type and can be used multiple times", var_type)?;
+                } else {
+                    write!(f, "\n  help: {} is not Copy; consider restructuring code to use value exactly once", var_type)?;
+                    write!(f, "\n        or extract logic into a separate function to avoid multiple uses")?;
+                }
+                Ok(())
             }
-            TypeError::VariableNotUsed { var } => {
+            TypeError::VariableNotUsed { var, var_type } => {
                 write!(
                     f,
-                    "Linear type violation: variable '{}' not used (must use exactly once)",
-                    var
-                )
+                    "Linear type violation: variable '{}' of type {} not used (must use exactly once)",
+                    var, var_type
+                )?;
+                if var_type.is_copy() {
+                    write!(f, "\n  note: {} is Copy, so it's okay if unused (this shouldn't happen)", var_type)?;
+                } else {
+                    write!(f, "\n  help: use '{}' in an expression or remove the binding", var)?;
+                }
+                Ok(())
             }
             TypeError::VariableNotFound { var } => {
-                write!(f, "Variable '{}' not found in scope", var)
+                write!(f, "Variable '{}' not found in scope", var)?;
+                write!(f, "\n  help: check variable name spelling or declare it with 'let'")?;
+                Ok(())
             }
             TypeError::TypeMismatch {
                 expected,
@@ -69,14 +87,31 @@ impl std::fmt::Display for TypeError {
                     f,
                     "Type mismatch in {}: expected {}, found {}",
                     context, expected, found
-                )
+                )?;
+                // Suggest conversions if applicable
+                if expected == &Type::I64 && found == &Type::I32 {
+                    write!(f, "\n  help: i32 can be widened to i64 in future versions")?;
+                } else if expected == &Type::Bool && (found == &Type::I32 || found == &Type::I64) {
+                    write!(f, "\n  help: use comparison operators (==, !=, <, >, etc.) to get a bool")?;
+                }
+                Ok(())
             }
             TypeError::IncompatibleTypes { left, right, op } => {
                 write!(
                     f,
                     "Incompatible types for operator '{}': {} and {}",
                     op, left, right
-                )
+                )?;
+                // Suggest fixes based on operator
+                if op.contains("&&") || op.contains("||") {
+                    write!(f, "\n  help: logical operators require both operands to be bool")?;
+                    write!(f, "\n        use comparison operators to convert integers to bool")?;
+                } else if op.contains("&") || op.contains("|") || op.contains("^") || op.contains("<<") || op.contains(">>") {
+                    write!(f, "\n  help: bitwise operators require both operands to have the same integer type")?;
+                } else if left != right {
+                    write!(f, "\n  help: both operands must have the same type")?;
+                }
+                Ok(())
             }
         }
     }
@@ -121,6 +156,7 @@ impl TypeEnv {
         if self.used.contains(name) {
             return Err(TypeError::VariableUsedTwice {
                 var: name.to_string(),
+                var_type: ty.clone(),
                 first_use: "previous usage".to_string(),
                 second_use: "current usage".to_string(),
             });
@@ -140,8 +176,10 @@ impl TypeEnv {
 
             // Non-Copy types must be used exactly once
             if !self.used.contains(var) {
+                let var_type = self.types.get(var).cloned().unwrap_or(Type::Infer);
                 return Err(TypeError::VariableNotUsed {
                     var: var.clone(),
+                    var_type,
                 });
             }
         }

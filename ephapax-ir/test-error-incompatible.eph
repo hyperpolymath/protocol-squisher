@@ -1,0 +1,7 @@
+// Test incompatible types error message
+
+fn main() {
+    let x = 5;
+    let y = true;
+    x + y  // Error: incompatible types (i32 and bool)
+}

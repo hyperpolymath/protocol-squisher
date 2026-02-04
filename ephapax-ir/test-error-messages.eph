@@ -1,0 +1,13 @@
+// Test improved error messages
+
+fn test_type_mismatch() -> i32 {
+    if 5 {  // Error: type mismatch (expected bool, found i32)
+        100
+    } else {
+        200
+    }
+}
+
+fn main() {
+    test_type_mismatch()
+}
