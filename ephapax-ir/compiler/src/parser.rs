@@ -51,11 +51,58 @@ impl Parser {
     }
 
     pub fn parse_program(&mut self) -> Result<Program, String> {
+        let mut structs = Vec::new();
         let mut functions = Vec::new();
+
         while self.current() != &Token::Eof {
-            functions.push(self.parse_function()?);
+            match self.current() {
+                Token::Struct => structs.push(self.parse_struct()?),
+                Token::Fn => functions.push(self.parse_function()?),
+                _ => return Err(format!("Expected 'struct' or 'fn', got {}", self.current())),
+            }
         }
-        Ok(Program { functions })
+
+        Ok(Program { structs, functions })
+    }
+
+    fn parse_struct(&mut self) -> Result<StructDef, String> {
+        self.expect(Token::Struct)?;
+
+        let name = match self.current() {
+            Token::Ident(s) => s.clone(),
+            _ => return Err("Expected struct name".to_string()),
+        };
+        self.advance();
+
+        self.expect(Token::LBrace)?;
+
+        let mut fields = Vec::new();
+        while self.current() != &Token::RBrace {
+            let field_name = match self.current() {
+                Token::Ident(s) => s.clone(),
+                _ => return Err("Expected field name".to_string()),
+            };
+            self.advance();
+
+            self.expect(Token::Colon)?;
+
+            let field_type = self.parse_type()?;
+
+            fields.push(StructField {
+                name: field_name,
+                ty: field_type,
+            });
+
+            if self.current() == &Token::Comma {
+                self.advance();
+            } else if self.current() != &Token::RBrace {
+                return Err("Expected ',' or '}' after field".to_string());
+            }
+        }
+
+        self.expect(Token::RBrace)?;
+
+        Ok(StructDef { name, fields })
     }
 
     fn parse_function(&mut self) -> Result<Function, String> {
@@ -143,6 +190,12 @@ impl Parser {
             Token::String => {
                 self.advance();
                 Ok(Type::String)
+            }
+            Token::Ident(name) => {
+                // Custom struct type
+                let struct_name = name.clone();
+                self.advance();
+                Ok(Type::Struct(struct_name))
             }
             _ => Err(format!("Expected type, got {}", self.current())),
         }
@@ -521,8 +574,36 @@ impl Parser {
                 let name = s.clone();
                 self.advance();
 
+                // Check if it's a struct literal
+                if self.current() == &Token::LBrace {
+                    self.advance();
+
+                    let mut fields = Vec::new();
+                    while self.current() != &Token::RBrace {
+                        let field_name = match self.current() {
+                            Token::Ident(s) => s.clone(),
+                            _ => return Err("Expected field name in struct literal".to_string()),
+                        };
+                        self.advance();
+
+                        self.expect(Token::Colon)?;
+
+                        let field_value = self.parse_expr()?;
+
+                        fields.push((field_name, field_value));
+
+                        if self.current() == &Token::Comma {
+                            self.advance();
+                        } else if self.current() != &Token::RBrace {
+                            return Err("Expected ',' or '}' in struct literal".to_string());
+                        }
+                    }
+                    self.expect(Token::RBrace)?;
+
+                    Expr::StructLit { name, fields }
+                }
                 // Check if it's a function call
-                if self.current() == &Token::LParen {
+                else if self.current() == &Token::LParen {
                     self.advance();
 
                     let mut args = Vec::new();
@@ -552,7 +633,7 @@ impl Parser {
             _ => return Err(format!("Unexpected token: {}", self.current())),
         };
 
-        // Handle postfix operators (indexing)
+        // Handle postfix operators (indexing, field access)
         loop {
             match self.current() {
                 Token::LBracket => {
@@ -562,6 +643,18 @@ impl Parser {
                     expr = Expr::Index {
                         vec: Box::new(expr),
                         index,
+                    };
+                }
+                Token::Dot => {
+                    self.advance();
+                    let field = match self.current() {
+                        Token::Ident(s) => s.clone(),
+                        _ => return Err("Expected field name after '.'".to_string()),
+                    };
+                    self.advance();
+                    expr = Expr::FieldAccess {
+                        expr: Box::new(expr),
+                        field,
                     };
                 }
                 _ => break,

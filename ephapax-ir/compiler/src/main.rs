@@ -140,5 +140,18 @@ fn print_value(value: &Value) {
             }
             print!("]");
         }
+        Value::Struct(name, fields) => {
+            print!("{} {{ ", name);
+            let mut first = true;
+            for (field_name, field_val) in fields {
+                if !first {
+                    print!(", ");
+                }
+                first = false;
+                print!("{}: ", field_name);
+                print_value(field_val);
+            }
+            print!(" }}");
+        }
     }
 }

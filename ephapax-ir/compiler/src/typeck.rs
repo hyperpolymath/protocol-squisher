@@ -195,16 +195,23 @@ impl TypeEnv {
 }
 
 pub struct TypeChecker {
+    structs: HashMap<String, StructDef>,
     functions: HashMap<String, Function>,
 }
 
 impl TypeChecker {
     pub fn new(program: &Program) -> Self {
+        let mut structs = HashMap::new();
+        for struct_def in &program.structs {
+            structs.insert(struct_def.name.clone(), struct_def.clone());
+        }
+
         let mut functions = HashMap::new();
         for func in &program.functions {
             functions.insert(func.name.clone(), func.clone());
         }
-        Self { functions }
+
+        Self { structs, functions }
     }
 
     pub fn check(&self) -> Result<(), TypeError> {
@@ -547,6 +554,75 @@ impl TypeChecker {
                 }
 
                 Ok(*elem_ty)
+            }
+
+            Expr::StructLit { name, fields } => {
+                // Look up struct definition
+                let struct_def = self.structs.get(name).ok_or_else(|| {
+                    TypeError::VariableNotFound {
+                        var: format!("struct '{}'", name),
+                    }
+                })?;
+
+                // Check all fields are provided and have correct types
+                for (field_name, field_expr) in fields {
+                    let field_def = struct_def.fields.iter().find(|f| &f.name == field_name)
+                        .ok_or_else(|| TypeError::VariableNotFound {
+                            var: format!("field '{}' in struct '{}'", field_name, name),
+                        })?;
+
+                    let field_ty = self.check_expr(field_expr, env)?;
+                    if field_ty != field_def.ty {
+                        return Err(TypeError::TypeMismatch {
+                            expected: field_def.ty.clone(),
+                            found: field_ty,
+                            context: format!("field '{}' in struct '{}'", field_name, name),
+                        });
+                    }
+                }
+
+                // Check all required fields are provided
+                for field_def in &struct_def.fields {
+                    if !fields.iter().any(|(name, _)| name == &field_def.name) {
+                        return Err(TypeError::TypeMismatch {
+                            expected: Type::Struct(name.clone()),
+                            found: Type::Infer,
+                            context: format!("missing field '{}' in struct '{}'", field_def.name, name),
+                        });
+                    }
+                }
+
+                Ok(Type::Struct(name.clone()))
+            }
+
+            Expr::FieldAccess { expr, field } => {
+                // Check expression type
+                let expr_ty = self.check_expr(expr, env)?;
+                let struct_name = match expr_ty {
+                    Type::Struct(name) => name,
+                    _ => {
+                        return Err(TypeError::TypeMismatch {
+                            expected: Type::Struct(String::from("<any>")),
+                            found: expr_ty,
+                            context: "field access requires a struct type".to_string(),
+                        });
+                    }
+                };
+
+                // Look up struct definition
+                let struct_def = self.structs.get(&struct_name).ok_or_else(|| {
+                    TypeError::VariableNotFound {
+                        var: format!("struct '{}'", struct_name),
+                    }
+                })?;
+
+                // Find field in struct
+                let field_def = struct_def.fields.iter().find(|f| &f.name == field)
+                    .ok_or_else(|| TypeError::VariableNotFound {
+                        var: format!("field '{}' in struct '{}'", field, struct_name),
+                    })?;
+
+                Ok(field_def.ty.clone())
             }
 
             Expr::Borrow(expr) => {

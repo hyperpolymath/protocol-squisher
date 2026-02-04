@@ -12,6 +12,7 @@ pub enum Type {
     Bool,
     String,          // String type (heap-allocated, not Copy)
     Vec(Box<Type>),  // Vector type Vec<T> (heap-allocated, not Copy)
+    Struct(String),  // Struct type (named, heap-allocated, not Copy)
     Ref(Box<Type>),  // Immutable reference type &T
     Infer,           // Type inference placeholder
 }
@@ -23,6 +24,7 @@ impl Type {
             Type::I32 | Type::I64 | Type::Bool => true,
             Type::String => false, // Strings are heap-allocated, not Copy
             Type::Vec(_) => false, // Vectors are heap-allocated, not Copy
+            Type::Struct(_) => false, // Structs are heap-allocated, not Copy
             Type::Ref(_) => true, // References are Copy (they're just pointers)
             Type::Infer => false, // Unknown types are not Copy by default
         }
@@ -37,6 +39,7 @@ impl fmt::Display for Type {
             Type::Bool => write!(f, "bool"),
             Type::String => write!(f, "String"),
             Type::Vec(inner) => write!(f, "Vec<{}>", inner),
+            Type::Struct(name) => write!(f, "{}", name),
             Type::Ref(inner) => write!(f, "&{}", inner),
             Type::Infer => write!(f, "_"),
         }
@@ -45,7 +48,20 @@ impl fmt::Display for Type {
 
 #[derive(Debug, Clone)]
 pub struct Program {
+    pub structs: Vec<StructDef>,
     pub functions: Vec<Function>,
+}
+
+#[derive(Debug, Clone)]
+pub struct StructDef {
+    pub name: String,
+    pub fields: Vec<StructField>,
+}
+
+#[derive(Debug, Clone)]
+pub struct StructField {
+    pub name: String,
+    pub ty: Type,
 }
 
 #[derive(Debug, Clone)]
@@ -90,6 +106,18 @@ pub enum Expr {
     Index {
         vec: Box<Expr>,
         index: Box<Expr>,
+    },
+
+    // Struct literal Name { field1: value1, field2: value2 }
+    StructLit {
+        name: String,
+        fields: Vec<(String, Expr)>,  // (field_name, field_value)
+    },
+
+    // Field access struct.field
+    FieldAccess {
+        expr: Box<Expr>,
+        field: String,
     },
 
     // Let binding
@@ -226,6 +254,19 @@ impl fmt::Display for Expr {
             }
             Expr::Index { vec, index } => {
                 write!(f, "{}[{}]", vec, index)
+            }
+            Expr::StructLit { name, fields } => {
+                write!(f, "{} {{", name)?;
+                for (i, (field_name, field_val)) in fields.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}: {}", field_name, field_val)?;
+                }
+                write!(f, "}}")
+            }
+            Expr::FieldAccess { expr, field } => {
+                write!(f, "{}.{}", expr, field)
             }
             Expr::Let { name, value, body } => {
                 write!(f, "(let {} = {} in {})", name, value, body)

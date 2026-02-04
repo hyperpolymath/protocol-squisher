@@ -215,6 +215,20 @@ impl WasmCodeGen {
                     .map_err(|e| e.to_string())?;
             }
 
+            Expr::StructLit { name: _name, fields: _fields } => {
+                // TODO: Implement struct literals with linear memory
+                // For now, return null pointer (0)
+                writeln!(&mut self.wat, "{}(i32.const 0) ;; Struct literal (not yet implemented)", ind)
+                    .map_err(|e| e.to_string())?;
+            }
+
+            Expr::FieldAccess { expr: _expr, field: _field } => {
+                // TODO: Implement field access with linear memory
+                // For now, return 0
+                writeln!(&mut self.wat, "{}(i64.const 0) ;; Field access (not yet implemented)", ind)
+                    .map_err(|e| e.to_string())?;
+            }
+
             Expr::Borrow(expr) | Expr::Deref(expr) => {
                 // Borrow and deref are type-level only, pass through
                 self.generate_expr(expr, indent)?;
@@ -310,6 +324,7 @@ impl WasmCodeGen {
             Type::Bool => "i32", // Booleans are i32 in WASM
             Type::String => "i32", // Strings are pointers to linear memory (requires memory management)
             Type::Vec(_) => "i32", // Vectors are pointers to linear memory (requires memory management)
+            Type::Struct(_) => "i32", // Structs are pointers to linear memory (requires memory management)
             Type::Ref(_) => "i32", // References are pointers (i32 for wasm32)
             Type::Infer => "i64", // Default to i64
         }

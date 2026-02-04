@@ -12,6 +12,7 @@ pub enum Value {
     Bool(bool),
     String(String),
     Vec(Vec<Value>),
+    Struct(String, HashMap<String, Value>),  // (struct_name, fields)
 }
 
 impl Value {
@@ -317,6 +318,27 @@ impl Interpreter {
                 }
 
                 Ok(vec_data[idx as usize].clone())
+            }
+
+            Expr::StructLit { name, fields } => {
+                let mut field_values = HashMap::new();
+                for (field_name, field_expr) in fields {
+                    let field_val = self.eval_expr(field_expr, env)?;
+                    field_values.insert(field_name.clone(), field_val);
+                }
+                Ok(Value::Struct(name.clone(), field_values))
+            }
+
+            Expr::FieldAccess { expr, field } => {
+                let struct_val = self.eval_expr(expr, env)?;
+                match struct_val {
+                    Value::Struct(_name, fields) => {
+                        fields.get(field).cloned().ok_or_else(|| {
+                            format!("Field '{}' not found in struct", field)
+                        })
+                    }
+                    _ => Err(format!("Field access requires a struct value, got {:?}", struct_val)),
+                }
             }
 
             Expr::Borrow(expr) => {

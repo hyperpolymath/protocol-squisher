@@ -1,0 +1,46 @@
+// Test struct support for schema representation
+
+// Field definition
+struct Field {
+    name: String,
+    field_type: i32,
+    optional: bool,
+}
+
+// Schema definition
+struct Schema {
+    name: String,
+    version: i32,
+}
+
+// Create a field
+fn make_field(name_val: String, type_val: i32, opt: bool) -> Field {
+    Field { name: name_val, field_type: type_val, optional: opt }
+}
+
+// Create a schema
+fn make_schema(name_val: String, ver: i32) -> Schema {
+    Schema { name: name_val, version: ver }
+}
+
+// Get schema version
+fn get_version(schema: Schema) -> i32 {
+    schema.version
+}
+
+// Get field type
+fn get_field_type(field: Field) -> i32 {
+    field.field_type
+}
+
+// Main: create schema and field, analyze them
+fn main() {
+    let schema = make_schema("UserSchema", 2);
+    let field = make_field("id", 1, false);
+
+    // Combine schema version and field type
+    let schema_ver = get_version(schema);
+    let field_ty = get_field_type(field);
+
+    schema_ver + field_ty  // 2 + 1 = 3
+}

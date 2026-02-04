@@ -15,6 +15,7 @@ pub enum Token {
     True,
     False,
     Match,
+    Struct,
     Underscore, // _
 
     // Identifiers and literals
@@ -38,6 +39,7 @@ pub enum Token {
     RBracket,   // ]
     Arrow,      // ->
     FatArrow,   // =>
+    Dot,        // .
     Colon,
     Semi,
     Comma,
@@ -77,6 +79,7 @@ impl fmt::Display for Token {
             Token::True => write!(f, "true"),
             Token::False => write!(f, "false"),
             Token::Match => write!(f, "match"),
+            Token::Struct => write!(f, "struct"),
             Token::Underscore => write!(f, "_"),
             Token::Ident(s) => write!(f, "{}", s),
             Token::IntLit(n) => write!(f, "{}", n),
@@ -94,6 +97,7 @@ impl fmt::Display for Token {
             Token::RBracket => write!(f, "]"),
             Token::Arrow => write!(f, "->"),
             Token::FatArrow => write!(f, "=>"),
+            Token::Dot => write!(f, "."),
             Token::Colon => write!(f, ":"),
             Token::Semi => write!(f, ";"),
             Token::Comma => write!(f, ","),
@@ -277,6 +281,10 @@ impl Lexer {
                     self.advance();
                     Token::RBracket
                 }
+                '.' => {
+                    self.advance();
+                    Token::Dot
+                }
                 ':' => {
                     self.advance();
                     Token::Colon
@@ -423,6 +431,7 @@ impl Lexer {
                         "true" => Token::True,
                         "false" => Token::False,
                         "match" => Token::Match,
+                        "struct" => Token::Struct,
                         "i32" => Token::I32,
                         "i64" => Token::I64,
                         "bool" => Token::Bool,
