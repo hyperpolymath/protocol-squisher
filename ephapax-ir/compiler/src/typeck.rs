@@ -730,6 +730,26 @@ impl TypeChecker {
                 Ok(Type::I32)
             }
 
+            Expr::Some(expr) => {
+                let inner_ty = self.check_expr(expr, env)?;
+                Ok(Type::Option(Box::new(inner_ty)))
+            }
+
+            Expr::None => {
+                // None has type Option<Infer> - will be refined by context
+                Ok(Type::Option(Box::new(Type::Infer)))
+            }
+
+            Expr::Ok(expr) => {
+                let ok_ty = self.check_expr(expr, env)?;
+                Ok(Type::Result(Box::new(ok_ty), Box::new(Type::Infer)))
+            }
+
+            Expr::Err(expr) => {
+                let err_ty = self.check_expr(expr, env)?;
+                Ok(Type::Result(Box::new(Type::Infer), Box::new(err_ty)))
+            }
+
             Expr::Borrow(expr) => {
                 // Borrow creates a reference to the expression's type
                 let inner_ty = self.check_expr(expr, env)?;
@@ -756,6 +776,10 @@ impl TypeChecker {
             Pattern::IntLit(_) => Type::I32,
             Pattern::BoolLit(_) => Type::Bool,
             Pattern::Var(_) | Pattern::Wildcard => Type::Infer,
+            Pattern::Some(inner) => Type::Option(Box::new(self.pattern_type(inner))),
+            Pattern::None => Type::Option(Box::new(Type::Infer)),
+            Pattern::Ok(inner) => Type::Result(Box::new(self.pattern_type(inner)), Box::new(Type::Infer)),
+            Pattern::Err(inner) => Type::Result(Box::new(Type::Infer), Box::new(self.pattern_type(inner))),
         }
     }
 

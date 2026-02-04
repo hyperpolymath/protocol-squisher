@@ -13,6 +13,10 @@ pub enum Value {
     String(String),
     Vec(Vec<Value>),
     Struct(String, HashMap<String, Value>),  // (struct_name, fields)
+    OptionSome(Box<Value>),  // Option::Some(value)
+    OptionNone,              // Option::None
+    ResultOk(Box<Value>),    // Result::Ok(value)
+    ResultErr(Box<Value>),   // Result::Err(error)
 }
 
 impl Value {
@@ -288,6 +292,37 @@ impl Interpreter {
                                 }
                                 print!(" }}");
                             }
+                            Value::OptionSome(v) => {
+                                print!("Some(");
+                                match v.as_ref() {
+                                    Value::Int(n) => print!("{}", n),
+                                    Value::Bool(b) => print!("{}", b),
+                                    Value::String(s) => print!("{}", s),
+                                    _ => print!("{:?}", v),
+                                }
+                                print!(")");
+                            }
+                            Value::OptionNone => print!("None"),
+                            Value::ResultOk(v) => {
+                                print!("Ok(");
+                                match v.as_ref() {
+                                    Value::Int(n) => print!("{}", n),
+                                    Value::Bool(b) => print!("{}", b),
+                                    Value::String(s) => print!("{}", s),
+                                    _ => print!("{:?}", v),
+                                }
+                                print!(")");
+                            }
+                            Value::ResultErr(v) => {
+                                print!("Err(");
+                                match v.as_ref() {
+                                    Value::Int(n) => print!("{}", n),
+                                    Value::Bool(b) => print!("{}", b),
+                                    Value::String(s) => print!("{}", s),
+                                    _ => print!("{:?}", v),
+                                }
+                                print!(")");
+                            }
                         }
                         Ok(Value::Int(0))  // Return 0 (unit placeholder)
                     }
@@ -451,6 +486,23 @@ impl Interpreter {
                 Ok(last_result)
             }
 
+            Expr::Some(expr) => {
+                let val = self.eval_expr(expr, env)?;
+                Ok(Value::OptionSome(Box::new(val)))
+            }
+
+            Expr::None => Ok(Value::OptionNone),
+
+            Expr::Ok(expr) => {
+                let val = self.eval_expr(expr, env)?;
+                Ok(Value::ResultOk(Box::new(val)))
+            }
+
+            Expr::Err(expr) => {
+                let val = self.eval_expr(expr, env)?;
+                Ok(Value::ResultErr(Box::new(val)))
+            }
+
             Expr::Borrow(expr) => {
                 // In interpreter, borrow is a no-op (type-level only)
                 self.eval_expr(expr, env)
@@ -498,6 +550,34 @@ impl Interpreter {
             Pattern::Wildcard => {
                 // Wildcard always matches, no bindings
                 Some(Vec::new())
+            }
+            Pattern::Some(inner_pattern) => {
+                if let Value::OptionSome(inner_val) = value {
+                    self.match_pattern(inner_pattern, inner_val)
+                } else {
+                    None
+                }
+            }
+            Pattern::None => {
+                if matches!(value, Value::OptionNone) {
+                    Some(Vec::new())
+                } else {
+                    None
+                }
+            }
+            Pattern::Ok(inner_pattern) => {
+                if let Value::ResultOk(inner_val) = value {
+                    self.match_pattern(inner_pattern, inner_val)
+                } else {
+                    None
+                }
+            }
+            Pattern::Err(inner_pattern) => {
+                if let Value::ResultErr(inner_val) = value {
+                    self.match_pattern(inner_pattern, inner_val)
+                } else {
+                    None
+                }
             }
         }
     }

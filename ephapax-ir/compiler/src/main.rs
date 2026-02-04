@@ -153,5 +153,21 @@ fn print_value(value: &Value) {
             }
             print!(" }}");
         }
+        Value::OptionSome(val) => {
+            print!("Some(");
+            print_value(val);
+            print!(")");
+        }
+        Value::OptionNone => print!("None"),
+        Value::ResultOk(val) => {
+            print!("Ok(");
+            print_value(val);
+            print!(")");
+        }
+        Value::ResultErr(val) => {
+            print!("Err(");
+            print_value(val);
+            print!(")");
+        }
     }
 }

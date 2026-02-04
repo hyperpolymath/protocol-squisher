@@ -10,11 +10,13 @@ pub enum Type {
     I32,
     I64,
     Bool,
-    String,          // String type (heap-allocated, not Copy)
-    Vec(Box<Type>),  // Vector type Vec<T> (heap-allocated, not Copy)
-    Struct(String),  // Struct type (named, heap-allocated, not Copy)
-    Ref(Box<Type>),  // Immutable reference type &T
-    Infer,           // Type inference placeholder
+    String,            // String type (heap-allocated, not Copy)
+    Vec(Box<Type>),    // Vector type Vec<T> (heap-allocated, not Copy)
+    Struct(String),    // Struct type (named, heap-allocated, not Copy)
+    Ref(Box<Type>),    // Immutable reference type &T
+    Option(Box<Type>), // Option<T> type (heap-allocated, not Copy)
+    Result(Box<Type>, Box<Type>), // Result<T, E> type (heap-allocated, not Copy)
+    Infer,             // Type inference placeholder
 }
 
 impl Type {
@@ -26,6 +28,8 @@ impl Type {
             Type::Vec(_) => false, // Vectors are heap-allocated, not Copy
             Type::Struct(_) => false, // Structs are heap-allocated, not Copy
             Type::Ref(_) => true, // References are Copy (they're just pointers)
+            Type::Option(_) => false, // Option is heap-allocated, not Copy
+            Type::Result(_, _) => false, // Result is heap-allocated, not Copy
             Type::Infer => false, // Unknown types are not Copy by default
         }
     }
@@ -41,6 +45,8 @@ impl fmt::Display for Type {
             Type::Vec(inner) => write!(f, "Vec<{}>", inner),
             Type::Struct(name) => write!(f, "{}", name),
             Type::Ref(inner) => write!(f, "&{}", inner),
+            Type::Option(inner) => write!(f, "Option<{}>", inner),
+            Type::Result(ok_ty, err_ty) => write!(f, "Result<{}, {}>", ok_ty, err_ty),
             Type::Infer => write!(f, "_"),
         }
     }
@@ -156,6 +162,14 @@ pub enum Expr {
         arms: Vec<MatchArm>,
     },
 
+    // Option constructors
+    Some(Box<Expr>),  // Some(value)
+    None,             // None
+
+    // Result constructors
+    Ok(Box<Expr>),    // Ok(value)
+    Err(Box<Expr>),   // Err(error)
+
     // Borrow expression (&x)
     Borrow(Box<Expr>),
 
@@ -179,6 +193,14 @@ pub enum Pattern {
     Var(String),
     /// Wildcard pattern: _
     Wildcard,
+    /// Option::Some pattern: Some(x)
+    Some(Box<Pattern>),
+    /// Option::None pattern: None
+    None,
+    /// Result::Ok pattern: Ok(x)
+    Ok(Box<Pattern>),
+    /// Result::Err pattern: Err(e)
+    Err(Box<Pattern>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -314,6 +336,10 @@ impl fmt::Display for Expr {
                 }
                 write!(f, " }})")
             }
+            Expr::Some(expr) => write!(f, "Some({})", expr),
+            Expr::None => write!(f, "None"),
+            Expr::Ok(expr) => write!(f, "Ok({})", expr),
+            Expr::Err(expr) => write!(f, "Err({})", expr),
             Expr::Borrow(expr) => write!(f, "&{}", expr),
             Expr::Deref(expr) => write!(f, "*{}", expr),
         }
@@ -327,6 +353,10 @@ impl fmt::Display for Pattern {
             Pattern::BoolLit(b) => write!(f, "{}", b),
             Pattern::Var(s) => write!(f, "{}", s),
             Pattern::Wildcard => write!(f, "_"),
+            Pattern::Some(p) => write!(f, "Some({})", p),
+            Pattern::None => write!(f, "None"),
+            Pattern::Ok(p) => write!(f, "Ok({})", p),
+            Pattern::Err(p) => write!(f, "Err({})", p),
         }
     }
 }

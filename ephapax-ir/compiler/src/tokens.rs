@@ -32,6 +32,14 @@ pub enum Token {
     Bool,
     String,
     Vec,
+    Option,
+    Result,
+
+    // Option/Result constructors
+    Some,
+    None,
+    Ok,
+    Err,
 
     // Symbols
     LParen,
@@ -95,6 +103,12 @@ impl fmt::Display for Token {
             Token::Bool => write!(f, "bool"),
             Token::String => write!(f, "String"),
             Token::Vec => write!(f, "Vec"),
+            Token::Option => write!(f, "Option"),
+            Token::Result => write!(f, "Result"),
+            Token::Some => write!(f, "Some"),
+            Token::None => write!(f, "None"),
+            Token::Ok => write!(f, "Ok"),
+            Token::Err => write!(f, "Err"),
             Token::LParen => write!(f, "("),
             Token::RParen => write!(f, ")"),
             Token::LBrace => write!(f, "{{"),
@@ -446,6 +460,12 @@ impl Lexer {
                         "bool" => Token::Bool,
                         "String" => Token::String,
                         "Vec" => Token::Vec,
+                        "Option" => Token::Option,
+                        "Result" => Token::Result,
+                        "Some" => Token::Some,
+                        "None" => Token::None,
+                        "Ok" => Token::Ok,
+                        "Err" => Token::Err,
                         _ => Token::Ident(ident),
                     }
                 }

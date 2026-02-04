@@ -244,6 +244,12 @@ impl WasmCodeGen {
                     .map_err(|e| e.to_string())?;
             }
 
+            Expr::Some(_) | Expr::None | Expr::Ok(_) | Expr::Err(_) => {
+                // TODO: Implement Option/Result with linear memory
+                writeln!(&mut self.wat, "{}(i32.const 0) ;; Option/Result (not yet implemented)", ind)
+                    .map_err(|e| e.to_string())?;
+            }
+
             Expr::Borrow(expr) | Expr::Deref(expr) => {
                 // Borrow and deref are type-level only, pass through
                 self.generate_expr(expr, indent)?;
@@ -320,6 +326,11 @@ impl WasmCodeGen {
                     // Wildcard always matches
                     self.generate_expr(&arm.body, indent)?;
                 }
+                Pattern::Some(_) | Pattern::None | Pattern::Ok(_) | Pattern::Err(_) => {
+                    // TODO: Implement Option/Result pattern matching in WASM
+                    writeln!(&mut self.wat, "{}    (i64.const 0) ;; Option/Result pattern (not yet implemented)", ind)
+                        .map_err(|e| e.to_string())?;
+                }
             }
         }
 
@@ -341,6 +352,8 @@ impl WasmCodeGen {
             Type::Vec(_) => "i32", // Vectors are pointers to linear memory (requires memory management)
             Type::Struct(_) => "i32", // Structs are pointers to linear memory (requires memory management)
             Type::Ref(_) => "i32", // References are pointers (i32 for wasm32)
+            Type::Option(_) => "i32", // Option is pointer to linear memory
+            Type::Result(_, _) => "i32", // Result is pointer to linear memory
             Type::Infer => "i64", // Default to i64
         }
     }
