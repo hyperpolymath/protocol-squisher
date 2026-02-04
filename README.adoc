@@ -150,6 +150,7 @@ See link:ROADMAP.adoc[ROADMAP.adoc] for the full expansion plan.
 
 - link:docs/CLI-GUIDE.adoc[CLI Usage Guide] - **Start here** for command reference and workflows
 - link:examples/README.md[Example Projects] - Working examples with benchmarks
+- link:proofs/README.adoc[Formal Proofs] - Theorem prover verification (ECHIDNA integration)
 - link:ROADMAP.adoc[Roadmap] - Where we're going
 - link:GAUNTLET.adoc[The Gauntlet] - Hard problems we're solving
 - link:docs/architecture.adoc[Architecture] - How it works

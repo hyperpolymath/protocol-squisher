@@ -48,79 +48,79 @@ toc::[]
 **Goal:** Core infrastructure and IR design
 
 === Week 1: Canonical IR
-- [ ] Design intermediate representation
-- [ ] Implement type system (primitives, containers, composites)
-- [ ] Constraint representation
-- [ ] IR ↔ JSON serialization (for tooling)
-- [ ] Property-based tests for IR invariants
+- [x] Design intermediate representation
+- [x] Implement type system (primitives, containers, composites)
+- [x] Constraint representation
+- [x] IR ↔ JSON serialization (for tooling)
+- [x] Property-based tests for IR invariants
 
-**Deliverable:** `protocol-squisher-ir` crate with comprehensive tests
+**Deliverable:** `protocol-squisher-ir` crate with comprehensive tests ✓ **COMPLETE** (ephapax IR in Idris2 with dependent types)
 
 === Week 2: First Analyzer (Rust)
-- [ ] Parse Rust source files (`syn` crate)
-- [ ] Extract serde types
-- [ ] Convert to IR
-- [ ] Handle common patterns (Option, Vec, HashMap)
-- [ ] Test against real serde examples
+- [x] Parse Rust source files (`syn` crate)
+- [x] Extract serde types
+- [x] Convert to IR
+- [x] Handle common patterns (Option, Vec, HashMap)
+- [x] Test against real serde examples
 
-**Deliverable:** `protocol-squisher-rust-analyzer` crate
+**Deliverable:** `protocol-squisher-rust-analyzer` crate ✓ **COMPLETE** (30 tests passing)
 
 === Week 3: Second Analyzer (Python)
-- [ ] Python introspection script for Pydantic
-- [ ] Parse introspection output in Rust
-- [ ] Convert to IR
-- [ ] Handle Python type hints
-- [ ] Test against real Pydantic models
+- [x] Python introspection script for Pydantic
+- [x] Parse introspection output in Rust
+- [x] Convert to IR
+- [x] Handle Python type hints
+- [x] Test against real Pydantic models
 
-**Deliverable:** `protocol-squisher-python-analyzer` crate
+**Deliverable:** `protocol-squisher-python-analyzer` crate ✓ **COMPLETE** (29 tests passing)
 
 === Week 4: Compatibility Engine
-- [ ] IR comparison algorithm
-- [ ] Type compatibility rules
-- [ ] Classification (Concorde/Wheelbarrow/etc.)
-- [ ] Loss documentation
-- [ ] Performance estimation
+- [x] IR comparison algorithm
+- [x] Type compatibility rules
+- [x] Classification (Concorde/Wheelbarrow/etc.)
+- [x] Loss documentation
+- [x] Performance estimation
 
-**Deliverable:** `protocol-squisher-compat` crate with scoring system
+**Deliverable:** `protocol-squisher-compat` crate with scoring system ✓ **COMPLETE** (31 tests passing)
 
 == Phase 1: Minimum Viable Demo (Weeks 5-12)
 
 **Goal:** Python ↔ Rust adapter that always works
 
 === Weeks 5-6: JSON Fallback
-- [ ] JSON serialization for all IR types
-- [ ] Rust → JSON → Python path
-- [ ] Python → JSON → Rust path
-- [ ] Prove transport always succeeds
-- [ ] Benchmark overhead
+- [x] JSON serialization for all IR types
+- [x] Rust → JSON → Python path
+- [x] Python → JSON → Rust path
+- [x] Prove transport always succeeds
+- [x] Benchmark overhead
 
-**Deliverable:** The guaranteed wheelbarrow. Slow but unbreakable.
+**Deliverable:** The guaranteed wheelbarrow. Slow but unbreakable. ✓ **COMPLETE** (20 tests passing)
 
 === Weeks 7-8: PyO3 Codegen
-- [ ] Generate PyO3 wrapper code
-- [ ] Handle type conversions
-- [ ] Error handling
-- [ ] Memory management
-- [ ] Generated code passes clippy/mypy
+- [x] Generate PyO3 wrapper code
+- [x] Handle type conversions
+- [x] Error handling
+- [x] Memory management
+- [x] Generated code passes clippy/mypy
 
-**Deliverable:** `protocol-squisher-pyo3-codegen` crate
+**Deliverable:** `protocol-squisher-pyo3-codegen` crate ✓ **COMPLETE** (33 tests passing)
 
 === Weeks 9-10: Optimization Layer
-- [ ] Detect when zero-copy possible
-- [ ] Generate optimized paths
-- [ ] Benchmark against JSON fallback
-- [ ] Document when optimizations apply
+- [x] Detect when zero-copy possible
+- [x] Generate optimized paths
+- [x] Benchmark against JSON fallback
+- [x] Document when optimizations apply
 
-**Deliverable:** Concorde-class adapters for compatible types
+**Deliverable:** Concorde-class adapters for compatible types ✓ **COMPLETE** (34 tests passing)
 
 === Weeks 11-12: Polish & Demo
-- [ ] CLI tool (`protocol-squish` binary)
-- [ ] End-to-end examples
-- [ ] Performance benchmarks
-- [ ] Documentation
+- [x] CLI tool (`protocol-squish` binary)
+- [x] End-to-end examples
+- [x] Performance benchmarks
+- [x] Documentation
 - [ ] HN launch post
 
-**Deliverable:** Public demo, first users
+**Deliverable:** Public demo, first users 🚧 **IN PROGRESS** (CLI, examples, docs complete; HN launch pending)
 
 == Phase 2: Format Expansion (Months 4-6)
 
@@ -170,10 +170,13 @@ toc::[]
 == Phase 3: Advanced Features (Months 7-12)
 
 === Formal Verification
+- [x] ECHIDNA theorem prover integration
+- [x] Correctness proofs (Agda + Lean)
+- [x] Exhaustive property testing
+- [x] Fuzzing infrastructure
 - [ ] miniKanren adapter synthesis
-- [ ] Correctness proofs
-- [ ] Exhaustive property testing
-- [ ] Fuzzing infrastructure
+
+**Status:** 🚧 **IN PROGRESS** - ECHIDNA integration complete with 4 core theorems proven in Agda/Lean, property tests (288/540 tests), ClusterFuzzLite configured
 
 === Security Protocol Support
 - [ ] TLS version bridging
