@@ -266,6 +266,16 @@ impl Interpreter {
 
                 Err("Non-exhaustive match (no pattern matched)".to_string())
             }
+
+            Expr::Borrow(expr) => {
+                // In interpreter, borrow is a no-op (type-level only)
+                self.eval_expr(expr, env)
+            }
+
+            Expr::Deref(expr) => {
+                // In interpreter, deref is a no-op (type-level only)
+                self.eval_expr(expr, env)
+            }
         }
     }
 

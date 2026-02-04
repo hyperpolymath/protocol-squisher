@@ -478,6 +478,25 @@ impl TypeChecker {
 
                 Ok(arm_type.unwrap())
             }
+
+            Expr::Borrow(expr) => {
+                // Borrow creates a reference to the expression's type
+                let inner_ty = self.check_expr(expr, env)?;
+                Ok(Type::Ref(Box::new(inner_ty)))
+            }
+
+            Expr::Deref(expr) => {
+                // Dereference extracts the inner type from a reference
+                let ref_ty = self.check_expr(expr, env)?;
+                match ref_ty {
+                    Type::Ref(inner_ty) => Ok(*inner_ty),
+                    _ => Err(TypeError::TypeMismatch {
+                        expected: Type::Ref(Box::new(Type::Infer)),
+                        found: ref_ty,
+                        context: "dereference requires a reference type".to_string(),
+                    }),
+                }
+            }
         }
     }
 

@@ -116,6 +116,11 @@ impl Parser {
 
     fn parse_type(&mut self) -> Result<Type, String> {
         match self.current() {
+            Token::Amp => {
+                self.advance();
+                let inner_ty = Box::new(self.parse_type()?);
+                Ok(Type::Ref(inner_ty))
+            }
             Token::I32 => {
                 self.advance();
                 Ok(Type::I32)
@@ -425,7 +430,7 @@ impl Parser {
     }
 
     fn parse_multiplicative(&mut self) -> Result<Expr, String> {
-        let mut left = self.parse_primary()?;
+        let mut left = self.parse_unary()?;
 
         while matches!(self.current(), Token::Star | Token::Slash | Token::Percent) {
             let op = match self.current() {
@@ -436,7 +441,7 @@ impl Parser {
             };
             self.advance();
 
-            let right = Box::new(self.parse_primary()?);
+            let right = Box::new(self.parse_unary()?);
             left = Expr::BinOp {
                 op,
                 left: Box::new(left),
@@ -445,6 +450,22 @@ impl Parser {
         }
 
         Ok(left)
+    }
+
+    fn parse_unary(&mut self) -> Result<Expr, String> {
+        match self.current() {
+            Token::Amp => {
+                self.advance();
+                let expr = Box::new(self.parse_unary()?);
+                Ok(Expr::Borrow(expr))
+            }
+            Token::Star => {
+                self.advance();
+                let expr = Box::new(self.parse_unary()?);
+                Ok(Expr::Deref(expr))
+            }
+            _ => self.parse_primary(),
+        }
     }
 
     fn parse_primary(&mut self) -> Result<Expr, String> {

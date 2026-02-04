@@ -10,7 +10,8 @@ pub enum Type {
     I32,
     I64,
     Bool,
-    Infer, // Type inference placeholder
+    Ref(Box<Type>),  // Immutable reference type &T
+    Infer,           // Type inference placeholder
 }
 
 impl Type {
@@ -18,6 +19,7 @@ impl Type {
     pub fn is_copy(&self) -> bool {
         match self {
             Type::I32 | Type::I64 | Type::Bool => true,
+            Type::Ref(_) => true, // References are Copy (they're just pointers)
             Type::Infer => false, // Unknown types are not Copy by default
         }
     }
@@ -29,6 +31,7 @@ impl fmt::Display for Type {
             Type::I32 => write!(f, "i32"),
             Type::I64 => write!(f, "i64"),
             Type::Bool => write!(f, "bool"),
+            Type::Ref(inner) => write!(f, "&{}", inner),
             Type::Infer => write!(f, "_"),
         }
     }
@@ -97,6 +100,12 @@ pub enum Expr {
         scrutinee: Box<Expr>,
         arms: Vec<MatchArm>,
     },
+
+    // Borrow expression (&x)
+    Borrow(Box<Expr>),
+
+    // Dereference expression (*x)
+    Deref(Box<Expr>),
 }
 
 #[derive(Debug, Clone)]
@@ -217,6 +226,8 @@ impl fmt::Display for Expr {
                 }
                 write!(f, " }})")
             }
+            Expr::Borrow(expr) => write!(f, "&{}", expr),
+            Expr::Deref(expr) => write!(f, "*{}", expr),
         }
     }
 }
