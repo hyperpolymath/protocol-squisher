@@ -22,17 +22,19 @@ pub fn to_ephapax_primitive(ir_type: &IrType) -> Option<PrimitiveType> {
                 IrPrim::I16 => Some(PrimitiveType::I16),
                 IrPrim::I32 => Some(PrimitiveType::I32),
                 IrPrim::I64 => Some(PrimitiveType::I64),
+                IrPrim::I128 => Some(PrimitiveType::I128),
                 IrPrim::U8 => Some(PrimitiveType::U8),
                 IrPrim::U16 => Some(PrimitiveType::U16),
                 IrPrim::U32 => Some(PrimitiveType::U32),
                 IrPrim::U64 => Some(PrimitiveType::U64),
+                IrPrim::U128 => Some(PrimitiveType::U128),
                 IrPrim::F32 => Some(PrimitiveType::F32),
                 IrPrim::F64 => Some(PrimitiveType::F64),
                 IrPrim::Bool => Some(PrimitiveType::Bool),
                 IrPrim::Char => Some(PrimitiveType::Char),
                 IrPrim::String => Some(PrimitiveType::String),
                 // Types not yet supported in ephapax IR
-                IrPrim::I128 | IrPrim::U128 | IrPrim::Bytes |
+                IrPrim::Bytes |
                 IrPrim::DateTime | IrPrim::Date | IrPrim::Time | IrPrim::Duration |
                 IrPrim::Uuid | IrPrim::Decimal | IrPrim::BigInt => None,
             }

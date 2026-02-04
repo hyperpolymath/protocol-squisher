@@ -40,16 +40,18 @@ pub enum PrimitiveType {
     I16 = 1,
     I32 = 2,
     I64 = 3,
-    U8 = 4,
-    U16 = 5,
-    U32 = 6,
-    U64 = 7,
-    F32 = 8,
-    F64 = 9,
-    Bool = 10,
-    Char = 11,
-    String = 12,
-    Unit = 13,
+    I128 = 4,
+    U8 = 5,
+    U16 = 6,
+    U32 = 7,
+    U64 = 8,
+    U128 = 9,
+    F32 = 10,
+    F64 = 11,
+    Bool = 12,
+    Char = 13,
+    String = 14,
+    Unit = 15,
 }
 
 /// Container types in the IR
@@ -182,5 +184,47 @@ mod tests {
         let ctx = IRContext::new();
         let class = ctx.analyze_compatibility(PrimitiveType::F32, PrimitiveType::F64);
         assert_eq!(class, TransportClass::Business);
+    }
+
+    #[test]
+    fn test_i128_exact_match() {
+        let ctx = IRContext::new();
+        let class = ctx.analyze_compatibility(PrimitiveType::I128, PrimitiveType::I128);
+        assert_eq!(class, TransportClass::Concorde);
+    }
+
+    #[test]
+    fn test_i64_to_i128_widening() {
+        let ctx = IRContext::new();
+        let class = ctx.analyze_compatibility(PrimitiveType::I64, PrimitiveType::I128);
+        assert_eq!(class, TransportClass::Business);
+    }
+
+    #[test]
+    fn test_i32_to_i128_widening() {
+        let ctx = IRContext::new();
+        let class = ctx.analyze_compatibility(PrimitiveType::I32, PrimitiveType::I128);
+        assert_eq!(class, TransportClass::Business);
+    }
+
+    #[test]
+    fn test_u128_exact_match() {
+        let ctx = IRContext::new();
+        let class = ctx.analyze_compatibility(PrimitiveType::U128, PrimitiveType::U128);
+        assert_eq!(class, TransportClass::Concorde);
+    }
+
+    #[test]
+    fn test_u64_to_u128_widening() {
+        let ctx = IRContext::new();
+        let class = ctx.analyze_compatibility(PrimitiveType::U64, PrimitiveType::U128);
+        assert_eq!(class, TransportClass::Business);
+    }
+
+    #[test]
+    fn test_i128_to_i64_narrowing() {
+        let ctx = IRContext::new();
+        let class = ctx.analyze_compatibility(PrimitiveType::I128, PrimitiveType::I64);
+        assert_eq!(class, TransportClass::Wheelbarrow);
     }
 }

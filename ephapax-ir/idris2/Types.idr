@@ -14,8 +14,8 @@ module Types
 -- ============================================================================
 
 public export
-data PrimitiveType = I8 | I16 | I32 | I64
-                   | U8 | U16 | U32 | U64
+data PrimitiveType = I8 | I16 | I32 | I64 | I128
+                   | U8 | U16 | U32 | U64 | U128
                    | F32 | F64
                    | Bool_ | Char_ | Str | UnitType
 
@@ -25,10 +25,12 @@ Eq PrimitiveType where
   I16 == I16 = True
   I32 == I32 = True
   I64 == I64 = True
+  I128 == I128 = True
   U8 == U8 = True
   U16 == U16 = True
   U32 == U32 = True
   U64 == U64 = True
+  U128 == U128 = True
   F32 == F32 = True
   F64 == F64 = True
   Bool_ == Bool_ = True
@@ -86,19 +88,27 @@ primitivesCompatible : PrimitiveType -> PrimitiveType -> Bool
 primitivesCompatible a b = a == b ||
   case (a, b) of
     -- Signed integer widening
-    (I8, I16)  => True
-    (I8, I32)  => True
-    (I8, I64)  => True
-    (I16, I32) => True
-    (I16, I64) => True
-    (I32, I64) => True
+    (I8, I16)   => True
+    (I8, I32)   => True
+    (I8, I64)   => True
+    (I8, I128)  => True
+    (I16, I32)  => True
+    (I16, I64)  => True
+    (I16, I128) => True
+    (I32, I64)  => True
+    (I32, I128) => True
+    (I64, I128) => True
     -- Unsigned integer widening
-    (U8, U16)  => True
-    (U8, U32)  => True
-    (U8, U64)  => True
-    (U16, U32) => True
-    (U16, U64) => True
-    (U32, U64) => True
+    (U8, U16)   => True
+    (U8, U32)   => True
+    (U8, U64)   => True
+    (U8, U128)  => True
+    (U16, U32)  => True
+    (U16, U64)  => True
+    (U16, U128) => True
+    (U32, U64)  => True
+    (U32, U128) => True
+    (U64, U128) => True
     -- Float widening
     (F32, F64) => True
     _ => False
@@ -113,10 +123,12 @@ typeSize I8       = 1
 typeSize I16      = 2
 typeSize I32      = 4
 typeSize I64      = 8
+typeSize I128     = 16
 typeSize U8       = 1
 typeSize U16      = 2
 typeSize U32      = 4
 typeSize U64      = 8
+typeSize U128     = 16
 typeSize F32      = 4
 typeSize F64      = 8
 typeSize Bool_    = 1
@@ -130,29 +142,33 @@ typeSize UnitType = 0
 
 public export
 isNumeric : PrimitiveType -> Bool
-isNumeric I8  = True
-isNumeric I16 = True
-isNumeric I32 = True
-isNumeric I64 = True
-isNumeric U8  = True
-isNumeric U16 = True
-isNumeric U32 = True
-isNumeric U64 = True
-isNumeric F32 = True
-isNumeric F64 = True
-isNumeric _   = False
+isNumeric I8   = True
+isNumeric I16  = True
+isNumeric I32  = True
+isNumeric I64  = True
+isNumeric I128 = True
+isNumeric U8   = True
+isNumeric U16  = True
+isNumeric U32  = True
+isNumeric U64  = True
+isNumeric U128 = True
+isNumeric F32  = True
+isNumeric F64  = True
+isNumeric _    = False
 
 public export
 isInteger : PrimitiveType -> Bool
-isInteger I8  = True
-isInteger I16 = True
-isInteger I32 = True
-isInteger I64 = True
-isInteger U8  = True
-isInteger U16 = True
-isInteger U32 = True
-isInteger U64 = True
-isInteger _   = False
+isInteger I8   = True
+isInteger I16  = True
+isInteger I32  = True
+isInteger I64  = True
+isInteger I128 = True
+isInteger U8   = True
+isInteger U16  = True
+isInteger U32  = True
+isInteger U64  = True
+isInteger U128 = True
+isInteger _    = False
 
 public export
 isFloat : PrimitiveType -> Bool
@@ -170,10 +186,12 @@ Show PrimitiveType where
   show I16      = "i16"
   show I32      = "i32"
   show I64      = "i64"
+  show I128     = "i128"
   show U8       = "u8"
   show U16      = "u16"
   show U32      = "u32"
   show U64      = "u64"
+  show U128     = "u128"
   show F32      = "f32"
   show F64      = "f64"
   show Bool_    = "bool"

@@ -34,13 +34,15 @@ fn is_safe_widening(source: PrimitiveType, target: PrimitiveType) -> bool {
     matches!(
         (source, target),
         // Signed integer widening
-        (I8, I16 | I32 | I64)
-            | (I16, I32 | I64)
-            | (I32, I64)
+        (I8, I16 | I32 | I64 | I128)
+            | (I16, I32 | I64 | I128)
+            | (I32, I64 | I128)
+            | (I64, I128)
             // Unsigned integer widening
-            | (U8, U16 | U32 | U64)
-            | (U16, U32 | U64)
-            | (U32, U64)
+            | (U8, U16 | U32 | U64 | U128)
+            | (U16, U32 | U64 | U128)
+            | (U32, U64 | U128)
+            | (U64, U128)
             // Float widening
             | (F32, F64)
     )
