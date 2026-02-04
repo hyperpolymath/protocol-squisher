@@ -21,11 +21,10 @@
 //! ```
 
 use protocol_squisher_ir::{
-    Constraint, FieldDef, FieldMetadata, IrSchema, IrType, PrimitiveType, StructDef, TypeDef,
+    ContainerType, FieldDef, FieldMetadata, IrSchema, IrType, PrimitiveType, StructDef, TypeDef,
     TypeMetadata,
 };
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
 
 /// ReScript type information
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -102,12 +101,12 @@ pub fn rescript_type_to_ir(rs_type: &ReScriptFieldType) -> IrType {
         ReScriptFieldType::String => IrType::Primitive(PrimitiveType::String),
         ReScriptFieldType::Bool => IrType::Primitive(PrimitiveType::Bool),
         ReScriptFieldType::Float => IrType::Primitive(PrimitiveType::F64),
-        ReScriptFieldType::Record(name) => IrType::Named(name.clone()),
+        ReScriptFieldType::Record(name) => IrType::Reference(name.clone()),
         ReScriptFieldType::Array(inner) => {
-            IrType::Array(Box::new(rescript_type_to_ir(inner)))
+            IrType::Container(ContainerType::Vec(Box::new(rescript_type_to_ir(inner))))
         }
         ReScriptFieldType::Option(inner) => {
-            IrType::Option(Box::new(rescript_type_to_ir(inner)))
+            IrType::Container(ContainerType::Option(Box::new(rescript_type_to_ir(inner))))
         }
     }
 }
@@ -152,7 +151,7 @@ pub fn analyze_rescript_source(
 }
 
 /// Calculate compatibility score with target language
-pub fn compatibility_score(rescript_type: &ReScriptType, target: &str) -> f32 {
+pub fn compatibility_score(_rescript_type: &ReScriptType, target: &str) -> f32 {
     match target {
         "rust" => {
             // All ReScript types map perfectly to Rust
