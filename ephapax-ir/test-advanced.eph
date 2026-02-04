@@ -1,0 +1,35 @@
+// Test advanced ephapax features
+
+fn prim_i32() -> i32 {
+    2
+}
+
+fn prim_i64() -> i32 {
+    3
+}
+
+fn primitives_compatible(a: i32, b: i32) -> bool {
+    if a == b {
+        true
+    } else {
+        // I32 -> I64 widening allowed
+        if a == 2 {
+            if b == 3 {
+                true
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+}
+
+fn main() {
+    let is_compatible = primitives_compatible(prim_i32(), prim_i64());
+    if is_compatible {
+        100
+    } else {
+        0
+    }
+}

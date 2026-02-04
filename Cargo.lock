@@ -585,6 +585,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "ephapax-compiler"
+version = "0.1.0"
+dependencies = [
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "equivalent"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1281,15 +1288,25 @@ dependencies = [
  "anyhow",
  "clap",
  "colored",
+ "protocol-squisher-avro-analyzer",
+ "protocol-squisher-bebop-analyzer",
+ "protocol-squisher-capnproto-analyzer",
  "protocol-squisher-compat",
  "protocol-squisher-ephapax-ir",
+ "protocol-squisher-flatbuffers-analyzer",
  "protocol-squisher-ir",
  "protocol-squisher-json-fallback",
+ "protocol-squisher-json-schema-analyzer",
+ "protocol-squisher-messagepack-analyzer",
  "protocol-squisher-optimizer",
+ "protocol-squisher-protobuf-analyzer",
  "protocol-squisher-pyo3-codegen",
  "protocol-squisher-python-analyzer",
+ "protocol-squisher-rescript-analyzer",
  "protocol-squisher-rust-analyzer",
+ "protocol-squisher-thrift-analyzer",
  "serde_json",
+ "strsim",
 ]
 
 [[package]]

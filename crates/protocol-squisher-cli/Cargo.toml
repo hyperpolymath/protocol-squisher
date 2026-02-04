@@ -19,6 +19,15 @@ path = "src/main.rs"
 protocol-squisher-ir = { path = "../protocol-squisher-ir" }
 protocol-squisher-rust-analyzer = { path = "../protocol-squisher-rust-analyzer" }
 protocol-squisher-python-analyzer = { path = "../protocol-squisher-python-analyzer" }
+protocol-squisher-bebop-analyzer = { path = "../protocol-squisher-bebop-analyzer" }
+protocol-squisher-flatbuffers-analyzer = { path = "../protocol-squisher-flatbuffers-analyzer" }
+protocol-squisher-messagepack-analyzer = { path = "../protocol-squisher-messagepack-analyzer" }
+protocol-squisher-avro-analyzer = { path = "../protocol-squisher-avro-analyzer" }
+protocol-squisher-thrift-analyzer = { path = "../protocol-squisher-thrift-analyzer" }
+protocol-squisher-capnproto-analyzer = { path = "../protocol-squisher-capnproto-analyzer" }
+protocol-squisher-rescript-analyzer = { path = "../protocol-squisher-rescript-analyzer" }
+protocol-squisher-protobuf-analyzer = { path = "../protocol-squisher-protobuf-analyzer" }
+protocol-squisher-json-schema-analyzer = { path = "../protocol-squisher-json-schema-analyzer" }
 protocol-squisher-compat = { path = "../protocol-squisher-compat" }
 protocol-squisher-optimizer = { path = "../protocol-squisher-optimizer" }
 protocol-squisher-pyo3-codegen = { path = "../protocol-squisher-pyo3-codegen" }
@@ -29,3 +38,4 @@ clap = { version = "4.5", features = ["derive", "color", "suggestions"] }
 anyhow = "1.0"
 serde_json = "1.0"
 colored = "2.1"
+strsim = "0.11"

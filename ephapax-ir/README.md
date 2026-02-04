@@ -4,8 +4,12 @@ Canonical intermediate representation for protocol-squisher with linear type gua
 
 ## Status
 
-**Working Implementation**: Idris2 ✅
-**In Development**: Rust parser (ephapax language)
+**Working Implementations**:
+- Idris2 backend ✅ (proven correctness via dependent types)
+- Ephapax compiler ✅ (lexer, parser, interpreter)
+
+**In Development**:
+- Ephapax linear type checker (resource safety verification)
 
 ## Quick Start
 
@@ -35,14 +39,36 @@ Located in `idris2/`:
 
 - **TestSimple.idr**: Test suite validating transport class selection
 
-### Rust Parser (IN DEVELOPMENT)
+### Ephapax Compiler (WORKING)
 
-Located in `src/`:
+Located in `compiler/`:
 
-- **types.eph**: Type system in ephapax language
-- **compat.eph**: Compatibility analysis in ephapax
+The ephapax compiler provides a complete implementation of the ephapax language:
 
-**Note**: These will work when the ephapax Rust parser stabilizes. For now, use the Idris2 implementation.
+- **Lexer** (`tokens.rs`): Tokenizes `.eph` source files
+- **Parser** (`parser.rs`): Builds AST from tokens
+- **Interpreter** (`interpreter.rs`): Executes ephapax programs
+- **CLI** (`main.rs`): Command-line interface
+
+```bash
+# Build compiler
+cargo build --release
+
+# Run .eph files
+./target/release/ephapax ephapax-ir/test-simple.eph  # => 42
+./target/release/ephapax -e 'fn main() { 10 + 20 }'  # => 30
+```
+
+**Ephapax Source Files** in `src/`:
+
+- **types.eph**: Type system implemented in pure ephapax
+- **compat.eph**: Compatibility analysis implemented in pure ephapax
+
+These files can now be executed by the ephapax compiler. Example:
+
+```bash
+./target/release/ephapax ephapax-ir/test-advanced.eph  # => 100
+```
 
 ## The Invariant
 

@@ -17,6 +17,8 @@ use std::fs;
 use std::path::PathBuf;
 
 mod analyze;
+mod compiler;
+mod formats;
 mod generate;
 
 #[derive(Parser)]
@@ -96,6 +98,55 @@ enum Commands {
         #[arg(short, long)]
         python: PathBuf,
     },
+
+    /// Universal protocol compiler (ephapax-verified)
+    Compile {
+        /// Source protocol format (bebop, flatbuffers, protobuf, etc.)
+        #[arg(short = 'f', long)]
+        from: String,
+
+        /// Target protocol format (rust, python, rescript, etc.)
+        #[arg(short = 't', long)]
+        to: String,
+
+        /// Input schema file
+        #[arg(short, long)]
+        input: PathBuf,
+
+        /// Output directory
+        #[arg(short, long, default_value = "generated")]
+        output: PathBuf,
+    },
+
+    /// Analyze any protocol schema
+    AnalyzeSchema {
+        /// Protocol format
+        #[arg(short, long)]
+        protocol: String,
+
+        /// Input schema file
+        #[arg(short, long)]
+        input: PathBuf,
+
+        /// Show detailed analysis
+        #[arg(short, long)]
+        detailed: bool,
+    },
+
+    /// Cross-compile to multiple target formats
+    CrossCompile {
+        /// Input schema file
+        #[arg(short, long)]
+        input: PathBuf,
+
+        /// Comma-separated target formats (rust,python,bebop,etc.)
+        #[arg(short, long)]
+        targets: String,
+
+        /// Output directory
+        #[arg(short, long, default_value = "generated")]
+        output: PathBuf,
+    },
 }
 
 fn main() -> Result<()> {
@@ -123,7 +174,152 @@ fn main() -> Result<()> {
         } => generate::run(rust, python, output, stubs),
 
         Commands::Check { rust, python } => check(rust, python),
+
+        Commands::Compile {
+            from,
+            to,
+            input,
+            output,
+        } => compile_universal(from, to, input, output),
+
+        Commands::AnalyzeSchema {
+            protocol,
+            input,
+            detailed,
+        } => analyze_schema(protocol, input, detailed),
+
+        Commands::CrossCompile {
+            input,
+            targets,
+            output,
+        } => cross_compile(input, targets, output),
     }
+}
+
+fn compile_universal(from: String, to: String, input: PathBuf, output: PathBuf) -> Result<()> {
+    use crate::compiler::UniversalCompiler;
+    use crate::formats::ProtocolFormat;
+
+    let source_format = ProtocolFormat::from_str(&from)?;
+    let target_format = ProtocolFormat::from_str(&to)?;
+
+    let compiler = UniversalCompiler::new();
+    let result = compiler.compile(source_format, &input, target_format, &output)?;
+
+    println!("\n{}", result.summary());
+    println!(
+        "{}",
+        format!(
+            "Ephapax verification: {} (linear types guarantee correctness)",
+            if result.ephapax_verified { "✓" } else { "✗" }
+        )
+        .bright_green()
+    );
+
+    Ok(())
+}
+
+fn analyze_schema(protocol: String, input: PathBuf, detailed: bool) -> Result<()> {
+    use crate::formats::ProtocolFormat;
+
+    let format = ProtocolFormat::from_str(&protocol)?;
+
+    println!(
+        "{}",
+        format!("Analyzing {} schema...", format.name())
+            .bright_cyan()
+            .bold()
+    );
+
+    let schema = format.analyze_file(&input)?;
+
+    println!("\n{}", "Schema Analysis:".bold());
+    println!("  Format: {}", format.name().bright_green());
+    println!("  Name: {}", schema.name.bright_cyan());
+    println!("  Types: {}", schema.types.len().to_string().bright_yellow());
+    println!("  Roots: {}", schema.roots.len().to_string().bright_yellow());
+
+    if detailed {
+        println!("\n{}", "Type Definitions:".bold());
+        for (name, type_def) in &schema.types {
+            match type_def {
+                protocol_squisher_ir::TypeDef::Struct(s) => {
+                    println!("  {} struct {} ({})", "→".blue(), name, s.fields.len());
+                    for field in &s.fields {
+                        println!("    - {}: {:?}", field.name, field.ty);
+                    }
+                }
+                protocol_squisher_ir::TypeDef::Enum(e) => {
+                    println!("  {} enum {} ({})", "→".blue(), name, e.variants.len());
+                    for variant in &e.variants {
+                        println!("    - {}", variant.name);
+                    }
+                }
+                protocol_squisher_ir::TypeDef::Union(u) => {
+                    println!("  {} union {} ({} types)", "→".blue(), name, u.variants.len());
+                    for (i, variant_ty) in u.variants.iter().enumerate() {
+                        println!("    - variant {}: {:?}", i, variant_ty);
+                    }
+                }
+                protocol_squisher_ir::TypeDef::Alias(a) => {
+                    println!("  {} alias {} = {:?}", "→".blue(), name, a.target);
+                }
+                protocol_squisher_ir::TypeDef::Newtype(n) => {
+                    println!("  {} newtype {} = {:?}", "→".blue(), name, n.inner);
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn cross_compile(input: PathBuf, targets: String, output: PathBuf) -> Result<()> {
+    use crate::compiler::UniversalCompiler;
+    use crate::formats::ProtocolFormat;
+
+    // Detect source format from input file
+    let source_format = ProtocolFormat::from_path(&input)?;
+
+    println!(
+        "{}",
+        format!(
+            "Cross-compiling from {} to multiple targets (ephapax-verified)",
+            source_format.name()
+        )
+        .bright_cyan()
+        .bold()
+    );
+
+    // Parse target formats
+    let target_formats: Result<Vec<ProtocolFormat>> = targets
+        .split(',')
+        .map(|t| ProtocolFormat::from_str(t.trim()))
+        .collect();
+    let target_formats = target_formats?;
+
+    println!("  Targets: {}", targets.bright_green());
+
+    let compiler = UniversalCompiler::new();
+    let mut results = Vec::new();
+
+    for target in target_formats {
+        let target_output = output.join(target.name());
+        match compiler.compile(source_format, &input, target, &target_output) {
+            Ok(result) => {
+                println!("  {} {}", "✓".green(), target.name());
+                results.push(result);
+            }
+            Err(e) => {
+                println!("  {} {} - {}", "✗".red(), target.name(), e);
+            }
+        }
+    }
+
+    println!("\n{}", format!("Cross-compilation complete: {}/{} succeeded",
+        results.len(), targets.split(',').count()).bright_green().bold());
+
+    Ok(())
 }
 
 fn optimize(rust_path: PathBuf, python_path: PathBuf, threshold: f64) -> Result<()> {

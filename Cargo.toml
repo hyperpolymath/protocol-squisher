@@ -72,6 +72,7 @@ debug = true
 [workspace]
 members = [
   "ephapax-ir",
+  "ephapax-ir/compiler",
   "crates/protocol-squisher-ir",
   "crates/protocol-squisher-rust-analyzer",
   "crates/protocol-squisher-python-analyzer",
