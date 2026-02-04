@@ -133,6 +133,10 @@ impl Parser {
                 self.advance();
                 Ok(Type::Bool)
             }
+            Token::String => {
+                self.advance();
+                Ok(Type::String)
+            }
             _ => Err(format!("Expected type, got {}", self.current())),
         }
     }
@@ -474,6 +478,11 @@ impl Parser {
                 let val = *n;
                 self.advance();
                 Ok(Expr::IntLit(val))
+            }
+            Token::StringLit(s) => {
+                let val = s.clone();
+                self.advance();
+                Ok(Expr::StringLit(val))
             }
             Token::True => {
                 self.advance();

@@ -113,6 +113,13 @@ impl WasmCodeGen {
                 .map_err(|e| e.to_string())?;
             }
 
+            Expr::StringLit(_s) => {
+                // TODO: Implement string table and linear memory for string literals
+                // For now, return null pointer (0)
+                writeln!(&mut self.wat, "{}(i32.const 0) ;; String literal (not yet implemented)", ind)
+                    .map_err(|e| e.to_string())?;
+            }
+
             Expr::Var(name) => {
                 writeln!(&mut self.wat, "{}(local.get ${})", ind, name)
                     .map_err(|e| e.to_string())?;
@@ -287,6 +294,7 @@ impl WasmCodeGen {
             Type::I32 => "i32",
             Type::I64 => "i64",
             Type::Bool => "i32", // Booleans are i32 in WASM
+            Type::String => "i32", // Strings are pointers to linear memory (requires memory management)
             Type::Ref(_) => "i32", // References are pointers (i32 for wasm32)
             Type::Infer => "i64", // Default to i64
         }

@@ -117,6 +117,7 @@ fn main() {
         Ok(value) => match value {
             Value::Int(n) => println!("{}", n),
             Value::Bool(b) => println!("{}", b),
+            Value::String(s) => println!("{}", s),
         },
         Err(e) => {
             eprintln!("Error: {}", e);

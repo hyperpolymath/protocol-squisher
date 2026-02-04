@@ -1,0 +1,9 @@
+// Test string support
+
+fn greet(name: String) -> String {
+    "Hello, " + name + "!"
+}
+
+fn main() {
+    greet("World")
+}

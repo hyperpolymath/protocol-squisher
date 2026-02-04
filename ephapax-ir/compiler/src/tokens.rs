@@ -20,11 +20,13 @@ pub enum Token {
     // Identifiers and literals
     Ident(String),
     IntLit(i64),
+    StringLit(String),
 
     // Type keywords
     I32,
     I64,
     Bool,
+    String,
 
     // Symbols
     LParen,
@@ -75,9 +77,11 @@ impl fmt::Display for Token {
             Token::Underscore => write!(f, "_"),
             Token::Ident(s) => write!(f, "{}", s),
             Token::IntLit(n) => write!(f, "{}", n),
+            Token::StringLit(s) => write!(f, "\"{}\"", s),
             Token::I32 => write!(f, "i32"),
             Token::I64 => write!(f, "i64"),
             Token::Bool => write!(f, "bool"),
+            Token::String => write!(f, "String"),
             Token::LParen => write!(f, "("),
             Token::RParen => write!(f, ")"),
             Token::LBrace => write!(f, "{{"),
@@ -191,6 +195,41 @@ impl Lexer {
             }
         }
         ident
+    }
+
+    fn read_string(&mut self) -> String {
+        let mut string = String::new();
+        // Skip opening quote
+        self.advance();
+
+        while let Some(ch) = self.current() {
+            if ch == '"' {
+                // Closing quote - skip it and return
+                self.advance();
+                break;
+            } else if ch == '\\' {
+                // Escape sequence
+                self.advance();
+                if let Some(escaped) = self.current() {
+                    match escaped {
+                        'n' => string.push('\n'),
+                        't' => string.push('\t'),
+                        'r' => string.push('\r'),
+                        '\\' => string.push('\\'),
+                        '"' => string.push('"'),
+                        _ => {
+                            string.push('\\');
+                            string.push(escaped);
+                        }
+                    }
+                    self.advance();
+                }
+            } else {
+                string.push(ch);
+                self.advance();
+            }
+        }
+        string
     }
 
     pub fn next_token(&mut self) -> Token {
@@ -356,6 +395,10 @@ impl Lexer {
                         Token::Underscore
                     }
                 }
+                '"' => {
+                    let string = self.read_string();
+                    Token::StringLit(string)
+                }
                 _ if ch.is_alphabetic() => {
                     let ident = self.read_ident();
                     match ident.as_str() {
@@ -369,6 +412,7 @@ impl Lexer {
                         "i32" => Token::I32,
                         "i64" => Token::I64,
                         "bool" => Token::Bool,
+                        "String" => Token::String,
                         _ => Token::Ident(ident),
                     }
                 }

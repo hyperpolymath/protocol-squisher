@@ -10,6 +10,7 @@ use std::collections::HashMap;
 pub enum Value {
     Int(i64),
     Bool(bool),
+    String(String),
 }
 
 impl Value {
@@ -24,6 +25,13 @@ impl Value {
         match self {
             Value::Bool(b) => Ok(*b),
             _ => Err(format!("Expected boolean, got {:?}", self)),
+        }
+    }
+
+    pub fn as_string(&self) -> Result<&str, String> {
+        match self {
+            Value::String(s) => Ok(s),
+            _ => Err(format!("Expected string, got {:?}", self)),
         }
     }
 }
@@ -67,6 +75,7 @@ impl Interpreter {
         match expr {
             Expr::IntLit(n) => Ok(Value::Int(*n)),
             Expr::BoolLit(b) => Ok(Value::Bool(*b)),
+            Expr::StringLit(s) => Ok(Value::String(s.clone())),
 
             Expr::Var(name) => env
                 .get(name)
@@ -103,9 +112,18 @@ impl Interpreter {
 
                         match op {
                             BinOp::Add => {
-                                let l = left_val.as_int()?;
-                                let r = right_val.as_int()?;
-                                Ok(Value::Int(l + r))
+                                match (&left_val, &right_val) {
+                                    (Value::Int(l), Value::Int(r)) => Ok(Value::Int(l + r)),
+                                    (Value::String(l), Value::String(r)) => {
+                                        let mut result = l.clone();
+                                        result.push_str(r);
+                                        Ok(Value::String(result))
+                                    }
+                                    _ => Err(format!(
+                                        "Cannot add {:?} and {:?}",
+                                        left_val, right_val
+                                    )),
+                                }
                             }
                             BinOp::Sub => {
                                 let l = left_val.as_int()?;

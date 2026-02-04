@@ -245,6 +245,7 @@ impl TypeChecker {
         match expr {
             Expr::IntLit(_) => Ok(Type::I32),
             Expr::BoolLit(_) => Ok(Type::Bool),
+            Expr::StringLit(_) => Ok(Type::String),
 
             Expr::Var(name) => {
                 let ty = env
@@ -265,7 +266,25 @@ impl TypeChecker {
                 let right_ty = self.check_expr(right, env)?;
 
                 match op {
-                    BinOp::Add | BinOp::Sub | BinOp::Mul | BinOp::Div | BinOp::Mod => {
+                    BinOp::Add => {
+                        // Add supports int + int and String + String
+                        if left_ty != right_ty {
+                            return Err(TypeError::IncompatibleTypes {
+                                left: left_ty,
+                                right: right_ty,
+                                op: op.to_string(),
+                            });
+                        }
+                        match left_ty {
+                            Type::I32 | Type::I64 | Type::String => Ok(left_ty),
+                            _ => Err(TypeError::IncompatibleTypes {
+                                left: left_ty,
+                                right: right_ty,
+                                op: op.to_string(),
+                            }),
+                        }
+                    }
+                    BinOp::Sub | BinOp::Mul | BinOp::Div | BinOp::Mod => {
                         if left_ty != right_ty {
                             return Err(TypeError::IncompatibleTypes {
                                 left: left_ty,

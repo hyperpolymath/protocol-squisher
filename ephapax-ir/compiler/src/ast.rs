@@ -10,6 +10,7 @@ pub enum Type {
     I32,
     I64,
     Bool,
+    String,          // String type (heap-allocated, not Copy)
     Ref(Box<Type>),  // Immutable reference type &T
     Infer,           // Type inference placeholder
 }
@@ -19,6 +20,7 @@ impl Type {
     pub fn is_copy(&self) -> bool {
         match self {
             Type::I32 | Type::I64 | Type::Bool => true,
+            Type::String => false, // Strings are heap-allocated, not Copy
             Type::Ref(_) => true, // References are Copy (they're just pointers)
             Type::Infer => false, // Unknown types are not Copy by default
         }
@@ -31,6 +33,7 @@ impl fmt::Display for Type {
             Type::I32 => write!(f, "i32"),
             Type::I64 => write!(f, "i64"),
             Type::Bool => write!(f, "bool"),
+            Type::String => write!(f, "String"),
             Type::Ref(inner) => write!(f, "&{}", inner),
             Type::Infer => write!(f, "_"),
         }
@@ -61,6 +64,7 @@ pub enum Expr {
     // Literals
     IntLit(i64),
     BoolLit(bool),
+    StringLit(String),
 
     // Variable reference
     Var(String),
@@ -185,6 +189,7 @@ impl fmt::Display for Expr {
         match self {
             Expr::IntLit(n) => write!(f, "{}", n),
             Expr::BoolLit(b) => write!(f, "{}", b),
+            Expr::StringLit(s) => write!(f, "\"{}\"", s),
             Expr::Var(s) => write!(f, "{}", s),
             Expr::BinOp { op, left, right } => {
                 write!(f, "({} {} {})", left, op, right)
