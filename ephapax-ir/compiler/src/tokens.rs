@@ -99,6 +99,13 @@ impl fmt::Display for Token {
             Token::Le => write!(f, "<="),
             Token::Ge => write!(f, ">="),
             Token::Assign => write!(f, "="),
+            Token::And => write!(f, "&&"),
+            Token::Or => write!(f, "||"),
+            Token::Amp => write!(f, "&"),
+            Token::Pipe => write!(f, "|"),
+            Token::Caret => write!(f, "^"),
+            Token::Shl => write!(f, "<<"),
+            Token::Shr => write!(f, ">>"),
             Token::Eof => write!(f, "<EOF>"),
         }
     }

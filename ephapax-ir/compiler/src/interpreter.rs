@@ -74,66 +74,124 @@ impl Interpreter {
                 .ok_or_else(|| format!("Variable '{}' not found", name)),
 
             Expr::BinOp { op, left, right } => {
-                let left_val = self.eval_expr(left, env)?;
-                let right_val = self.eval_expr(right, env)?;
-
+                // Logical AND and OR use short-circuit evaluation
                 match op {
-                    BinOp::Add => {
-                        let l = left_val.as_int()?;
-                        let r = right_val.as_int()?;
-                        Ok(Value::Int(l + r))
-                    }
-                    BinOp::Sub => {
-                        let l = left_val.as_int()?;
-                        let r = right_val.as_int()?;
-                        Ok(Value::Int(l - r))
-                    }
-                    BinOp::Mul => {
-                        let l = left_val.as_int()?;
-                        let r = right_val.as_int()?;
-                        Ok(Value::Int(l * r))
-                    }
-                    BinOp::Div => {
-                        let l = left_val.as_int()?;
-                        let r = right_val.as_int()?;
-                        if r == 0 {
-                            return Err("Division by zero".to_string());
+                    BinOp::And => {
+                        let left_val = self.eval_expr(left, env)?;
+                        let l = left_val.as_bool()?;
+                        if !l {
+                            return Ok(Value::Bool(false));
                         }
-                        Ok(Value::Int(l / r))
+                        let right_val = self.eval_expr(right, env)?;
+                        let r = right_val.as_bool()?;
+                        Ok(Value::Bool(r))
                     }
-                    BinOp::Mod => {
-                        let l = left_val.as_int()?;
-                        let r = right_val.as_int()?;
-                        if r == 0 {
-                            return Err("Modulo by zero".to_string());
+                    BinOp::Or => {
+                        let left_val = self.eval_expr(left, env)?;
+                        let l = left_val.as_bool()?;
+                        if l {
+                            return Ok(Value::Bool(true));
                         }
-                        Ok(Value::Int(l % r))
+                        let right_val = self.eval_expr(right, env)?;
+                        let r = right_val.as_bool()?;
+                        Ok(Value::Bool(r))
                     }
-                    BinOp::Eq => {
-                        Ok(Value::Bool(left_val == right_val))
-                    }
-                    BinOp::Ne => {
-                        Ok(Value::Bool(left_val != right_val))
-                    }
-                    BinOp::Lt => {
-                        let l = left_val.as_int()?;
-                        let r = right_val.as_int()?;
-                        Ok(Value::Bool(l < r))
-                    }
-                    BinOp::Gt => {
-                        let l = left_val.as_int()?;
-                        let r = right_val.as_int()?;
-                        Ok(Value::Bool(l > r))
-                    }
-                    BinOp::Le => {
-                        let l = left_val.as_int()?;
-                        let r = right_val.as_int()?;
-                        Ok(Value::Bool(l <= r))
-                    }
-                    BinOp::Ge => {
-                        let l = left_val.as_int()?;
-                        let r = right_val.as_int()?;
-                        Ok(Value::Bool(l >= r))
+                    _ => {
+                        // Other operators evaluate both sides
+                        let left_val = self.eval_expr(left, env)?;
+                        let right_val = self.eval_expr(right, env)?;
+
+                        match op {
+                            BinOp::Add => {
+                                let l = left_val.as_int()?;
+                                let r = right_val.as_int()?;
+                                Ok(Value::Int(l + r))
+                            }
+                            BinOp::Sub => {
+                                let l = left_val.as_int()?;
+                                let r = right_val.as_int()?;
+                                Ok(Value::Int(l - r))
+                            }
+                            BinOp::Mul => {
+                                let l = left_val.as_int()?;
+                                let r = right_val.as_int()?;
+                                Ok(Value::Int(l * r))
+                            }
+                            BinOp::Div => {
+                                let l = left_val.as_int()?;
+                                let r = right_val.as_int()?;
+                                if r == 0 {
+                                    return Err("Division by zero".to_string());
+                                }
+                                Ok(Value::Int(l / r))
+                            }
+                            BinOp::Mod => {
+                                let l = left_val.as_int()?;
+                                let r = right_val.as_int()?;
+                                if r == 0 {
+                                    return Err("Modulo by zero".to_string());
+                                }
+                                Ok(Value::Int(l % r))
+                            }
+                            BinOp::Eq => {
+                                Ok(Value::Bool(left_val == right_val))
+                            }
+                            BinOp::Ne => {
+                                Ok(Value::Bool(left_val != right_val))
+                            }
+                            BinOp::Lt => {
+                                let l = left_val.as_int()?;
+                                let r = right_val.as_int()?;
+                                Ok(Value::Bool(l < r))
+                            }
+                            BinOp::Gt => {
+                                let l = left_val.as_int()?;
+                                let r = right_val.as_int()?;
+                                Ok(Value::Bool(l > r))
+                            }
+                            BinOp::Le => {
+                                let l = left_val.as_int()?;
+                                let r = right_val.as_int()?;
+                                Ok(Value::Bool(l <= r))
+                            }
+                            BinOp::Ge => {
+                                let l = left_val.as_int()?;
+                                let r = right_val.as_int()?;
+                                Ok(Value::Bool(l >= r))
+                            }
+                            BinOp::BitAnd => {
+                                let l = left_val.as_int()?;
+                                let r = right_val.as_int()?;
+                                Ok(Value::Int(l & r))
+                            }
+                            BinOp::BitOr => {
+                                let l = left_val.as_int()?;
+                                let r = right_val.as_int()?;
+                                Ok(Value::Int(l | r))
+                            }
+                            BinOp::BitXor => {
+                                let l = left_val.as_int()?;
+                                let r = right_val.as_int()?;
+                                Ok(Value::Int(l ^ r))
+                            }
+                            BinOp::Shl => {
+                                let l = left_val.as_int()?;
+                                let r = right_val.as_int()?;
+                                if r < 0 || r > 63 {
+                                    return Err(format!("Shift amount {} out of range [0, 63]", r));
+                                }
+                                Ok(Value::Int(l << r))
+                            }
+                            BinOp::Shr => {
+                                let l = left_val.as_int()?;
+                                let r = right_val.as_int()?;
+                                if r < 0 || r > 63 {
+                                    return Err(format!("Shift amount {} out of range [0, 63]", r));
+                                }
+                                Ok(Value::Int(l >> r))
+                            }
+                            BinOp::And | BinOp::Or => unreachable!("Handled above"),
+                        }
                     }
                 }
             }

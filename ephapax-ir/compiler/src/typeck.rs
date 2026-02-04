@@ -254,6 +254,40 @@ impl TypeChecker {
                         }
                         Ok(Type::Bool)
                     }
+                    BinOp::And | BinOp::Or => {
+                        if left_ty != Type::Bool {
+                            return Err(TypeError::IncompatibleTypes {
+                                left: left_ty,
+                                right: right_ty,
+                                op: op.to_string(),
+                            });
+                        }
+                        if right_ty != Type::Bool {
+                            return Err(TypeError::IncompatibleTypes {
+                                left: left_ty,
+                                right: right_ty,
+                                op: op.to_string(),
+                            });
+                        }
+                        Ok(Type::Bool)
+                    }
+                    BinOp::BitAnd | BinOp::BitOr | BinOp::BitXor | BinOp::Shl | BinOp::Shr => {
+                        if left_ty != right_ty {
+                            return Err(TypeError::IncompatibleTypes {
+                                left: left_ty,
+                                right: right_ty,
+                                op: op.to_string(),
+                            });
+                        }
+                        match left_ty {
+                            Type::I32 | Type::I64 => Ok(left_ty),
+                            _ => Err(TypeError::IncompatibleTypes {
+                                left: left_ty,
+                                right: right_ty,
+                                op: op.to_string(),
+                            }),
+                        }
+                    }
                 }
             }
 
