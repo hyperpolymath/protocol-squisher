@@ -1,6 +1,6 @@
 # Next Steps - Protocol Squisher Development
 
-**Current Status:** Ephapax compiler + linear type checker + Copy types + pattern matching complete ✅
+**Current Status:** Ephapax compiler + linear types + Copy types + pattern matching + operators + borrowing + WASM backend complete ✅
 
 ## What's Been Accomplished
 
@@ -28,7 +28,34 @@
    - Type checking ensures all arms same type
    - bebop_analyzer_match.eph demonstrates cleaner code
 
-5. **Protocol Analyzer Prototype** (complete)
+5. **More Operators** (commits 13373a3, 77f3857, 70900d4)
+   - Logical operators: &&, || with short-circuit evaluation
+   - Bitwise operators: &, |, ^ (AND, OR, XOR)
+   - Shift operators: <<, >> with range checking
+   - Full 9-level operator precedence
+   - All operators type-checked and tested
+
+6. **Type Inference Improvements** (commit 1fc1bad)
+   - Enhanced error messages with helpful suggestions
+   - Type information in linear violation errors
+   - Contextual hints for common mistakes
+   - Improved developer experience
+
+7. **Borrowing System (Basic)** (commit 1ca38a5)
+   - Reference types (&T)
+   - Borrow operator (&x)
+   - Dereference operator (*x)
+   - Type-level only (no runtime overhead)
+   - References are Copy
+
+8. **WASM Backend** (commit 6796690)
+   - WebAssembly Text (WAT) code generation
+   - Complete codegen.rs module (~330 lines)
+   - CLI --wasm flag for compilation
+   - Valid WAT output for all language features
+   - Two-pass local variable tracking
+
+9. **Protocol Analyzer Prototype** (complete)
    - bebop_analyzer_match.eph uses pattern matching
    - Successfully type checks and executes
    - Outputs: 102 (verified correct)
@@ -209,36 +236,42 @@ Linear check: ✅ Pass
 ### Medium Priority (Better Ergonomics) - ✅ COMPLETE
 
 4. **Pattern matching** ✅
-   - match expressions
-   - Exhaustiveness checking
-   - Guards (basic wildcard support)
+   - match expressions ✅
+   - Exhaustiveness checking ✅
+   - Guards (basic wildcard support) ✅
 
-5. **Type inference improvements**
-   - Infer Copy trait automatically
-   - Better error messages
-   - Suggest fixes for linear violations
+5. **Type inference improvements** ✅
+   - Infer Copy trait automatically ✅
+   - Better error messages ✅
+   - Suggest fixes for linear violations ✅
 
-6. **More operators**
-   - Logical AND/OR
-   - Bitwise operations
-   - String concatenation
+6. **More operators** ✅
+   - Logical AND/OR (&&, ||) ✅
+   - Bitwise operations (&, |, ^, <<, >>) ✅
+   - String concatenation (future work)
 
 ### Long Term (Advanced Features)
 
-7. **Borrowing system** ✅ (basic implementation)
+7. **Borrowing system** ✅ (basic implementation complete)
    - Reference types (&T) ✅
+   - Borrow operator (&x) ✅
+   - Dereference operator (*x) ✅
    - Lifetime tracking (future work)
    - Mutable vs. immutable (future work)
 
-8. **WASM backend** (next priority)
-   - Compile to WASM
-   - No GC needed (linear types!)
-   - Integrate with browsers
+8. **WASM backend** ✅ (basic implementation complete)
+   - WAT code generation ✅
+   - All language features supported ✅
+   - CLI --wasm flag ✅
+   - Binary compilation (future work - need wasmtime integration)
+   - Runtime execution (future work)
+   - Optimization passes (future work)
 
 9. **Full analyzer suite** (next priority)
    - Rewrite all 7 analyzers in ephapax
    - Benchmarks vs. Rust
    - Integration with protocol-squisher
+   - WASM compilation for deployment
 
 ## Performance Goals
 
@@ -274,9 +307,10 @@ Ephapax analyzer → Ephapax IR → Idris2 proofs → Generated code
 - [x] EPHAPAX-COMPILER-COMPLETE.md
 - [x] LINEAR-TYPES-COMPLETE.md
 - [x] COPY-TYPES-COMPLETE.md
+- [x] PATTERN-MATCHING-COMPLETE.md
+- [x] OPERATORS-AND-BORROWING-COMPLETE.md
+- [x] WASM-BACKEND-COMPLETE.md
 - [x] NEXT-STEPS.md (this file)
-- [ ] PATTERN-MATCHING-COMPLETE.md (to be created)
-- [ ] WASM-BACKEND-SPEC.md (next phase)
 
 ## See Also
 
