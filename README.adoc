@@ -109,18 +109,25 @@ We achieve this through:
 [source,bash]
 ----
 # Install
-cargo install protocol-squisher
+cargo install --path crates/protocol-squisher-cli
 
-# Analyze compatibility
-protocol-squish analyze schema-a.rs schema-b.py
+# Check Rust ↔ Python compatibility
+protocol-squisher check \
+  --rust examples/zero-copy-demo/src/lib.rs \
+  --python examples/zero-copy-demo/models.py
 
-# Generate adapter
-protocol-squish generate --from rust --to python --output ./adapter/
+# Get optimization suggestions
+protocol-squisher optimize --rust src/lib.rs --python models.py
 
-# Use in your code
-use adapter::Squisher;
-let python_data = Squisher::to_python(&rust_struct)?;
+# Generate PyO3 bindings
+protocol-squisher generate \
+  --rust src/lib.rs \
+  --python models.py \
+  --output generated/ \
+  --stubs
 ----
+
+**See link:docs/CLI-GUIDE.adoc[CLI Usage Guide] for complete documentation and workflows.**
 
 == Supported Formats
 
@@ -141,6 +148,8 @@ See link:ROADMAP.adoc[ROADMAP.adoc] for the full expansion plan.
 
 == Documentation
 
+- link:docs/CLI-GUIDE.adoc[CLI Usage Guide] - **Start here** for command reference and workflows
+- link:examples/README.md[Example Projects] - Working examples with benchmarks
 - link:ROADMAP.adoc[Roadmap] - Where we're going
 - link:GAUNTLET.adoc[The Gauntlet] - Hard problems we're solving
 - link:docs/architecture.adoc[Architecture] - How it works

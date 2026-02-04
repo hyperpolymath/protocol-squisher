@@ -1,0 +1,612 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+= CLI Usage Guide
+:toc: left
+:toclevels: 3
+:icons: font
+
+[.lead]
+Complete guide to using the `protocol-squisher` CLI for schema analysis, compatibility checking, and code generation.
+
+== Overview
+
+The `protocol-squisher` CLI provides four main commands:
+
+[cols="1,3",options="header"]
+|===
+|Command |Purpose
+
+|`analyze`
+|Analyze a schema and show transport classes for all fields
+
+|`check`
+|Quick compatibility check between two schemas (CI/CD friendly)
+
+|`optimize`
+|Get optimization suggestions to improve transport classes
+
+|`generate`
+|Generate PyO3 bindings optimized by transport class
+|===
+
+== Installation
+
+[source,bash]
+----
+# From source
+cd crates/protocol-squisher-cli
+cargo install --path .
+
+# Or from the workspace root
+cargo build --release -p protocol-squisher-cli
+----
+
+The CLI binary will be available as `protocol-squisher`.
+
+== Command Reference
+
+=== `analyze` - Schema Analysis
+
+Analyze a single schema to understand its types and potential transport classes.
+
+==== Basic Usage
+
+[source,bash]
+----
+# Analyze a Rust schema
+protocol-squisher analyze --rust examples/zero-copy-demo/src/lib.rs
+
+# Analyze a Python schema
+protocol-squisher analyze --python examples/zero-copy-demo/models.py
+
+# Analyze with detailed output
+protocol-squisher analyze --rust src/lib.rs --detailed
+----
+
+==== Example Output
+
+[source,text]
+----
+Schema Analysis: examples/zero-copy-demo/src/lib.rs
+
+Structs Found: 4
+  - Point (2 fields)
+  - Person (4 fields)
+  - Vector3D (3 fields)
+  - Message (3 fields)
+
+Type Distribution:
+  - Primitives: 12 (i64: 7, f64: 2, String: 2, bool: 1)
+  - Containers: 0
+
+Concorde-Class Fields: 12/12 (100%)
+  All fields use perfect type matches (i64, f64, String, bool)
+
+Production Readiness: ✓ Yes
+  - Zero-copy fields: 100%
+  - No narrowing conversions
+  - No JSON fallback needed
+----
+
+==== Options
+
+[cols="2,5",options="header"]
+|===
+|Option |Description
+
+|`--rust <FILE>`
+|Path to Rust source file (.rs)
+
+|`--python <FILE>`
+|Path to Python source file (.py)
+
+|`--detailed`
+|Show field-level details for each struct
+
+|`--json`
+|Output in JSON format (for tooling integration)
+|===
+
+=== `check` - Compatibility Check
+
+Check if two schemas are compatible for interop. Exits with code 0 if compatible, non-zero if issues found.
+
+==== Basic Usage
+
+[source,bash]
+----
+# Check Rust ↔ Python compatibility
+protocol-squisher check \
+  --rust examples/zero-copy-demo/src/lib.rs \
+  --python examples/zero-copy-demo/models.py
+
+# Quick check for CI/CD
+protocol-squisher check --rust src/lib.rs --python models.py --quiet
+----
+
+==== Example Output
+
+[source,text]
+----
+Compatibility Check: Rust ↔ Python
+
+Overall Transport Class: Concorde ✓
+  Zero-copy fields: 12/12 (100%)
+  Business-class fields: 0/12 (0%)
+  Wheelbarrow-class fields: 0/12 (0%)
+
+Production Ready: ✓ Yes
+  All conversions are safe and efficient.
+
+Field-Level Compatibility:
+  Point.x: i64 ↔ int = Concorde (100% fidelity) ✓
+  Point.y: i64 ↔ int = Concorde (100% fidelity) ✓
+  Person.id: i64 ↔ int = Concorde (100% fidelity) ✓
+  Person.name: String ↔ str = Concorde (100% fidelity) ✓
+  Person.age: i64 ↔ int = Concorde (100% fidelity) ✓
+  Person.active: bool ↔ bool = Concorde (100% fidelity) ✓
+  ...
+
+✓ Schemas are compatible. Proceed with code generation.
+----
+
+==== Exit Codes
+
+[cols="1,3",options="header"]
+|===
+|Code |Meaning
+
+|0
+|Schemas are compatible (Concorde or Business class)
+
+|1
+|Schemas have significant issues (Wheelbarrow class)
+
+|2
+|Analysis error (invalid schema, file not found, etc.)
+|===
+
+==== Options
+
+[cols="2,5",options="header"]
+|===
+|Option |Description
+
+|`--rust <FILE>`
+|Path to Rust source file
+
+|`--python <FILE>`
+|Path to Python source file
+
+|`--quiet`
+|Only output errors (for CI/CD scripts)
+
+|`--fail-on-business`
+|Exit with code 1 if any Business-class fields (strict mode)
+
+|`--fail-on-wheelbarrow`
+|Exit with code 1 if any Wheelbarrow-class fields (default)
+|===
+
+=== `optimize` - Get Optimization Suggestions
+
+Analyze schemas and suggest improvements to achieve better transport classes.
+
+==== Basic Usage
+
+[source,bash]
+----
+# Get optimization suggestions
+protocol-squisher optimize \
+  --rust examples/mixed-transport/src/lib.rs \
+  --python examples/mixed-transport/models.py
+
+# Show only high-impact suggestions
+protocol-squisher optimize --rust src/lib.rs --python models.py --min-impact high
+----
+
+==== Example Output
+
+[source,text]
+----
+Optimization Analysis: mixed-transport
+
+Current Quality:
+  Overall Transport Class: Business
+  Zero-copy fields: 2/4 (50%)
+  Safe conversions: 4/4 (100%)
+  JSON fallback: 0/4 (0%)
+  Production Ready: ✓ Yes
+
+Optimization Opportunities:
+
+HIGH IMPACT:
+  1. Widen SensorReading.count: i32 → i64
+     Current: Business (98% fidelity, 5% overhead)
+     After: Concorde (100% fidelity, 0% overhead)
+     Impact: +25% zero-copy fields
+
+  2. Widen SensorReading.temperature: f32 → f64
+     Current: Business (98% fidelity, 5% overhead)
+     After: Concorde (100% fidelity, 0% overhead)
+     Impact: +25% zero-copy fields
+
+MEDIUM IMPACT:
+  (none)
+
+LOW IMPACT:
+  (none)
+
+Estimated Improvement:
+  If all suggestions applied:
+  - Zero-copy fields: 50% → 100%
+  - Overall transport class: Business → Concorde
+  - Performance gain: ~2-5ns per field access
+----
+
+==== Options
+
+[cols="2,5",options="header"]
+|===
+|Option |Description
+
+|`--rust <FILE>`
+|Path to Rust source file
+
+|`--python <FILE>`
+|Path to Python source file
+
+|`--min-impact <LEVEL>`
+|Only show suggestions with given impact (low/medium/high)
+
+|`--sort-by <FIELD>`
+|Sort suggestions by: impact (default), name, class
+|===
+
+=== `generate` - Generate PyO3 Bindings
+
+Generate Rust PyO3 bindings optimized by transport class.
+
+==== Basic Usage
+
+[source,bash]
+----
+# Generate bindings
+protocol-squisher generate \
+  --rust examples/zero-copy-demo/src/lib.rs \
+  --python examples/zero-copy-demo/models.py \
+  --output generated/
+
+# Generate with Python type stubs
+protocol-squisher generate \
+  --rust src/lib.rs \
+  --python models.py \
+  --output generated/ \
+  --stubs
+----
+
+==== Example Output
+
+[source,text]
+----
+Code Generation: zero-copy-demo
+
+Analysis:
+  Structs: 4 (Point, Person, Vector3D, Message)
+  Fields: 12 total
+  Transport class: Concorde (100% zero-copy)
+
+Generated Files:
+  ✓ generated/bindings.rs (823 lines)
+  ✓ generated/bindings.pyi (142 lines)
+  ✓ generated/tests.rs (394 lines)
+  ✓ generated/README.md
+
+Quality Metrics:
+  Zero-copy conversions: 12/12 (100%)
+  JSON fallback conversions: 0/12 (0%)
+  Production ready: ✓ Yes
+
+Next Steps:
+  1. Copy generated/bindings.rs to your PyO3 project
+  2. Add #[pymodule] to your lib.rs
+  3. Run: maturin develop
+  4. Test: python -c "import your_module; print(your_module.Point(10, 20))"
+----
+
+==== Generated Code Example
+
+For a Concorde-class field:
+
+[source,rust]
+----
+/// Transport Class: Concorde (100% fidelity, 0% overhead)
+/// Direct memory access - no conversion needed
+#[pyclass]
+pub struct Point {
+    #[pyo3(get, set)]
+    pub x: i64,  // Zero-copy: i64 ↔ int
+
+    #[pyo3(get, set)]
+    pub y: i64,  // Zero-copy: i64 ↔ int
+}
+----
+
+For a Wheelbarrow-class field:
+
+[source,rust]
+----
+/// ⚠ WARNING: This field uses JSON fallback (Wheelbarrow class)
+/// Reason: Narrowing conversion i64 → i32 may lose data
+/// Performance: 100-1000x slower than zero-copy
+#[pyclass]
+pub struct NarrowData {
+    value: i32,  // Internal storage
+
+    #[getter]
+    fn value(&self) -> PyResult<i64> {
+        Ok(self.value as i64)  // Safe widening for getter
+    }
+
+    #[setter]
+    fn set_value(&mut self, value: i64) -> PyResult<()> {
+        self.value = value.try_into()
+            .map_err(|_| PyErr::new::<PyValueError, _>("value overflow"))?;
+        Ok(())
+    }
+}
+----
+
+==== Options
+
+[cols="2,5",options="header"]
+|===
+|Option |Description
+
+|`--rust <FILE>`
+|Path to Rust source file
+
+|`--python <FILE>`
+|Path to Python source file
+
+|`--output <DIR>`
+|Output directory for generated files (default: generated/)
+
+|`--stubs`
+|Generate Python type stubs (.pyi files)
+
+|`--no-tests`
+|Skip test file generation
+
+|`--no-warnings`
+|Suppress WARNING comments for Wheelbarrow fields
+|===
+
+== Common Workflows
+
+=== 1. Starting a New Rust↔Python Project
+
+[source,bash]
+----
+# Step 1: Design your Rust types
+cat > src/lib.rs <<'EOF'
+use serde::{Serialize, Deserialize};
+
+#[derive(Serialize, Deserialize)]
+pub struct User {
+    pub id: i64,
+    pub name: String,
+    pub email: String,
+    pub active: bool,
+}
+EOF
+
+# Step 2: Define matching Python types
+cat > models.py <<'EOF'
+from pydantic import BaseModel
+
+class User(BaseModel):
+    id: int
+    name: str
+    email: str
+    active: bool
+EOF
+
+# Step 3: Check compatibility
+protocol-squisher check --rust src/lib.rs --python models.py
+
+# Step 4: If compatible, generate bindings
+protocol-squisher generate \
+  --rust src/lib.rs \
+  --python models.py \
+  --output generated/ \
+  --stubs
+
+# Step 5: Use generated bindings in your PyO3 project
+----
+
+=== 2. Optimizing Existing Schemas
+
+[source,bash]
+----
+# Analyze current state
+protocol-squisher check --rust src/lib.rs --python models.py
+
+# Get optimization suggestions
+protocol-squisher optimize --rust src/lib.rs --python models.py
+
+# Apply suggestions (widen i32 → i64, f32 → f64)
+# Edit src/lib.rs and models.py
+
+# Verify improvements
+protocol-squisher check --rust src/lib.rs --python models.py
+----
+
+=== 3. CI/CD Integration
+
+Add to your `.github/workflows/ci.yml`:
+
+[source,yaml]
+----
+- name: Check Rust↔Python compatibility
+  run: |
+    protocol-squisher check \
+      --rust src/lib.rs \
+      --python models.py \
+      --quiet \
+      --fail-on-wheelbarrow
+----
+
+This will fail the CI build if any Wheelbarrow-class fields are detected.
+
+=== 4. Pre-Commit Hook
+
+Add to `.git/hooks/pre-commit`:
+
+[source,bash]
+----
+#!/bin/bash
+# Check schema compatibility before commit
+
+if ! protocol-squisher check \
+    --rust src/lib.rs \
+    --python models.py \
+    --quiet; then
+    echo "❌ Schema compatibility check failed!"
+    echo "Run: protocol-squisher optimize --rust src/lib.rs --python models.py"
+    exit 1
+fi
+
+echo "✓ Schemas are compatible"
+----
+
+== Best Practices
+
+=== DO: Match Types from the Start
+
+Always use matching types between Rust and Python:
+
+[cols="2,2,2",options="header"]
+|===
+|Rust |Python |Transport Class
+
+|`i64`
+|`int`
+|Concorde ✓
+
+|`f64`
+|`float`
+|Concorde ✓
+
+|`String`
+|`str`
+|Concorde ✓
+
+|`bool`
+|`bool`
+|Concorde ✓
+|===
+
+=== DO: Run Analysis Early
+
+Run `protocol-squisher check` during schema design, not after implementation:
+
+[source,bash]
+----
+# GOOD: Check before writing PyO3 code
+protocol-squisher check --rust schema.rs --python schema.py
+# Fix issues if needed, THEN implement
+
+# BAD: Check after writing all PyO3 code
+# (May need to refactor everything)
+----
+
+=== DO: Accept Business Class When Necessary
+
+Business-class transport (safe widening) is acceptable for production:
+
+- `i32 → i64`: 98% fidelity, 5% overhead
+- `f32 → f64`: 98% fidelity, 5% overhead
+
+Performance impact: ~2-5ns per field access (vs ~1ns for Concorde)
+
+=== DON'T: Ignore Wheelbarrow Warnings
+
+If `optimize` suggests changes, consider applying them:
+
+[source,bash]
+----
+# Get suggestions
+protocol-squisher optimize --rust src/lib.rs --python models.py
+
+# If it suggests widening i32 → i64, strongly consider it
+# Wheelbarrow overhead: 100-1000x slower than zero-copy
+----
+
+=== DON'T: Narrow Types
+
+Avoid narrowing conversions (i64 → i32, f64 → f32):
+
+- Wheelbarrow class: 50% fidelity, 80% overhead
+- Requires JSON fallback (100-1000ns per access)
+- Risk of runtime errors if value too large
+
+Instead: widen the target type to match the source.
+
+== Troubleshooting
+
+=== Error: "No structs found in schema"
+
+**Cause:** The analyzer couldn't find any `#[derive(Serialize, Deserialize)]` structs (Rust) or `BaseModel` classes (Python).
+
+**Solution:** Ensure your types are properly annotated:
+
+[source,rust]
+----
+// Rust: Must have #[derive(Serialize, Deserialize)]
+use serde::{Serialize, Deserialize};
+
+#[derive(Serialize, Deserialize)]
+pub struct MyType {
+    field: i64,
+}
+----
+
+[source,python]
+----
+# Python: Must inherit from BaseModel
+from pydantic import BaseModel
+
+class MyType(BaseModel):
+    field: int
+----
+
+=== Error: "Incompatible container types"
+
+**Cause:** Source and target use different container types (e.g., `Vec<T>` vs `Option<T>`).
+
+**Solution:** Match container types exactly:
+
+[source,text]
+----
+Rust: Vec<i64>     → Python: list[int]     ✓
+Rust: Option<i64>  → Python: int | None    ✓
+Rust: Vec<i64>     → Python: int | None    ✗  (mismatch)
+----
+
+=== Warning: "Wheelbarrow-class field detected"
+
+**Cause:** A field requires narrowing conversion or has mismatched types.
+
+**Solution:**
+
+1. Run `protocol-squisher optimize` to see suggestions
+2. Widen the narrower type to match the wider one
+3. Re-run `protocol-squisher check` to verify
+
+== See Also
+
+- link:../examples/README.md[Example Projects] - Complete working examples
+- link:transport-classes.adoc[Transport Classes Explained] - Deep dive into transport classification
+- link:optimization.adoc[Optimization Guide] - How to achieve Concorde-class transport
+- link:architecture.adoc[Architecture] - How protocol-squisher works internally
