@@ -191,6 +191,62 @@ impl Interpreter {
                 }
                 Ok(result)
             }
+
+            Expr::Match { scrutinee, arms } => {
+                let scrutinee_val = self.eval_expr(scrutinee, env)?;
+
+                for arm in arms {
+                    if let Some(bindings) = self.match_pattern(&arm.pattern, &scrutinee_val) {
+                        // Pattern matched, bind variables and evaluate body
+                        let mut new_env = env.clone();
+                        for (name, value) in bindings {
+                            new_env.insert(name, value);
+                        }
+                        return self.eval_expr(&arm.body, &mut new_env);
+                    }
+                }
+
+                Err("Non-exhaustive match (no pattern matched)".to_string())
+            }
+        }
+    }
+
+    fn match_pattern(
+        &self,
+        pattern: &Pattern,
+        value: &Value,
+    ) -> Option<Vec<(String, Value)>> {
+        match pattern {
+            Pattern::IntLit(n) => {
+                if let Value::Int(v) = value {
+                    if *n == *v {
+                        Some(Vec::new()) // Match, no bindings
+                    } else {
+                        None // Doesn't match
+                    }
+                } else {
+                    None // Type mismatch
+                }
+            }
+            Pattern::BoolLit(b) => {
+                if let Value::Bool(v) = value {
+                    if *b == *v {
+                        Some(Vec::new()) // Match, no bindings
+                    } else {
+                        None // Doesn't match
+                    }
+                } else {
+                    None // Type mismatch
+                }
+            }
+            Pattern::Var(name) => {
+                // Variable pattern always matches and binds the value
+                Some(vec![(name.clone(), value.clone())])
+            }
+            Pattern::Wildcard => {
+                // Wildcard always matches, no bindings
+                Some(Vec::new())
+            }
         }
     }
 }

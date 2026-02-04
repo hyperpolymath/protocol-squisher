@@ -91,6 +91,30 @@ pub enum Expr {
 
     // Block (sequence of expressions)
     Block(Vec<Expr>),
+
+    // Match expression
+    Match {
+        scrutinee: Box<Expr>,
+        arms: Vec<MatchArm>,
+    },
+}
+
+#[derive(Debug, Clone)]
+pub struct MatchArm {
+    pub pattern: Pattern,
+    pub body: Expr,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Pattern {
+    /// Literal integer pattern: 42
+    IntLit(i64),
+    /// Literal boolean pattern: true, false
+    BoolLit(bool),
+    /// Variable binding pattern: x
+    Var(String),
+    /// Wildcard pattern: _
+    Wildcard,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -165,6 +189,24 @@ impl fmt::Display for Expr {
                 }
                 write!(f, " }}")
             }
+            Expr::Match { scrutinee, arms } => {
+                write!(f, "(match {} {{", scrutinee)?;
+                for arm in arms {
+                    write!(f, " {} => {},", arm.pattern, arm.body)?;
+                }
+                write!(f, " }})")
+            }
+        }
+    }
+}
+
+impl fmt::Display for Pattern {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Pattern::IntLit(n) => write!(f, "{}", n),
+            Pattern::BoolLit(b) => write!(f, "{}", b),
+            Pattern::Var(s) => write!(f, "{}", s),
+            Pattern::Wildcard => write!(f, "_"),
         }
     }
 }

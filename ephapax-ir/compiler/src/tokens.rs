@@ -14,6 +14,8 @@ pub enum Token {
     Else,
     True,
     False,
+    Match,
+    Underscore, // _
 
     // Identifiers and literals
     Ident(String),
@@ -30,6 +32,7 @@ pub enum Token {
     LBrace,
     RBrace,
     Arrow,      // ->
+    FatArrow,   // =>
     Colon,
     Semi,
     Comma,
@@ -61,6 +64,8 @@ impl fmt::Display for Token {
             Token::Else => write!(f, "else"),
             Token::True => write!(f, "true"),
             Token::False => write!(f, "false"),
+            Token::Match => write!(f, "match"),
+            Token::Underscore => write!(f, "_"),
             Token::Ident(s) => write!(f, "{}", s),
             Token::IntLit(n) => write!(f, "{}", n),
             Token::I32 => write!(f, "i32"),
@@ -71,6 +76,7 @@ impl fmt::Display for Token {
             Token::LBrace => write!(f, "{{"),
             Token::RBrace => write!(f, "}}"),
             Token::Arrow => write!(f, "->"),
+            Token::FatArrow => write!(f, "=>"),
             Token::Colon => write!(f, ":"),
             Token::Semi => write!(f, ";"),
             Token::Comma => write!(f, ","),
@@ -246,6 +252,9 @@ impl Lexer {
                     if self.current() == Some('=') {
                         self.advance();
                         Token::Eq
+                    } else if self.current() == Some('>') {
+                        self.advance();
+                        Token::FatArrow
                     } else {
                         Token::Assign
                     }
@@ -281,7 +290,31 @@ impl Lexer {
                     let num = self.read_number();
                     Token::IntLit(num)
                 }
-                _ if ch.is_alphabetic() || ch == '_' => {
+                '_' => {
+                    self.advance();
+                    // Check if it's just underscore or an identifier starting with _
+                    if let Some(ch) = self.current() {
+                        if ch.is_alphanumeric() {
+                            // It's an identifier like _foo
+                            let mut ident = String::from("_");
+                            while let Some(ch) = self.current() {
+                                if ch.is_alphanumeric() || ch == '_' {
+                                    ident.push(ch);
+                                    self.advance();
+                                } else {
+                                    break;
+                                }
+                            }
+                            Token::Ident(ident)
+                        } else {
+                            // It's just the wildcard _
+                            Token::Underscore
+                        }
+                    } else {
+                        Token::Underscore
+                    }
+                }
+                _ if ch.is_alphabetic() => {
                     let ident = self.read_ident();
                     match ident.as_str() {
                         "fn" => Token::Fn,
@@ -290,6 +323,7 @@ impl Lexer {
                         "else" => Token::Else,
                         "true" => Token::True,
                         "false" => Token::False,
+                        "match" => Token::Match,
                         "i32" => Token::I32,
                         "i64" => Token::I64,
                         "bool" => Token::Bool,

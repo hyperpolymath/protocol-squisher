@@ -344,6 +344,85 @@ impl TypeChecker {
                 }
                 Ok(result_ty)
             }
+
+            Expr::Match { scrutinee, arms } => {
+                // Check scrutinee type
+                let scrutinee_ty = self.check_expr(scrutinee, env)?;
+
+                if arms.is_empty() {
+                    return Err(TypeError::TypeMismatch {
+                        expected: Type::I32,
+                        found: Type::I32,
+                        context: "match expression must have at least one arm".to_string(),
+                    });
+                }
+
+                // Check all arms
+                let mut arm_type: Option<Type> = None;
+                let mut has_wildcard = false;
+
+                for arm in arms {
+                    // Check pattern type matches scrutinee
+                    let pattern_ty = self.pattern_type(&arm.pattern);
+                    if pattern_ty != Type::Infer && pattern_ty != scrutinee_ty {
+                        return Err(TypeError::TypeMismatch {
+                            expected: scrutinee_ty,
+                            found: pattern_ty,
+                            context: "match pattern".to_string(),
+                        });
+                    }
+
+                    // Check for wildcard (makes match exhaustive)
+                    if matches!(arm.pattern, Pattern::Wildcard | Pattern::Var(_)) {
+                        has_wildcard = true;
+                    }
+
+                    // Create new environment with pattern bindings
+                    let mut arm_env = env.clone();
+                    self.add_pattern_bindings(&arm.pattern, &scrutinee_ty, &mut arm_env);
+
+                    // Check arm body
+                    let body_ty = self.check_expr(&arm.body, &mut arm_env)?;
+
+                    // All arms must have same type
+                    if let Some(ref expected_ty) = arm_type {
+                        if body_ty != *expected_ty {
+                            return Err(TypeError::TypeMismatch {
+                                expected: expected_ty.clone(),
+                                found: body_ty,
+                                context: "match arm".to_string(),
+                            });
+                        }
+                    } else {
+                        arm_type = Some(body_ty);
+                    }
+                }
+
+                // Warn about non-exhaustive matches (not an error for now)
+                if !has_wildcard && scrutinee_ty != Type::Bool {
+                    // For non-bool types, we can't easily check exhaustiveness
+                    // In a real implementation, we'd track all literal patterns
+                }
+
+                Ok(arm_type.unwrap())
+            }
+        }
+    }
+
+    fn pattern_type(&self, pattern: &Pattern) -> Type {
+        match pattern {
+            Pattern::IntLit(_) => Type::I32,
+            Pattern::BoolLit(_) => Type::Bool,
+            Pattern::Var(_) | Pattern::Wildcard => Type::Infer,
+        }
+    }
+
+    fn add_pattern_bindings(&self, pattern: &Pattern, ty: &Type, env: &mut TypeEnv) {
+        match pattern {
+            Pattern::Var(name) => {
+                env.insert(name.clone(), ty.clone());
+            }
+            _ => {}
         }
     }
 }

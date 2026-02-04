@@ -164,6 +164,7 @@ impl Parser {
         match self.current() {
             Token::Let => self.parse_let(),
             Token::If => self.parse_if(),
+            Token::Match => self.parse_match(),
             _ => self.parse_comparison(),
         }
     }
@@ -204,6 +205,70 @@ impl Parser {
             then_branch,
             else_branch,
         })
+    }
+
+    fn parse_match(&mut self) -> Result<Expr, String> {
+        self.expect(Token::Match)?;
+
+        let scrutinee = Box::new(self.parse_comparison()?);
+
+        self.expect(Token::LBrace)?;
+
+        let mut arms = Vec::new();
+        while self.current() != &Token::RBrace {
+            let pattern = self.parse_pattern()?;
+
+            self.expect(Token::FatArrow)?;
+
+            let body = self.parse_comparison()?;
+
+            arms.push(MatchArm { pattern, body });
+
+            // Optional comma
+            if self.current() == &Token::Comma {
+                self.advance();
+            }
+
+            if self.current() == &Token::RBrace {
+                break;
+            }
+        }
+
+        self.expect(Token::RBrace)?;
+
+        if arms.is_empty() {
+            return Err("Match expression must have at least one arm".to_string());
+        }
+
+        Ok(Expr::Match { scrutinee, arms })
+    }
+
+    fn parse_pattern(&mut self) -> Result<Pattern, String> {
+        match self.current() {
+            Token::IntLit(n) => {
+                let val = *n;
+                self.advance();
+                Ok(Pattern::IntLit(val))
+            }
+            Token::True => {
+                self.advance();
+                Ok(Pattern::BoolLit(true))
+            }
+            Token::False => {
+                self.advance();
+                Ok(Pattern::BoolLit(false))
+            }
+            Token::Underscore => {
+                self.advance();
+                Ok(Pattern::Wildcard)
+            }
+            Token::Ident(s) => {
+                let name = s.clone();
+                self.advance();
+                Ok(Pattern::Var(name))
+            }
+            _ => Err(format!("Expected pattern, got {}", self.current())),
+        }
     }
 
     fn parse_comparison(&mut self) -> Result<Expr, String> {
