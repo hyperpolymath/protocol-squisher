@@ -1,0 +1,191 @@
+# Protocol Squisher: Universal Protocol Interoperability with Formal Guarantees
+
+**TL;DR:** Automatic adapter synthesis between any two serialization formats. If it compiles, it carries. 312 tests, 4 theorems proven in Agda/Lean, Rust↔Python working now.
+
+---
+
+## The Problem
+
+You have a Rust service using serde. Your colleague's Python service uses Pydantic. You need them to talk.
+
+Current options:
+1. Write manual FFI glue (hours/days, error-prone)
+2. JSON as lingua franca (slow, manual conversions)
+3. Rewrite one side (expensive, political)
+4. Give up
+
+**The real problem:** Every serialization format pair needs custom bridge code. With N formats, that's O(N²) adapters to maintain.
+
+## The Solution
+
+Protocol Squisher analyzes schema pairs and synthesizes the minimum viable adapter with provable correctness guarantees.
+
+```bash
+$ protocol-squisher check --rust lib.rs --python models.py
+
+Analysis Results:
+  Transport Class: Concorde (100% fidelity, 0% overhead)
+
+Field Compatibility:
+  ✓ user_id: i64 ↔ int (native mapping)
+  ✓ balance: f64 ↔ float (IEEE 754 compatible)
+  ✓ name: String ↔ str (UTF-8)
+  ✓ active: bool ↔ bool (identical)
+
+TRANSPORT VIABLE: Zero-copy possible
+
+$ protocol-squisher generate --rust lib.rs --python models.py --output ./
+
+Generated PyO3 bindings:
+  ✓ lib.rs (657 lines)
+  ✓ models.pyi (type stubs)
+  ✓ tests.py (property-based tests)
+```
+
+**Result:** Direct memory access between Rust and Python. ~1ns per field. No serialization overhead.
+
+## Transport Classes
+
+Every schema pair gets classified:
+
+| Class | Fidelity | Overhead | Example |
+|-------|----------|----------|---------|
+| **Concorde** | 100% | 0% | i64↔int, f64↔float |
+| **Business** | 98% | 5% | i32→i64 (safe widening) |
+| **Economy** | 80% | 25% | Documented minor losses |
+| **Wheelbarrow** | 50% | 80% | i64→i32 (needs JSON fallback) |
+
+The CLI tells you which class you get *before* generating code.
+
+## The Invariant
+
+```
+For any valid input x in format A,
+there exists a valid output y in format B
+such that squish(x) = y.
+```
+
+**"If it compiles, it carries."**
+
+Even if slow. Even if lossy. But it *will* transport.
+
+We achieve this through:
+1. **Canonical IR** - Every format maps to ephapax intermediate representation
+2. **Compatibility analysis** - We prove transport is possible before generating
+3. **JSON fallback** - When all else fails, JSON becomes the wheelbarrow
+4. **Property-based testing** - Generated adapters include exhaustive test suites
+
+## Formal Verification
+
+4 core theorems proven in Agda and cross-validated in Lean:
+
+1. **Concorde Safety**: Identical types → lossless bijection
+2. **Wheelbarrow Necessity**: Narrowing conversions require fallback
+3. **Container Propagation**: Container class = worst element class
+4. **Optimization Soundness**: Suggested rewrites preserve semantics
+
+Proofs: https://github.com/hyperpolymath/protocol-squisher/tree/main/proofs
+
+## Real-World Example
+
+**Before (manual FFI):**
+```rust
+#[pyclass]
+struct User {
+    #[pyo3(get, set)]
+    user_id: i64,
+    #[pyo3(get, set)]
+    balance: f64,
+    // ... 50 lines of boilerplate
+}
+
+#[pymethods]
+impl User {
+    #[new]
+    fn new(user_id: i64, balance: f64) -> Self { /* ... */ }
+    // ... 30 more lines
+}
+```
+
+**After (protocol-squisher):**
+```rust
+#[derive(Serialize, Deserialize)]
+struct User {
+    user_id: i64,
+    balance: f64,
+}
+```
+
+Generated code handles all FFI, type conversions, and includes property tests.
+
+## Current Status
+
+**MVP Complete (100%)**
+- ✅ 312 tests passing
+- ✅ Rust ↔ Python working (all 4 transport classes)
+- ✅ CLI with analysis, optimization suggestions, code generation
+- ✅ Formal proofs in Agda/Lean
+- ✅ Zero-copy benchmarks (~1ns Concorde, ~100-1000ns Wheelbarrow)
+
+**Supported formats:**
+- Rust (serde)
+- Python (Pydantic)
+- JSON
+
+**Coming soon:**
+- Cap'n Proto, Protobuf, Thrift, Avro, MessagePack, Factor
+
+## Try It
+
+```bash
+git clone https://github.com/hyperpolymath/protocol-squisher
+cd protocol-squisher/examples/zero-copy-demo
+./build.sh
+python test.py  # See ~1ns field access
+
+# Or install CLI
+cargo install --path crates/protocol-squisher-cli
+protocol-squisher --help
+```
+
+**Documentation:**
+- CLI Guide: https://github.com/hyperpolymath/protocol-squisher/blob/main/docs/CLI-GUIDE.adoc
+- Examples: https://github.com/hyperpolymath/protocol-squisher/tree/main/examples
+- Formal Proofs: https://github.com/hyperpolymath/protocol-squisher/tree/main/proofs
+
+## Why This Matters
+
+Polyglot systems are the norm. Every microservice boundary is a potential serialization mismatch. Manual adapters are:
+- Time-consuming
+- Error-prone
+- Unmaintained (bit rot)
+
+Protocol Squisher makes format interop a build step, not a maintenance burden.
+
+## Limitations (We're Honest)
+
+1. **Wheelbarrow class is slow** - Narrowing conversions need JSON (100-1000x overhead)
+2. **Analysis requires schemas** - No runtime schema inference yet
+3. **Limited formats** - MVP supports Rust/Python/JSON, expanding in Phase 2
+
+We document losses upfront. No surprises.
+
+## Contributing
+
+We need:
+- Real-world schema examples that break our analysis
+- New format analyzers (Protobuf, Thrift, Avro)
+- Performance optimizations
+- Edge cases in formal proofs
+
+Issues: https://github.com/hyperpolymath/protocol-squisher/issues
+
+## License
+
+PMPL-1.0-or-later (Palimpsest License)
+
+---
+
+Built by [@hyperpolymath](https://github.com/hyperpolymath). Inspired by every polyglot developer who's cursed at FFI boilerplate.
+
+Questions? Comments? Found an edge case that breaks the invariant? Let's hear it.

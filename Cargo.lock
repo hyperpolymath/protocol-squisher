@@ -1351,6 +1351,7 @@ name = "protocol-squisher-protobuf-analyzer"
 version = "0.1.0"
 dependencies = [
  "pretty_assertions",
+ "protocol-squisher-ephapax-ir",
  "protocol-squisher-ir",
  "regex",
  "thiserror 1.0.69",

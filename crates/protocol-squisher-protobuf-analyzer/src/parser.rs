@@ -432,7 +432,13 @@ fn parse_fields(body: &str, syntax: ProtoSyntax) -> Result<Vec<ProtoField>, Anal
             "required" => FieldLabel::Required,
             "repeated" => FieldLabel::Repeated,
             "optional" => FieldLabel::Optional,
-            _ => FieldLabel::Optional,
+            _ => {
+                // Default depends on syntax
+                match syntax {
+                    ProtoSyntax::Proto2 => FieldLabel::Optional, // Proto2 defaults to optional
+                    ProtoSyntax::Proto3 => FieldLabel::Required, // Proto3 fields have implicit presence (required)
+                }
+            }
         };
 
         fields.push(ProtoField {

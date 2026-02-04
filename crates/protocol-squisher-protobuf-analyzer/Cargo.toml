@@ -14,6 +14,7 @@ categories = ["development-tools", "parsing"]
 
 [dependencies]
 protocol-squisher-ir = { path = "../protocol-squisher-ir" }
+protocol-squisher-ephapax-ir = { path = "../../ephapax-ir" }
 thiserror = "1.0"
 # Simple regex-based parsing for proto files
 regex = "1.10"

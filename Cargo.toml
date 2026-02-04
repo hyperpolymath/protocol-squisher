@@ -34,6 +34,18 @@ path = "src/lib.rs"
 name = "optimizer_bench"
 harness = false
 
+[[bench]]
+name = "transport_classes"
+harness = false
+
+[[bench]]
+name = "container_operations"
+harness = false
+
+[[bench]]
+name = "generated_vs_handwritten"
+harness = false
+
 [[example]]
 name = "rust_python_interop"
 path = "examples/rust_python_interop.rs"
