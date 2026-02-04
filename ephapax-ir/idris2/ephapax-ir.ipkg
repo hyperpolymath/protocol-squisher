@@ -1,0 +1,23 @@
+-- SPDX-License-Identifier: PMPL-1.0-or-later
+-- SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+package ephapax-ir
+
+version = 0.1.0
+authors = "Jonathan D.A. Jewell <jonathan.jewell@open.ac.uk>"
+license = "PMPL-1.0-or-later"
+brief = "Protocol Squisher Canonical IR with Linear Types"
+
+depends = base
+
+sourcedir = "."
+builddir = "build"
+outputdir = "build/exec"
+
+modules = Types
+        , Compat
+        , TestSimple
+
+executable = "ephapax-ir-test"
+main = TestSimple
+
+opts = "--total"
