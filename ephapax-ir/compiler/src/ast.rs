@@ -99,6 +99,12 @@ pub enum Expr {
     // Variable reference
     Var(String),
 
+    // Unary operations
+    UnaryOp {
+        op: UnaryOp,
+        operand: Box<Expr>,
+    },
+
     // Binary operations
     BinOp {
         op: BinOp,
@@ -208,6 +214,14 @@ pub enum Pattern {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UnaryOp {
+    /// Logical negation: !
+    Not,
+    /// Arithmetic negation: - (unary minus)
+    Neg,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BinOp {
     // Arithmetic
     Add,
@@ -234,6 +248,15 @@ pub enum BinOp {
     BitXor,  // ^
     Shl,     // <<
     Shr,     // >>
+}
+
+impl fmt::Display for UnaryOp {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            UnaryOp::Not => write!(f, "!"),
+            UnaryOp::Neg => write!(f, "-"),
+        }
+    }
 }
 
 impl fmt::Display for BinOp {
@@ -288,6 +311,9 @@ impl fmt::Display for Expr {
                 write!(f, "}}")
             }
             Expr::Var(s) => write!(f, "{}", s),
+            Expr::UnaryOp { op, operand } => {
+                write!(f, "({}{})", op, operand)
+            }
             Expr::BinOp { op, left, right } => {
                 write!(f, "({} {} {})", left, op, right)
             }

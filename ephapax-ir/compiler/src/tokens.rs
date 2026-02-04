@@ -76,6 +76,7 @@ pub enum Token {
     Caret,      // ^
     Shl,        // <<
     Shr,        // >>
+    Not,        // !
 
     // Special
     Eof,
@@ -142,6 +143,7 @@ impl fmt::Display for Token {
             Token::Caret => write!(f, "^"),
             Token::Shl => write!(f, "<<"),
             Token::Shr => write!(f, ">>"),
+            Token::Not => write!(f, "!"),
             Token::Eof => write!(f, "<EOF>"),
         }
     }
@@ -362,7 +364,7 @@ impl Lexer {
                         self.advance();
                         Token::Ne
                     } else {
-                        panic!("Unexpected character after '!'");
+                        Token::Not
                     }
                 }
                 '<' => {

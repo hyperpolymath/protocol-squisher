@@ -124,6 +124,8 @@ struct TypeEnv {
     types: HashMap<String, Type>,
     /// Variables that have been used (for linear checking)
     used: HashSet<String>,
+    /// Variables that have been borrowed (read-only access)
+    borrowed: HashSet<String>,
     /// Variables that must be used before scope ends
     must_use: HashSet<String>,
 }
@@ -133,6 +135,7 @@ impl TypeEnv {
         Self {
             types: HashMap::new(),
             used: HashSet::new(),
+            borrowed: HashSet::new(),
             must_use: HashSet::new(),
         }
     }
@@ -144,6 +147,12 @@ impl TypeEnv {
 
     fn get(&self, name: &str) -> Option<&Type> {
         self.types.get(name)
+    }
+
+    fn mark_borrowed(&mut self, name: &str) {
+        // Borrowing marks the variable as accessed (satisfies "must use")
+        // but doesn't consume it (can be borrowed multiple times)
+        self.borrowed.insert(name.to_string());
     }
 
     fn mark_used(&mut self, name: &str, ty: &Type) -> Result<(), TypeError> {
@@ -174,8 +183,8 @@ impl TypeEnv {
                 }
             }
 
-            // Non-Copy types must be used exactly once
-            if !self.used.contains(var) {
+            // Non-Copy types must be used exactly once OR borrowed at least once
+            if !self.used.contains(var) && !self.borrowed.contains(var) {
                 let var_type = self.types.get(var).cloned().unwrap_or(Type::Infer);
                 return Err(TypeError::VariableNotUsed {
                     var: var.clone(),
@@ -190,6 +199,10 @@ impl TypeEnv {
         // Merge used variables from both branches
         for var in &other.used {
             self.used.insert(var.clone());
+        }
+        // Merge borrowed variables
+        for var in &other.borrowed {
+            self.borrowed.insert(var.clone());
         }
     }
 }
@@ -266,6 +279,34 @@ impl TypeChecker {
                 env.mark_used(name, &ty)?;
 
                 Ok(ty)
+            }
+
+            Expr::UnaryOp { op, operand } => {
+                use crate::ast::UnaryOp;
+                let operand_ty = self.check_expr(operand, env)?;
+
+                match op {
+                    UnaryOp::Not => {
+                        if operand_ty != Type::Bool {
+                            return Err(TypeError::IncompatibleTypes {
+                                left: operand_ty,
+                                right: Type::Bool,
+                                op: "!".to_string(),
+                            });
+                        }
+                        Ok(Type::Bool)
+                    }
+                    UnaryOp::Neg => {
+                        if operand_ty != Type::I32 && operand_ty != Type::I64 {
+                            return Err(TypeError::IncompatibleTypes {
+                                left: operand_ty,
+                                right: Type::I32,
+                                op: "-".to_string(),
+                            });
+                        }
+                        Ok(operand_ty)
+                    }
+                }
             }
 
             Expr::BinOp { op, left, right } => {
@@ -413,6 +454,441 @@ impl TypeChecker {
                         // print accepts any type
                         self.check_expr(&args[0], env)?;
                         Ok(Type::I32)  // Returns 0 (unit placeholder)
+                    }
+                    "hashmap_new" => {
+                        if !args.is_empty() {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::I32,
+                                found: Type::I32,
+                                context: format!("hashmap_new expects 0 arguments, got {}", args.len()),
+                            });
+                        }
+                        Ok(Type::HashMap(Box::new(Type::String), Box::new(Type::Infer)))
+                    }
+                    "hashmap_insert" => {
+                        if args.len() != 3 {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::I32,
+                                found: Type::I32,
+                                context: format!("hashmap_insert expects 3 arguments, got {}", args.len()),
+                            });
+                        }
+                        let map_ty = self.check_expr(&args[0], env)?;
+                        let key_ty = self.check_expr(&args[1], env)?;
+                        let _val_ty = self.check_expr(&args[2], env)?;
+
+                        // Verify map is HashMap type
+                        match &map_ty {
+                            Type::HashMap(_, _) => {}
+                            _ => return Err(TypeError::TypeMismatch {
+                                expected: Type::HashMap(Box::new(Type::String), Box::new(Type::Infer)),
+                                found: map_ty,
+                                context: "hashmap_insert first argument must be HashMap".to_string(),
+                            }),
+                        }
+                        // Key must be String
+                        if key_ty != Type::String {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::String,
+                                found: key_ty,
+                                context: "hashmap_insert key must be String".to_string(),
+                            });
+                        }
+                        Ok(map_ty)  // Returns the HashMap
+                    }
+                    "hashmap_get" => {
+                        if args.len() != 2 {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::I32,
+                                found: Type::I32,
+                                context: format!("hashmap_get expects 2 arguments, got {}", args.len()),
+                            });
+                        }
+                        let map_ty = self.check_expr(&args[0], env)?;
+                        let key_ty = self.check_expr(&args[1], env)?;
+
+                        // Verify map is HashMap<K, V> (reference)
+                        let val_ty = match &map_ty {
+                            Type::Ref(inner) => match &**inner {
+                                Type::HashMap(_, v) => v.clone(),
+                                _ => return Err(TypeError::TypeMismatch {
+                                    expected: Type::Ref(Box::new(Type::HashMap(Box::new(Type::String), Box::new(Type::Infer)))),
+                                    found: map_ty,
+                                    context: "hashmap_get first argument must be &HashMap".to_string(),
+                                }),
+                            },
+                            _ => return Err(TypeError::TypeMismatch {
+                                expected: Type::Ref(Box::new(Type::HashMap(Box::new(Type::String), Box::new(Type::Infer)))),
+                                found: map_ty,
+                                context: "hashmap_get first argument must be &HashMap".to_string(),
+                            }),
+                        };
+                        // Key must be String
+                        if key_ty != Type::String {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::String,
+                                found: key_ty,
+                                context: "hashmap_get key must be String".to_string(),
+                            });
+                        }
+                        Ok(Type::Option(val_ty))
+                    }
+                    "hashmap_contains_key" => {
+                        if args.len() != 2 {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::I32,
+                                found: Type::I32,
+                                context: format!("hashmap_contains_key expects 2 arguments, got {}", args.len()),
+                            });
+                        }
+                        let map_ty = self.check_expr(&args[0], env)?;
+                        let key_ty = self.check_expr(&args[1], env)?;
+
+                        // Verify map is &HashMap
+                        match &map_ty {
+                            Type::Ref(inner) => match &**inner {
+                                Type::HashMap(_, _) => {}
+                                _ => return Err(TypeError::TypeMismatch {
+                                    expected: Type::Ref(Box::new(Type::HashMap(Box::new(Type::String), Box::new(Type::Infer)))),
+                                    found: map_ty,
+                                    context: "hashmap_contains_key first argument must be &HashMap".to_string(),
+                                }),
+                            },
+                            _ => return Err(TypeError::TypeMismatch {
+                                expected: Type::Ref(Box::new(Type::HashMap(Box::new(Type::String), Box::new(Type::Infer)))),
+                                found: map_ty,
+                                context: "hashmap_contains_key first argument must be &HashMap".to_string(),
+                            }),
+                        }
+                        // Key must be String
+                        if key_ty != Type::String {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::String,
+                                found: key_ty,
+                                context: "hashmap_contains_key key must be String".to_string(),
+                            });
+                        }
+                        Ok(Type::Bool)
+                    }
+                    "hashmap_remove" => {
+                        if args.len() != 2 {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::I32,
+                                found: Type::I32,
+                                context: format!("hashmap_remove expects 2 arguments, got {}", args.len()),
+                            });
+                        }
+                        let map_ty = self.check_expr(&args[0], env)?;
+                        let key_ty = self.check_expr(&args[1], env)?;
+
+                        // Verify map is HashMap type
+                        match &map_ty {
+                            Type::HashMap(_, _) => {}
+                            _ => return Err(TypeError::TypeMismatch {
+                                expected: Type::HashMap(Box::new(Type::String), Box::new(Type::Infer)),
+                                found: map_ty,
+                                context: "hashmap_remove first argument must be HashMap".to_string(),
+                            }),
+                        }
+                        // Key must be String
+                        if key_ty != Type::String {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::String,
+                                found: key_ty,
+                                context: "hashmap_remove key must be String".to_string(),
+                            });
+                        }
+                        Ok(map_ty)  // Returns the HashMap
+                    }
+                    // String operations
+                    "string_length" => {
+                        if args.len() != 1 {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::I32,
+                                found: Type::I32,
+                                context: format!("string_length expects 1 argument, got {}", args.len()),
+                            });
+                        }
+                        let arg_ty = self.check_expr(&args[0], env)?;
+                        // Accept String or &String
+                        match &arg_ty {
+                            Type::String => {}
+                            Type::Ref(inner) => match &**inner {
+                                Type::String => {}
+                                _ => return Err(TypeError::TypeMismatch {
+                                    expected: Type::String,
+                                    found: arg_ty,
+                                    context: "string_length argument must be String or &String".to_string(),
+                                }),
+                            },
+                            _ => return Err(TypeError::TypeMismatch {
+                                expected: Type::String,
+                                found: arg_ty,
+                                context: "string_length argument must be String or &String".to_string(),
+                            }),
+                        }
+                        Ok(Type::I32)
+                    }
+                    "string_to_upper" | "string_to_lower" => {
+                        if args.len() != 1 {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::I32,
+                                found: Type::I32,
+                                context: format!("{} expects 1 argument, got {}", func, args.len()),
+                            });
+                        }
+                        let arg_ty = self.check_expr(&args[0], env)?;
+                        // Accept String or &String
+                        match &arg_ty {
+                            Type::String => {}
+                            Type::Ref(inner) => match &**inner {
+                                Type::String => {}
+                                _ => return Err(TypeError::TypeMismatch {
+                                    expected: Type::String,
+                                    found: arg_ty,
+                                    context: format!("{} argument must be String or &String", func),
+                                }),
+                            },
+                            _ => return Err(TypeError::TypeMismatch {
+                                expected: Type::String,
+                                found: arg_ty,
+                                context: format!("{} argument must be String or &String", func),
+                            }),
+                        }
+                        Ok(Type::String)
+                    }
+                    "string_substring" => {
+                        if args.len() != 3 {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::I32,
+                                found: Type::I32,
+                                context: format!("string_substring expects 3 arguments, got {}", args.len()),
+                            });
+                        }
+                        let str_ty = self.check_expr(&args[0], env)?;
+                        let start_ty = self.check_expr(&args[1], env)?;
+                        let len_ty = self.check_expr(&args[2], env)?;
+
+                        // Accept String or &String
+                        match &str_ty {
+                            Type::String => {}
+                            Type::Ref(inner) => match &**inner {
+                                Type::String => {}
+                                _ => return Err(TypeError::TypeMismatch {
+                                    expected: Type::String,
+                                    found: str_ty,
+                                    context: "string_substring first argument must be String or &String".to_string(),
+                                }),
+                            },
+                            _ => return Err(TypeError::TypeMismatch {
+                                expected: Type::String,
+                                found: str_ty,
+                                context: "string_substring first argument must be String or &String".to_string(),
+                            }),
+                        }
+                        if start_ty != Type::I32 {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::I32,
+                                found: start_ty,
+                                context: "string_substring start must be i32".to_string(),
+                            });
+                        }
+                        if len_ty != Type::I32 {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::I32,
+                                found: len_ty,
+                                context: "string_substring length must be i32".to_string(),
+                            });
+                        }
+                        Ok(Type::String)
+                    }
+                    // Math operations
+                    "abs" => {
+                        if args.len() != 1 {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::I32,
+                                found: Type::I32,
+                                context: format!("abs expects 1 argument, got {}", args.len()),
+                            });
+                        }
+                        let arg_ty = self.check_expr(&args[0], env)?;
+                        if arg_ty != Type::I32 && arg_ty != Type::I64 {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::I32,
+                                found: arg_ty,
+                                context: "abs argument must be i32 or i64".to_string(),
+                            });
+                        }
+                        Ok(arg_ty)
+                    }
+                    "min" | "max" => {
+                        if args.len() != 2 {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::I32,
+                                found: Type::I32,
+                                context: format!("{} expects 2 arguments, got {}", func, args.len()),
+                            });
+                        }
+                        let arg1_ty = self.check_expr(&args[0], env)?;
+                        let arg2_ty = self.check_expr(&args[1], env)?;
+
+                        if arg1_ty != Type::I32 || arg2_ty != Type::I32 {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::I32,
+                                found: if arg1_ty != Type::I32 { arg1_ty } else { arg2_ty },
+                                context: format!("{} arguments must be i32", func),
+                            });
+                        }
+                        Ok(Type::I32)
+                    }
+                    "pow" => {
+                        if args.len() != 2 {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::I32,
+                                found: Type::I32,
+                                context: format!("pow expects 2 arguments, got {}", args.len()),
+                            });
+                        }
+                        let base_ty = self.check_expr(&args[0], env)?;
+                        let exp_ty = self.check_expr(&args[1], env)?;
+
+                        if base_ty != Type::I32 {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::I32,
+                                found: base_ty,
+                                context: "pow base must be i32".to_string(),
+                            });
+                        }
+                        if exp_ty != Type::I32 {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::I32,
+                                found: exp_ty,
+                                context: "pow exponent must be i32".to_string(),
+                            });
+                        }
+                        Ok(Type::I32)
+                    }
+                    // Vec operations
+                    "vec_new" => {
+                        if !args.is_empty() {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::I32,
+                                found: Type::I32,
+                                context: format!("vec_new expects 0 arguments, got {}", args.len()),
+                            });
+                        }
+                        Ok(Type::Vec(Box::new(Type::Infer)))
+                    }
+                    "vec_push" => {
+                        if args.len() != 2 {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::I32,
+                                found: Type::I32,
+                                context: format!("vec_push expects 2 arguments, got {}", args.len()),
+                            });
+                        }
+                        let vec_ty = self.check_expr(&args[0], env)?;
+                        let _elem_ty = self.check_expr(&args[1], env)?;
+
+                        match &vec_ty {
+                            Type::Vec(_) => {}
+                            _ => return Err(TypeError::TypeMismatch {
+                                expected: Type::Vec(Box::new(Type::Infer)),
+                                found: vec_ty,
+                                context: "vec_push first argument must be Vec".to_string(),
+                            }),
+                        }
+
+                        Ok(vec_ty)  // Returns the Vec
+                    }
+                    "vec_pop" => {
+                        if args.len() != 1 {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::I32,
+                                found: Type::I32,
+                                context: format!("vec_pop expects 1 argument, got {}", args.len()),
+                            });
+                        }
+                        let vec_ty = self.check_expr(&args[0], env)?;
+
+                        let elem_ty = match &vec_ty {
+                            Type::Vec(elem) => elem.clone(),
+                            _ => return Err(TypeError::TypeMismatch {
+                                expected: Type::Vec(Box::new(Type::Infer)),
+                                found: vec_ty,
+                                context: "vec_pop argument must be Vec".to_string(),
+                            }),
+                        };
+
+                        Ok(Type::Option(elem_ty))
+                    }
+                    "vec_length" => {
+                        if args.len() != 1 {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::I32,
+                                found: Type::I32,
+                                context: format!("vec_length expects 1 argument, got {}", args.len()),
+                            });
+                        }
+                        let vec_ty = self.check_expr(&args[0], env)?;
+
+                        // Accept Vec or &Vec
+                        match &vec_ty {
+                            Type::Vec(_) => {}
+                            Type::Ref(inner) => match &**inner {
+                                Type::Vec(_) => {}
+                                _ => return Err(TypeError::TypeMismatch {
+                                    expected: Type::Vec(Box::new(Type::Infer)),
+                                    found: vec_ty,
+                                    context: "vec_length argument must be Vec or &Vec".to_string(),
+                                }),
+                            },
+                            _ => return Err(TypeError::TypeMismatch {
+                                expected: Type::Vec(Box::new(Type::Infer)),
+                                found: vec_ty,
+                                context: "vec_length argument must be Vec or &Vec".to_string(),
+                            }),
+                        }
+
+                        Ok(Type::I32)
+                    }
+                    "vec_get" => {
+                        if args.len() != 2 {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::I32,
+                                found: Type::I32,
+                                context: format!("vec_get expects 2 arguments, got {}", args.len()),
+                            });
+                        }
+                        let vec_ty = self.check_expr(&args[0], env)?;
+                        let idx_ty = self.check_expr(&args[1], env)?;
+
+                        let elem_ty = match &vec_ty {
+                            Type::Vec(elem) => elem.clone(),
+                            Type::Ref(inner) => match &**inner {
+                                Type::Vec(elem) => elem.clone(),
+                                _ => return Err(TypeError::TypeMismatch {
+                                    expected: Type::Vec(Box::new(Type::Infer)),
+                                    found: vec_ty,
+                                    context: "vec_get first argument must be Vec or &Vec".to_string(),
+                                }),
+                            },
+                            _ => return Err(TypeError::TypeMismatch {
+                                expected: Type::Vec(Box::new(Type::Infer)),
+                                found: vec_ty,
+                                context: "vec_get first argument must be Vec or &Vec".to_string(),
+                            }),
+                        };
+
+                        if idx_ty != Type::I32 {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::I32,
+                                found: idx_ty,
+                                context: "vec_get index must be i32".to_string(),
+                            });
+                        }
+
+                        Ok(Type::Option(elem_ty))
                     }
                     _ => {
                         // User-defined function
@@ -792,7 +1268,24 @@ impl TypeChecker {
 
             Expr::Borrow(expr) => {
                 // Borrow creates a reference to the expression's type
-                let inner_ty = self.check_expr(expr, env)?;
+                // Borrowing doesn't consume the original value - it only reads it
+                let inner_ty = match expr.as_ref() {
+                    Expr::Var(name) => {
+                        // Get type and mark as borrowed (not consumed)
+                        let ty = env.get(name)
+                            .ok_or_else(|| TypeError::VariableNotFound {
+                                var: name.clone(),
+                            })?
+                            .clone();
+                        // Mark as borrowed (satisfies "must use" but allows multiple borrows)
+                        env.mark_borrowed(name);
+                        ty
+                    }
+                    _ => {
+                        // For complex expressions, check them normally
+                        self.check_expr(expr, env)?
+                    }
+                };
                 Ok(Type::Ref(Box::new(inner_ty)))
             }
 

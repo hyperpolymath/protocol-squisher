@@ -96,6 +96,22 @@ impl Interpreter {
                 .cloned()
                 .ok_or_else(|| format!("Variable '{}' not found", name)),
 
+            Expr::UnaryOp { op, operand } => {
+                use crate::ast::UnaryOp;
+                let operand_val = self.eval_expr(operand, env)?;
+
+                match op {
+                    UnaryOp::Not => {
+                        let b = operand_val.as_bool()?;
+                        Ok(Value::Bool(!b))
+                    }
+                    UnaryOp::Neg => {
+                        let n = operand_val.as_int()?;
+                        Ok(Value::Int(-n))
+                    }
+                }
+            }
+
             Expr::BinOp { op, left, right } => {
                 // Logical AND and OR use short-circuit evaluation
                 match op {
@@ -340,6 +356,255 @@ impl Interpreter {
                             }
                         }
                         Ok(Value::Int(0))  // Return 0 (unit placeholder)
+                    }
+                    "hashmap_new" => {
+                        if !args.is_empty() {
+                            return Err(format!("hashmap_new expects 0 arguments, got {}", args.len()));
+                        }
+                        Ok(Value::HashMap(HashMap::new()))
+                    }
+                    "hashmap_insert" => {
+                        if args.len() != 3 {
+                            return Err(format!("hashmap_insert expects 3 arguments (map, key, value), got {}", args.len()));
+                        }
+                        let map_val = self.eval_expr(&args[0], env)?;
+                        let key_val = self.eval_expr(&args[1], env)?;
+                        let val_val = self.eval_expr(&args[2], env)?;
+
+                        // Extract map (consumes it due to linear types)
+                        let mut map = match map_val {
+                            Value::HashMap(m) => m,
+                            _ => return Err("hashmap_insert expects first argument to be a HashMap".to_string()),
+                        };
+
+                        // Key must be string
+                        let key_str = key_val.as_string()?.to_string();
+
+                        // Insert and return new map
+                        map.insert(key_str, val_val);
+                        Ok(Value::HashMap(map))
+                    }
+                    "hashmap_get" => {
+                        if args.len() != 2 {
+                            return Err(format!("hashmap_get expects 2 arguments (map, key), got {}", args.len()));
+                        }
+                        let map_val = self.eval_expr(&args[0], env)?;
+                        let key_val = self.eval_expr(&args[1], env)?;
+
+                        // Get reference to map (doesn't consume it)
+                        let map = match &map_val {
+                            Value::HashMap(m) => m,
+                            _ => return Err("hashmap_get expects first argument to be a HashMap".to_string()),
+                        };
+
+                        // Key must be string
+                        let key_str = key_val.as_string()?;
+
+                        // Lookup and return Option
+                        match map.get(key_str) {
+                            Some(val) => Ok(Value::OptionSome(Box::new(val.clone()))),
+                            None => Ok(Value::OptionNone),
+                        }
+                    }
+                    "hashmap_contains_key" => {
+                        if args.len() != 2 {
+                            return Err(format!("hashmap_contains_key expects 2 arguments (map, key), got {}", args.len()));
+                        }
+                        let map_val = self.eval_expr(&args[0], env)?;
+                        let key_val = self.eval_expr(&args[1], env)?;
+
+                        // Get reference to map
+                        let map = match &map_val {
+                            Value::HashMap(m) => m,
+                            _ => return Err("hashmap_contains_key expects first argument to be a HashMap".to_string()),
+                        };
+
+                        // Key must be string
+                        let key_str = key_val.as_string()?;
+
+                        // Check existence
+                        Ok(Value::Bool(map.contains_key(key_str)))
+                    }
+                    "hashmap_remove" => {
+                        if args.len() != 2 {
+                            return Err(format!("hashmap_remove expects 2 arguments (map, key), got {}", args.len()));
+                        }
+                        let map_val = self.eval_expr(&args[0], env)?;
+                        let key_val = self.eval_expr(&args[1], env)?;
+
+                        // Extract map (consumes it)
+                        let mut map = match map_val {
+                            Value::HashMap(m) => m,
+                            _ => return Err("hashmap_remove expects first argument to be a HashMap".to_string()),
+                        };
+
+                        // Key must be string
+                        let key_str = key_val.as_string()?.to_string();
+
+                        // Remove and return new map
+                        map.remove(&key_str);
+                        Ok(Value::HashMap(map))
+                    }
+                    // String operations
+                    "string_length" => {
+                        if args.len() != 1 {
+                            return Err(format!("string_length expects 1 argument, got {}", args.len()));
+                        }
+                        let val = self.eval_expr(&args[0], env)?;
+                        let s = val.as_string()?;
+                        Ok(Value::Int(s.len() as i64))
+                    }
+                    "string_to_upper" => {
+                        if args.len() != 1 {
+                            return Err(format!("string_to_upper expects 1 argument, got {}", args.len()));
+                        }
+                        let val = self.eval_expr(&args[0], env)?;
+                        let s = val.as_string()?;
+                        Ok(Value::String(s.to_uppercase()))
+                    }
+                    "string_to_lower" => {
+                        if args.len() != 1 {
+                            return Err(format!("string_to_lower expects 1 argument, got {}", args.len()));
+                        }
+                        let val = self.eval_expr(&args[0], env)?;
+                        let s = val.as_string()?;
+                        Ok(Value::String(s.to_lowercase()))
+                    }
+                    "string_substring" => {
+                        if args.len() != 3 {
+                            return Err(format!("string_substring expects 3 arguments (string, start, length), got {}", args.len()));
+                        }
+                        let val = self.eval_expr(&args[0], env)?;
+                        let start_val = self.eval_expr(&args[1], env)?;
+                        let len_val = self.eval_expr(&args[2], env)?;
+
+                        let s = val.as_string()?;
+                        let start = start_val.as_int()? as usize;
+                        let len = len_val.as_int()? as usize;
+
+                        if start > s.len() {
+                            return Err("string_substring: start index out of bounds".to_string());
+                        }
+                        let end = std::cmp::min(start + len, s.len());
+                        Ok(Value::String(s[start..end].to_string()))
+                    }
+                    // Math operations
+                    "abs" => {
+                        if args.len() != 1 {
+                            return Err(format!("abs expects 1 argument, got {}", args.len()));
+                        }
+                        let val = self.eval_expr(&args[0], env)?;
+                        let n = val.as_int()?;
+                        Ok(Value::Int(n.abs()))
+                    }
+                    "min" => {
+                        if args.len() != 2 {
+                            return Err(format!("min expects 2 arguments, got {}", args.len()));
+                        }
+                        let val1 = self.eval_expr(&args[0], env)?;
+                        let val2 = self.eval_expr(&args[1], env)?;
+                        let n1 = val1.as_int()?;
+                        let n2 = val2.as_int()?;
+                        Ok(Value::Int(std::cmp::min(n1, n2)))
+                    }
+                    "max" => {
+                        if args.len() != 2 {
+                            return Err(format!("max expects 2 arguments, got {}", args.len()));
+                        }
+                        let val1 = self.eval_expr(&args[0], env)?;
+                        let val2 = self.eval_expr(&args[1], env)?;
+                        let n1 = val1.as_int()?;
+                        let n2 = val2.as_int()?;
+                        Ok(Value::Int(std::cmp::max(n1, n2)))
+                    }
+                    "pow" => {
+                        if args.len() != 2 {
+                            return Err(format!("pow expects 2 arguments (base, exponent), got {}", args.len()));
+                        }
+                        let base_val = self.eval_expr(&args[0], env)?;
+                        let exp_val = self.eval_expr(&args[1], env)?;
+                        let base = base_val.as_int()?;
+                        let exp = exp_val.as_int()?;
+
+                        if exp < 0 {
+                            return Err("pow: negative exponents not supported".to_string());
+                        }
+                        let result = base.pow(exp as u32);
+                        Ok(Value::Int(result))
+                    }
+                    // Vec operations
+                    "vec_new" => {
+                        if !args.is_empty() {
+                            return Err(format!("vec_new expects 0 arguments, got {}", args.len()));
+                        }
+                        Ok(Value::Vec(Vec::new()))
+                    }
+                    "vec_push" => {
+                        if args.len() != 2 {
+                            return Err(format!("vec_push expects 2 arguments (vec, element), got {}", args.len()));
+                        }
+                        let vec_val = self.eval_expr(&args[0], env)?;
+                        let elem_val = self.eval_expr(&args[1], env)?;
+
+                        let mut vec = match vec_val {
+                            Value::Vec(v) => v,
+                            _ => return Err("vec_push expects first argument to be a Vec".to_string()),
+                        };
+
+                        vec.push(elem_val);
+                        Ok(Value::Vec(vec))
+                    }
+                    "vec_pop" => {
+                        if args.len() != 1 {
+                            return Err(format!("vec_pop expects 1 argument, got {}", args.len()));
+                        }
+                        let vec_val = self.eval_expr(&args[0], env)?;
+
+                        let mut vec = match vec_val {
+                            Value::Vec(v) => v,
+                            _ => return Err("vec_pop expects first argument to be a Vec".to_string()),
+                        };
+
+                        match vec.pop() {
+                            Some(elem) => {
+                                // Return tuple (new_vec, Some(elem)) but we don't have tuples
+                                // For now, just return the popped element
+                                Ok(Value::OptionSome(Box::new(elem)))
+                            }
+                            None => Ok(Value::OptionNone),
+                        }
+                    }
+                    "vec_length" => {
+                        if args.len() != 1 {
+                            return Err(format!("vec_length expects 1 argument, got {}", args.len()));
+                        }
+                        let vec_val = self.eval_expr(&args[0], env)?;
+
+                        let vec = match &vec_val {
+                            Value::Vec(v) => v,
+                            _ => return Err("vec_length expects first argument to be a Vec".to_string()),
+                        };
+
+                        Ok(Value::Int(vec.len() as i64))
+                    }
+                    "vec_get" => {
+                        if args.len() != 2 {
+                            return Err(format!("vec_get expects 2 arguments (vec, index), got {}", args.len()));
+                        }
+                        let vec_val = self.eval_expr(&args[0], env)?;
+                        let idx_val = self.eval_expr(&args[1], env)?;
+
+                        let vec = match &vec_val {
+                            Value::Vec(v) => v,
+                            _ => return Err("vec_get expects first argument to be a Vec".to_string()),
+                        };
+
+                        let idx = idx_val.as_int()? as usize;
+
+                        match vec.get(idx) {
+                            Some(elem) => Ok(Value::OptionSome(Box::new(elem.clone()))),
+                            None => Ok(Value::OptionNone),
+                        }
                     }
                     _ => {
                         // User-defined function

@@ -1,5 +1,13 @@
 // Test HashMap literal creation
 fn main() -> i32 {
     let map = {"name": "Alice", "role": "Engineer"};
-    0
+
+    // Use the map
+    match hashmap_get(&map, "name") {
+        Some(val) => {
+            print(val);
+            0
+        }
+        None => 1
+    }
 }

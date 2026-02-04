@@ -125,6 +125,22 @@ impl WasmCodeGen {
                     .map_err(|e| e.to_string())?;
             }
 
+            Expr::UnaryOp { op, operand } => {
+                use crate::ast::UnaryOp;
+                self.generate_expr(operand, indent)?;
+                match op {
+                    UnaryOp::Not => {
+                        // Boolean negation: if x == 0 then 1 else 0
+                        writeln!(&mut self.wat, "{}(i32.eqz)", ind).map_err(|e| e.to_string())?;
+                    }
+                    UnaryOp::Neg => {
+                        // Arithmetic negation: 0 - x
+                        writeln!(&mut self.wat, "{}(i64.const 0)", ind).map_err(|e| e.to_string())?;
+                        writeln!(&mut self.wat, "{}(i64.sub)", ind).map_err(|e| e.to_string())?;
+                    }
+                }
+            }
+
             Expr::BinOp { op, left, right } => {
                 self.generate_expr(left, indent)?;
                 self.generate_expr(right, indent)?;

@@ -1,0 +1,35 @@
+// Phase 1 MVP Complete Demo
+// All features working: Vec, HashMap, String, Math, Pattern matching, Linear types
+
+fn main() -> i32 {
+    // HashMap literals and string operations
+    let config = {"name": "Ephapax", "version": "1.0"};
+
+    {
+        // Test HashMap get and string operations
+        match hashmap_get(&config, "name") {
+            Some(name) => {
+                print(string_to_upper(&name));  // EPHAPAX
+                0
+            }
+            None => 1
+        };
+
+        // Math operations
+        print(pow(2, 5));          // 32
+        print(max(10, 20));        // 20
+
+        // Vec operations - create, push, and pop
+        let v1 = vec_new();
+        let v2 = vec_push(v1, 100);
+        let v3 = vec_push(v2, 200);
+
+        match vec_pop(v3) {
+            Some(last) => {
+                print(last);           // 200
+                0
+            }
+            None => 1
+        }
+    }
+}

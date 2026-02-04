@@ -22,7 +22,7 @@ impl Parser {
         &self.tokens[self.pos]
     }
 
-    fn peek(&self, offset: usize) -> Option<&Token> {
+    fn _peek(&self, offset: usize) -> Option<&Token> {
         let idx = self.pos + offset;
         if idx < self.tokens.len() {
             Some(&self.tokens[idx])
@@ -247,10 +247,41 @@ impl Parser {
 
         if exprs.is_empty() {
             Err("Empty block".to_string())
-        } else if exprs.len() == 1 {
-            Ok(exprs.into_iter().next().unwrap())
         } else {
-            Ok(Expr::Block(exprs))
+            // Restructure consecutive Lets to have proper scoping
+            // If we have [Let, expr1, expr2, ...], transform to Let { body: [expr1, expr2, ...] }
+            Ok(self.restructure_lets(exprs))
+        }
+    }
+
+    /// Restructure a list of expressions so that Let bindings properly scope
+    /// the remaining expressions in the list
+    fn restructure_lets(&self, mut exprs: Vec<Expr>) -> Expr {
+        if exprs.is_empty() {
+            return Expr::IntLit(0);
+        }
+
+        if exprs.len() == 1 {
+            return exprs.into_iter().next().unwrap();
+        }
+
+        // Check if the first expression is a Let
+        match exprs.remove(0) {
+            Expr::Let { name, value, body: _ } => {
+                // Ignore the original body and use the rest of exprs as the new body
+                let new_body = Box::new(self.restructure_lets(exprs));
+                Expr::Let { name, value, body: new_body }
+            }
+            first_expr => {
+                // Not a Let, so return as Block
+                let mut all_exprs = vec![first_expr];
+                all_exprs.extend(exprs);
+                if all_exprs.len() == 1 {
+                    all_exprs.into_iter().next().unwrap()
+                } else {
+                    Expr::Block(all_exprs)
+                }
+            }
         }
     }
 
@@ -368,7 +399,9 @@ impl Parser {
     fn parse_if(&mut self) -> Result<Expr, String> {
         self.expect(Token::If)?;
 
-        let cond = Box::new(self.parse_expr()?);
+        // Parse condition - use logical_or to stop before {
+        // This prevents "if x {" from being parsed as "if x {...}" where x{...} is a struct literal
+        let cond = Box::new(self.parse_logical_or()?);
 
         let then_branch = Box::new(self.parse_block_expr()?);
 
@@ -666,6 +699,14 @@ impl Parser {
 
     fn parse_unary(&mut self) -> Result<Expr, String> {
         match self.current() {
+            Token::Not => {
+                self.advance();
+                let operand = Box::new(self.parse_unary()?);
+                Ok(Expr::UnaryOp {
+                    op: crate::ast::UnaryOp::Not,
+                    operand,
+                })
+            }
             Token::Amp => {
                 self.advance();
                 let expr = Box::new(self.parse_unary()?);
@@ -747,36 +788,8 @@ impl Parser {
                 let name = s.clone();
                 self.advance();
 
-                // Check if it's a struct literal
-                if self.current() == &Token::LBrace {
-                    self.advance();
-
-                    let mut fields = Vec::new();
-                    while self.current() != &Token::RBrace {
-                        let field_name = match self.current() {
-                            Token::Ident(s) => s.clone(),
-                            _ => return Err("Expected field name in struct literal".to_string()),
-                        };
-                        self.advance();
-
-                        self.expect(Token::Colon)?;
-
-                        let field_value = self.parse_expr()?;
-
-                        fields.push((field_name, field_value));
-
-                        if self.current() == &Token::Comma {
-                            self.advance();
-                        } else if self.current() != &Token::RBrace {
-                            return Err("Expected ',' or '}' in struct literal".to_string());
-                        }
-                    }
-                    self.expect(Token::RBrace)?;
-
-                    Expr::StructLit { name, fields }
-                }
                 // Check if it's a function call
-                else if self.current() == &Token::LParen {
+                if self.current() == &Token::LParen {
                     self.advance();
 
                     let mut args = Vec::new();
@@ -802,7 +815,82 @@ impl Parser {
                 self.expect(Token::RParen)?;
                 e
             }
-            Token::LBrace => return self.parse_block_expr(),
+            Token::LBrace => {
+                // Distinguish between HashMap literal and block
+                // HashMap literal: {"key": value, ...}
+                // Block: { expr; expr; ... }
+                // Look ahead to see if it's a HashMap literal
+                self.advance(); // consume {
+
+                // Check if it's an empty block/hashmap
+                if self.current() == &Token::RBrace {
+                    self.advance();
+                    return Ok(Expr::HashMapLit(Vec::new()));
+                }
+
+                // Check if first element is string literal followed by colon
+                let is_hashmap = matches!(self.current(), Token::StringLit(_));
+
+                if is_hashmap {
+                    // Parse as HashMap literal
+                    let mut entries = Vec::new();
+
+                    loop {
+                        // Parse key (must be string)
+                        let key = match self.current() {
+                            Token::StringLit(s) => {
+                                let val = s.clone();
+                                self.advance();
+                                Expr::StringLit(val)
+                            }
+                            Token::RBrace => break,
+                            _ => return Err("HashMap literal keys must be strings".to_string()),
+                        };
+
+                        self.expect(Token::Colon)?;
+
+                        let value = self.parse_expr()?;
+
+                        entries.push((key, value));
+
+                        if self.current() == &Token::Comma {
+                            self.advance();
+                        } else if self.current() != &Token::RBrace {
+                            return Err("Expected ',' or '}' in HashMap literal".to_string());
+                        }
+
+                        if self.current() == &Token::RBrace {
+                            break;
+                        }
+                    }
+
+                    self.expect(Token::RBrace)?;
+                    return Ok(Expr::HashMapLit(entries));
+                } else {
+                    // Parse as block - we already consumed the {, so parse the contents
+                    let mut exprs = Vec::new();
+
+                    while self.current() != &Token::RBrace {
+                        exprs.push(self.parse_expr()?);
+
+                        if self.current() == &Token::Semi {
+                            self.advance();
+                        } else if self.current() != &Token::RBrace {
+                            break;
+                        }
+                    }
+
+                    self.expect(Token::RBrace)?;
+
+                    if exprs.is_empty() {
+                        return Ok(Expr::IntLit(0)); // Empty block
+                    } else if exprs.len() == 1 {
+                        return Ok(exprs.into_iter().next().unwrap());
+                    } else {
+                        return Ok(Expr::Block(exprs));
+                    }
+                }
+            }
             _ => return Err(format!("Unexpected token: {}", self.current())),
         };
 

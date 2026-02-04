@@ -1,0 +1,23 @@
+// Test standard library functions
+fn main() -> i32 {
+    // String operations - test all at once
+    let name = "alice";
+    let result = {
+        print(string_to_upper(&name));
+        print(string_length(&name));
+        print(string_substring(&name, 1, 3));
+
+        // Math operations
+        print(abs(0 - 42));
+        print(min(10, 20));
+        print(max(10, 20));
+
+        pow(2, 8)
+    };
+
+    if result == 256 {
+        0
+    } else {
+        1
+    }
+}
