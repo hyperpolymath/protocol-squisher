@@ -1,0 +1,11 @@
+// Test matching None
+fn get_none() -> Option<i32> {
+    None
+}
+
+fn main() -> i32 {
+    let val = get_none();
+    match val {
+        None => 0
+    }
+}

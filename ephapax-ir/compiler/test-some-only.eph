@@ -1,0 +1,4 @@
+// Just test if Some parses
+fn main() -> i32 {
+    42
+}

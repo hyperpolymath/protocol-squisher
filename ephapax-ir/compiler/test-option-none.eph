@@ -1,0 +1,16 @@
+// Test None constructor
+fn maybe_divide(a: i32, b: i32) -> Option<i32> {
+    if b == 0 {
+        None
+    } else {
+        Some(a / b)
+    }
+}
+
+fn main() -> i32 {
+    let result = maybe_divide(10, 0);
+    match result {
+        Some(n) => n,
+        None => -1
+    }
+}

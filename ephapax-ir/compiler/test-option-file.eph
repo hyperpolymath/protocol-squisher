@@ -1,0 +1,15 @@
+// Test Option with file I/O
+fn try_read_number(path: String) -> Option<i32> {
+    let content = read_file(path);
+    // In a real implementation, would parse content
+    // For now, just return Some with a dummy value
+    Some(42)
+}
+
+fn main() -> i32 {
+    let result = try_read_number("test.txt");
+    match result {
+        Some(n) => n,
+        None => 0
+    }
+}

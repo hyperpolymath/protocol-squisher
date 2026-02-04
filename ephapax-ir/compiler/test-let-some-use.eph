@@ -1,0 +1,8 @@
+// Test let binding with Some and using it
+fn main() -> i32 {
+    let x = Some(42);
+    match x {
+        Some(n) => n,
+        None => 0
+    }
+}

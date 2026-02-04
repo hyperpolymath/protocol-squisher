@@ -1,0 +1,8 @@
+// Test Option with only Some pattern (using wildcard for None)
+fn main() -> i32 {
+    let x = Some(42);
+    match x {
+        Some(n) => n,
+        _ => 0
+    }
+}

@@ -1,0 +1,8 @@
+// Test Some directly in a function
+fn make_some() -> Option<i32> {
+    Some(42)
+}
+
+fn main() -> i32 {
+    0
+}

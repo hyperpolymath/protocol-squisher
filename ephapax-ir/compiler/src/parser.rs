@@ -175,6 +175,22 @@ impl Parser {
                 self.expect(Token::Gt)?;
                 Ok(Type::Vec(elem_ty))
             }
+            Token::Option => {
+                self.advance();
+                self.expect(Token::Lt)?;
+                let inner_ty = Box::new(self.parse_type()?);
+                self.expect(Token::Gt)?;
+                Ok(Type::Option(inner_ty))
+            }
+            Token::Result => {
+                self.advance();
+                self.expect(Token::Lt)?;
+                let ok_ty = Box::new(self.parse_type()?);
+                self.expect(Token::Comma)?;
+                let err_ty = Box::new(self.parse_type()?);
+                self.expect(Token::Gt)?;
+                Ok(Type::Result(ok_ty, err_ty))
+            }
             Token::I32 => {
                 self.advance();
                 Ok(Type::I32)
@@ -361,7 +377,33 @@ impl Parser {
     fn parse_match(&mut self) -> Result<Expr, String> {
         self.expect(Token::Match)?;
 
-        let scrutinee = Box::new(self.parse_comparison()?);
+        // Parse scrutinee as simple expression to avoid consuming the match block's {
+        // Similar to how for loops parse iterables
+        let scrutinee = Box::new(match self.current() {
+            Token::Ident(name) => {
+                let n = name.clone();
+                self.advance();
+                // Check for function call
+                if self.current() == &Token::LParen {
+                    self.advance();
+                    let mut args = Vec::new();
+                    while self.current() != &Token::RParen {
+                        args.push(self.parse_expr()?);
+                        if self.current() == &Token::Comma {
+                            self.advance();
+                        } else if self.current() != &Token::RParen {
+                            return Err("Expected ',' or ')' in function call".to_string());
+                        }
+                    }
+                    self.expect(Token::RParen)?;
+                    Expr::Call { func: n, args }
+                } else {
+                    // Just a variable reference
+                    Expr::Var(n)
+                }
+            }
+            _ => return Err("Expected scrutinee expression (variable or function call)".to_string()),
+        });
 
         self.expect(Token::LBrace)?;
 
@@ -482,6 +524,31 @@ impl Parser {
             Token::Underscore => {
                 self.advance();
                 Ok(Pattern::Wildcard)
+            }
+            Token::Some => {
+                self.advance();
+                self.expect(Token::LParen)?;
+                let inner_pattern = Box::new(self.parse_pattern()?);
+                self.expect(Token::RParen)?;
+                Ok(Pattern::Some(inner_pattern))
+            }
+            Token::None => {
+                self.advance();
+                Ok(Pattern::None)
+            }
+            Token::Ok => {
+                self.advance();
+                self.expect(Token::LParen)?;
+                let inner_pattern = Box::new(self.parse_pattern()?);
+                self.expect(Token::RParen)?;
+                Ok(Pattern::Ok(inner_pattern))
+            }
+            Token::Err => {
+                self.advance();
+                self.expect(Token::LParen)?;
+                let inner_pattern = Box::new(self.parse_pattern()?);
+                self.expect(Token::RParen)?;
+                Ok(Pattern::Err(inner_pattern))
             }
             Token::Ident(s) => {
                 let name = s.clone();
@@ -623,6 +690,31 @@ impl Parser {
             Token::False => {
                 self.advance();
                 Expr::BoolLit(false)
+            }
+            Token::Some => {
+                self.advance();
+                self.expect(Token::LParen)?;
+                let inner = Box::new(self.parse_expr()?);
+                self.expect(Token::RParen)?;
+                Expr::Some(inner)
+            }
+            Token::None => {
+                self.advance();
+                Expr::None
+            }
+            Token::Ok => {
+                self.advance();
+                self.expect(Token::LParen)?;
+                let inner = Box::new(self.parse_expr()?);
+                self.expect(Token::RParen)?;
+                Expr::Ok(inner)
+            }
+            Token::Err => {
+                self.advance();
+                self.expect(Token::LParen)?;
+                let inner = Box::new(self.parse_expr()?);
+                self.expect(Token::RParen)?;
+                Expr::Err(inner)
             }
             Token::LBracket => {
                 // Vec literal [e1, e2, ...]
