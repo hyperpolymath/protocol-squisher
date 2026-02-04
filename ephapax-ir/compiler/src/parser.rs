@@ -121,6 +121,13 @@ impl Parser {
                 let inner_ty = Box::new(self.parse_type()?);
                 Ok(Type::Ref(inner_ty))
             }
+            Token::Vec => {
+                self.advance();
+                self.expect(Token::Lt)?;
+                let elem_ty = Box::new(self.parse_type()?);
+                self.expect(Token::Gt)?;
+                Ok(Type::Vec(elem_ty))
+            }
             Token::I32 => {
                 self.advance();
                 Ok(Type::I32)
@@ -473,24 +480,42 @@ impl Parser {
     }
 
     fn parse_primary(&mut self) -> Result<Expr, String> {
-        match self.current() {
+        let mut expr = match self.current() {
             Token::IntLit(n) => {
                 let val = *n;
                 self.advance();
-                Ok(Expr::IntLit(val))
+                Expr::IntLit(val)
             }
             Token::StringLit(s) => {
                 let val = s.clone();
                 self.advance();
-                Ok(Expr::StringLit(val))
+                Expr::StringLit(val)
             }
             Token::True => {
                 self.advance();
-                Ok(Expr::BoolLit(true))
+                Expr::BoolLit(true)
             }
             Token::False => {
                 self.advance();
-                Ok(Expr::BoolLit(false))
+                Expr::BoolLit(false)
+            }
+            Token::LBracket => {
+                // Vec literal [e1, e2, ...]
+                self.advance();
+                let mut elements = Vec::new();
+
+                while self.current() != &Token::RBracket {
+                    elements.push(self.parse_expr()?);
+
+                    if self.current() == &Token::Comma {
+                        self.advance();
+                    } else if self.current() != &Token::RBracket {
+                        return Err("Expected ',' or ']' in vector literal".to_string());
+                    }
+                }
+                self.expect(Token::RBracket)?;
+
+                Expr::VecLit(elements)
             }
             Token::Ident(s) => {
                 let name = s.clone();
@@ -512,20 +537,38 @@ impl Parser {
                     }
                     self.expect(Token::RParen)?;
 
-                    Ok(Expr::Call { func: name, args })
+                    Expr::Call { func: name, args }
                 } else {
-                    Ok(Expr::Var(name))
+                    Expr::Var(name)
                 }
             }
             Token::LParen => {
                 self.advance();
-                let expr = self.parse_expr()?;
+                let e = self.parse_expr()?;
                 self.expect(Token::RParen)?;
-                Ok(expr)
+                e
             }
-            Token::LBrace => self.parse_block_expr(),
-            _ => Err(format!("Unexpected token: {}", self.current())),
+            Token::LBrace => return self.parse_block_expr(),
+            _ => return Err(format!("Unexpected token: {}", self.current())),
+        };
+
+        // Handle postfix operators (indexing)
+        loop {
+            match self.current() {
+                Token::LBracket => {
+                    self.advance();
+                    let index = Box::new(self.parse_expr()?);
+                    self.expect(Token::RBracket)?;
+                    expr = Expr::Index {
+                        vec: Box::new(expr),
+                        index,
+                    };
+                }
+                _ => break,
+            }
         }
+
+        Ok(expr)
     }
 }
 

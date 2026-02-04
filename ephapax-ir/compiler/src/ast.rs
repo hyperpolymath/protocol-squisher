@@ -11,6 +11,7 @@ pub enum Type {
     I64,
     Bool,
     String,          // String type (heap-allocated, not Copy)
+    Vec(Box<Type>),  // Vector type Vec<T> (heap-allocated, not Copy)
     Ref(Box<Type>),  // Immutable reference type &T
     Infer,           // Type inference placeholder
 }
@@ -21,6 +22,7 @@ impl Type {
         match self {
             Type::I32 | Type::I64 | Type::Bool => true,
             Type::String => false, // Strings are heap-allocated, not Copy
+            Type::Vec(_) => false, // Vectors are heap-allocated, not Copy
             Type::Ref(_) => true, // References are Copy (they're just pointers)
             Type::Infer => false, // Unknown types are not Copy by default
         }
@@ -34,6 +36,7 @@ impl fmt::Display for Type {
             Type::I64 => write!(f, "i64"),
             Type::Bool => write!(f, "bool"),
             Type::String => write!(f, "String"),
+            Type::Vec(inner) => write!(f, "Vec<{}>", inner),
             Type::Ref(inner) => write!(f, "&{}", inner),
             Type::Infer => write!(f, "_"),
         }
@@ -65,6 +68,7 @@ pub enum Expr {
     IntLit(i64),
     BoolLit(bool),
     StringLit(String),
+    VecLit(Vec<Expr>),  // Vector literal [e1, e2, ...]
 
     // Variable reference
     Var(String),
@@ -80,6 +84,12 @@ pub enum Expr {
     Call {
         func: String,
         args: Vec<Expr>,
+    },
+
+    // Vector indexing vec[index]
+    Index {
+        vec: Box<Expr>,
+        index: Box<Expr>,
     },
 
     // Let binding
@@ -190,6 +200,16 @@ impl fmt::Display for Expr {
             Expr::IntLit(n) => write!(f, "{}", n),
             Expr::BoolLit(b) => write!(f, "{}", b),
             Expr::StringLit(s) => write!(f, "\"{}\"", s),
+            Expr::VecLit(elements) => {
+                write!(f, "[")?;
+                for (i, elem) in elements.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", elem)?;
+                }
+                write!(f, "]")
+            }
             Expr::Var(s) => write!(f, "{}", s),
             Expr::BinOp { op, left, right } => {
                 write!(f, "({} {} {})", left, op, right)
@@ -203,6 +223,9 @@ impl fmt::Display for Expr {
                     write!(f, "{}", arg)?;
                 }
                 write!(f, ")")
+            }
+            Expr::Index { vec, index } => {
+                write!(f, "{}[{}]", vec, index)
             }
             Expr::Let { name, value, body } => {
                 write!(f, "(let {} = {} in {})", name, value, body)

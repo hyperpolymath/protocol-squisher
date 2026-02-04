@@ -11,6 +11,7 @@ pub enum Value {
     Int(i64),
     Bool(bool),
     String(String),
+    Vec(Vec<Value>),
 }
 
 impl Value {
@@ -32,6 +33,13 @@ impl Value {
         match self {
             Value::String(s) => Ok(s),
             _ => Err(format!("Expected string, got {:?}", self)),
+        }
+    }
+
+    pub fn as_vec(&self) -> Result<&Vec<Value>, String> {
+        match self {
+            Value::Vec(v) => Ok(v),
+            _ => Err(format!("Expected vector, got {:?}", self)),
         }
     }
 }
@@ -283,6 +291,32 @@ impl Interpreter {
                 }
 
                 Err("Non-exhaustive match (no pattern matched)".to_string())
+            }
+
+            Expr::VecLit(elements) => {
+                let mut values = Vec::new();
+                for elem in elements {
+                    values.push(self.eval_expr(elem, env)?);
+                }
+                Ok(Value::Vec(values))
+            }
+
+            Expr::Index { vec, index } => {
+                let vec_val = self.eval_expr(vec, env)?;
+                let index_val = self.eval_expr(index, env)?;
+
+                let vec_data = vec_val.as_vec()?;
+                let idx = index_val.as_int()?;
+
+                if idx < 0 || idx as usize >= vec_data.len() {
+                    return Err(format!(
+                        "Index {} out of bounds for vector of length {}",
+                        idx,
+                        vec_data.len()
+                    ));
+                }
+
+                Ok(vec_data[idx as usize].clone())
             }
 
             Expr::Borrow(expr) => {

@@ -498,6 +498,57 @@ impl TypeChecker {
                 Ok(arm_type.unwrap())
             }
 
+            Expr::VecLit(elements) => {
+                // Empty vector needs type annotation (for now, default to Vec<i32>)
+                if elements.is_empty() {
+                    return Ok(Type::Vec(Box::new(Type::I32)));
+                }
+
+                // Check first element type
+                let elem_ty = self.check_expr(&elements[0], env)?;
+
+                // All elements must have the same type
+                for (i, elem) in elements.iter().enumerate().skip(1) {
+                    let ty = self.check_expr(elem, env)?;
+                    if ty != elem_ty {
+                        return Err(TypeError::TypeMismatch {
+                            expected: elem_ty.clone(),
+                            found: ty,
+                            context: format!("vector element at index {}", i),
+                        });
+                    }
+                }
+
+                Ok(Type::Vec(Box::new(elem_ty)))
+            }
+
+            Expr::Index { vec, index } => {
+                // Check vector type
+                let vec_ty = self.check_expr(vec, env)?;
+                let elem_ty = match vec_ty {
+                    Type::Vec(elem_ty) => elem_ty,
+                    _ => {
+                        return Err(TypeError::TypeMismatch {
+                            expected: Type::Vec(Box::new(Type::Infer)),
+                            found: vec_ty,
+                            context: "indexing requires a vector type".to_string(),
+                        });
+                    }
+                };
+
+                // Check index is i32
+                let index_ty = self.check_expr(index, env)?;
+                if index_ty != Type::I32 {
+                    return Err(TypeError::TypeMismatch {
+                        expected: Type::I32,
+                        found: index_ty,
+                        context: "vector index".to_string(),
+                    });
+                }
+
+                Ok(*elem_ty)
+            }
+
             Expr::Borrow(expr) => {
                 // Borrow creates a reference to the expression's type
                 let inner_ty = self.check_expr(expr, env)?;

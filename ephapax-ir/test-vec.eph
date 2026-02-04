@@ -1,0 +1,17 @@
+// Test Vec<T> type support
+
+// Create a vector of integers
+fn make_vec() -> Vec<i32> {
+    [10, 20, 30, 40, 50]
+}
+
+// Get a single element from a vector (consumes the vector)
+fn get_element(vec: Vec<i32>, index: i32) -> i32 {
+    vec[index]
+}
+
+// Main entry point - get the second element (index 1)
+fn main() {
+    let numbers = make_vec();
+    get_element(numbers, 1)  // Should return 20
+}

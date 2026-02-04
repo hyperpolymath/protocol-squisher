@@ -27,12 +27,15 @@ pub enum Token {
     I64,
     Bool,
     String,
+    Vec,
 
     // Symbols
     LParen,
     RParen,
     LBrace,
     RBrace,
+    LBracket,   // [
+    RBracket,   // ]
     Arrow,      // ->
     FatArrow,   // =>
     Colon,
@@ -82,10 +85,13 @@ impl fmt::Display for Token {
             Token::I64 => write!(f, "i64"),
             Token::Bool => write!(f, "bool"),
             Token::String => write!(f, "String"),
+            Token::Vec => write!(f, "Vec"),
             Token::LParen => write!(f, "("),
             Token::RParen => write!(f, ")"),
             Token::LBrace => write!(f, "{{"),
             Token::RBrace => write!(f, "}}"),
+            Token::LBracket => write!(f, "["),
+            Token::RBracket => write!(f, "]"),
             Token::Arrow => write!(f, "->"),
             Token::FatArrow => write!(f, "=>"),
             Token::Colon => write!(f, ":"),
@@ -263,6 +269,14 @@ impl Lexer {
                     self.advance();
                     Token::RBrace
                 }
+                '[' => {
+                    self.advance();
+                    Token::LBracket
+                }
+                ']' => {
+                    self.advance();
+                    Token::RBracket
+                }
                 ':' => {
                     self.advance();
                     Token::Colon
@@ -413,6 +427,7 @@ impl Lexer {
                         "i64" => Token::I64,
                         "bool" => Token::Bool,
                         "String" => Token::String,
+                        "Vec" => Token::Vec,
                         _ => Token::Ident(ident),
                     }
                 }

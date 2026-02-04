@@ -114,14 +114,31 @@ fn main() {
     };
 
     match result {
-        Ok(value) => match value {
-            Value::Int(n) => println!("{}", n),
-            Value::Bool(b) => println!("{}", b),
-            Value::String(s) => println!("{}", s),
-        },
+        Ok(value) => {
+            print_value(&value);
+            println!();
+        }
         Err(e) => {
             eprintln!("Error: {}", e);
             process::exit(1);
+        }
+    }
+}
+
+fn print_value(value: &Value) {
+    match value {
+        Value::Int(n) => print!("{}", n),
+        Value::Bool(b) => print!("{}", b),
+        Value::String(s) => print!("{}", s),
+        Value::Vec(elements) => {
+            print!("[");
+            for (i, elem) in elements.iter().enumerate() {
+                if i > 0 {
+                    print!(", ");
+                }
+                print_value(elem);
+            }
+            print!("]");
         }
     }
 }
