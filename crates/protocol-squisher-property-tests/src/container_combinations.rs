@@ -58,10 +58,7 @@ fn test_option_i64() {
     assert_eq!(class, TransportClass::Concorde);
 }
 
-// TODO: Container element type analysis not yet implemented
-// Currently, containers return None from to_ephapax_primitive(), so element narrowing isn't detected
 #[test]
-#[ignore = "Container element type analysis not yet implemented"]
 fn test_option_narrowing() {
     let source = IrType::Container(ContainerType::Option(Box::new(IrType::Primitive(
         PrimitiveType::I64,
@@ -90,9 +87,7 @@ fn test_vec_i64() {
     );
 }
 
-// TODO: Container element type analysis not yet implemented
 #[test]
-#[ignore = "Container element type analysis not yet implemented"]
 fn test_vec_narrowing() {
     let source = IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(
         PrimitiveType::I64,
@@ -169,9 +164,7 @@ fn test_hashmap_string_i64() {
     );
 }
 
-// TODO: Container element type analysis not yet implemented
 #[test]
-#[ignore = "Container element type analysis not yet implemented"]
 fn test_hashmap_with_narrowing_value() {
     let source = IrType::Container(ContainerType::Map(
         Box::new(IrType::Primitive(PrimitiveType::String)),
@@ -202,9 +195,7 @@ fn test_tuple_i64_string() {
     );
 }
 
-// TODO: Container element type analysis not yet implemented
 #[test]
-#[ignore = "Container element type analysis not yet implemented"]
 fn test_tuple_with_narrowing() {
     let source = IrType::Container(ContainerType::Tuple(vec![
         IrType::Primitive(PrimitiveType::I64),

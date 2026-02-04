@@ -101,7 +101,7 @@ impl EphapaxCompatibilityEngine {
         source: &protocol_squisher_ir::StructDef,
         target: &protocol_squisher_ir::StructDef,
     ) -> Option<TypeCompatibilityAnalysis> {
-        use protocol_squisher_rust_analyzer::to_ephapax_primitive;
+        // No longer need to_ephapax_primitive - using analyze_transport_compatibility instead
 
         let mut field_analyses = Vec::new();
         let mut worst_class = EphapaxTransportClass::Concorde;
@@ -109,12 +109,12 @@ impl EphapaxCompatibilityEngine {
         for source_field in &source.fields {
             // Find matching field in target
             if let Some(target_field) = target.fields.iter().find(|f| f.name == source_field.name) {
-                // Try to convert to ephapax primitives
-                if let (Some(s_prim), Some(t_prim)) = (
-                    to_ephapax_primitive(&source_field.ty),
-                    to_ephapax_primitive(&target_field.ty),
+                // Analyze transport compatibility (supports primitives AND containers)
+                if let Ok(class) = protocol_squisher_rust_analyzer::analyze_transport_compatibility(
+                    &self.ir_ctx,
+                    &source_field.ty,
+                    &target_field.ty
                 ) {
-                    let class = self.ir_ctx.analyze_compatibility(s_prim, t_prim);
                     let fidelity = self.ir_ctx.get_fidelity(class);
                     let overhead = self.ir_ctx.get_overhead(class);
 

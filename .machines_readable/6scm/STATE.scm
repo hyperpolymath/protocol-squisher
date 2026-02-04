@@ -26,13 +26,13 @@
 
 (define current-position
   '((phase . "mvp")
-    (overall-completion . 87)
+    (overall-completion . 90)
     (components
       ((ephapax-ir . "working-idris2-with-rust-ffi")
        (protocol-squisher-ir . "working")
-       (protocol-squisher-rust-analyzer . "working-with-ephapax")
-       (protocol-squisher-python-analyzer . "working-with-ephapax")
-       (protocol-squisher-compat . "working-with-ephapax")
+       (protocol-squisher-rust-analyzer . "working-with-ephapax-and-containers")
+       (protocol-squisher-python-analyzer . "working-with-ephapax-and-containers")
+       (protocol-squisher-compat . "working-with-ephapax-and-containers")
        (protocol-squisher-pyo3-codegen . "working-with-ephapax")
        (protocol-squisher-json-fallback . "working-with-ephapax")
        (protocol-squisher-integration-tests . "working")
@@ -73,7 +73,10 @@
        "Commands: analyze, optimize, generate, check"
        "Comprehensive property-based tests (64 tests: primitives + containers + edge cases)"
        "Property tests: 169 primitive type combinations, container nesting, boundary conditions"
-       "Test coverage increased from 180 to 244 tests (35% increase, 45% of 540 target)"))))
+       "Test coverage increased from 180 to 276 tests (53% increase, 51% of 540 target)"
+       "Container transport analysis: Option, Vec, Map, Tuple with recursive element analysis"
+       "Container analysis propagates worst transport class from element types"
+       "All 64 property tests passing (0 ignored, container analysis complete)"))))
 
 (define route-to-mvp
   '((milestones
@@ -131,7 +134,41 @@
       "Integrate proven library when SafePath module compiles")))
 
 (define session-history
-  '((session-2026-02-04-part8
+  '((session-2026-02-04-part9
+      (date . "2026-02-04")
+      (duration . "continuation")
+      (accomplishments
+        "✓ Implemented container transport analysis with recursive element type checking"
+        "✓ Updated Rust analyzer ephapax bridge (+6 container tests: Option, Vec, Map, Tuple)"
+        "✓ Updated Python analyzer ephapax bridge (+6 container tests)"
+        "✓ Updated compatibility engine to use container-aware analysis"
+        "✓ Container analysis rules: propagate worst class from element types"
+        "✓ All 4 previously ignored property tests now pass (container narrowing detection)"
+        "✓ Total test count increased from 244 to 276 (+32 tests, 13% increase)"
+        "✓ All 64 property tests passing with 0 ignored"
+        "✓ Fixed unused import warnings and ephapax-ir Cargo.toml bin entry")
+      (commits
+        "Pending: feat: add container transport analysis with recursive element checking")
+      (test-results
+        "protocol-squisher-rust-analyzer: 30/30 passing (+6 container tests) ✓"
+        "protocol-squisher-python-analyzer: 29/29 passing (+6 container tests) ✓"
+        "protocol-squisher-compat: 31/31 passing (now container-aware) ✓"
+        "protocol-squisher-property-tests: 64/64 passing, 0 ignored ✓"
+        "Total workspace: 276 tests passing ✓")
+      (key-insights
+        "Container analysis recursively analyzes element types"
+        "Option<T> propagates T's transport class (zero-overhead wrapper)"
+        "Vec<T>, Map<K,V>, Tuple(...) propagate worst element class"
+        "Compatibility engine now supports full type hierarchy (primitives + containers)"
+        "Mismatched container types (Vec vs Option) → Wheelbarrow"
+        "Container narrowing (Vec<i64>→Vec<i32>) correctly detected as Wheelbarrow")
+      (next-session-priorities
+        "Create example projects demonstrating zero-copy interop"
+        "Document CLI usage and common workflows"
+        "Add I128/U128 support to ephapax IR"
+        "Add cross-signedness widening if desired"
+        "Continue with remaining Phase 2 testing (error paths, CLI tests)"))
+    (session-2026-02-04-part8
       (date . "2026-02-04")
       (duration . "continuation")
       (accomplishments
