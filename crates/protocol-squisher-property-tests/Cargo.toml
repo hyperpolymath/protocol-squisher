@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+
+[package]
+name = "protocol-squisher-property-tests"
+version = "0.1.0"
+edition = "2021"
+license = "PMPL-1.0-or-later"
+description = "Property-based tests for protocol-squisher"
+repository = "https://github.com/hyperpolymath/protocol-squisher"
+
+[dependencies]
+protocol-squisher-ir = { path = "../protocol-squisher-ir" }
+protocol-squisher-compat = { path = "../protocol-squisher-compat" }
+protocol-squisher-ephapax-ir = { path = "../../ephapax-ir" }
+proptest = "1.4"
+proptest-derive = "0.5"
+
+[lib]
+name = "protocol_squisher_property_tests"
+path = "src/lib.rs"
