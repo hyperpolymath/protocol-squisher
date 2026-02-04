@@ -42,10 +42,15 @@ use protocol_squisher_ir::IrSchema;
 pub mod transport;
 pub mod compare;
 pub mod schema;
+pub mod ephapax_engine;
 
 pub use transport::{TransportClass, ConversionLoss, LossKind, LossSeverity};
 pub use compare::{compare_types, TypeComparison};
 pub use schema::{compare_schemas, SchemaComparison, TypeDefComparison, ComparisonSummary};
+pub use ephapax_engine::{
+    EphapaxCompatibilityEngine, SchemaCompatibilityResult, TypeCompatibilityAnalysis,
+    FieldCompatibility, ConversionSummary,
+};
 
 /// Compatibility analyzer for IR schemas
 pub struct CompatibilityAnalyzer {

@@ -1143,7 +1143,10 @@ name = "protocol-squisher-compat"
 version = "0.1.0"
 dependencies = [
  "proptest",
+ "protocol-squisher-ephapax-ir",
  "protocol-squisher-ir",
+ "protocol-squisher-python-analyzer",
+ "protocol-squisher-rust-analyzer",
  "serde",
  "serde_json",
 ]
