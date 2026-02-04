@@ -61,6 +61,7 @@ members = [
   "crates/protocol-squisher-compat",
   "crates/protocol-squisher-pyo3-codegen",
   "crates/protocol-squisher-json-fallback",
+  "crates/protocol-squisher-integration-tests",
   "crates/protocol-squisher-optimizer",
   "crates/protocol-squisher-json-schema-analyzer",
   "crates/protocol-squisher-protobuf-analyzer",

@@ -1161,6 +1161,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "protocol-squisher-integration-tests"
+version = "0.1.0"
+dependencies = [
+ "proptest",
+ "protocol-squisher-compat",
+ "protocol-squisher-ephapax-ir",
+ "protocol-squisher-ir",
+ "protocol-squisher-json-fallback",
+ "protocol-squisher-pyo3-codegen",
+ "protocol-squisher-python-analyzer",
+ "protocol-squisher-rust-analyzer",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "protocol-squisher-ir"
 version = "0.1.0"
 dependencies = [

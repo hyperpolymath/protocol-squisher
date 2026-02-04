@@ -19,12 +19,10 @@
 //! - Data loss during narrowing (value out of range for target type)
 
 use protocol_squisher_compat::{
-    EphapaxCompatibilityEngine, SchemaCompatibilityResult, FieldCompatibility,
+    EphapaxCompatibilityEngine, SchemaCompatibilityResult,
 };
 use protocol_squisher_ephapax_ir::TransportClass;
 use protocol_squisher_ir::IrSchema;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 /// Configuration for ephapax-aware JSON fallback
 #[derive(Debug, Clone)]
