@@ -1,0 +1,132 @@
+// Simple Bebop Protocol Analyzer
+// Demonstrates protocol analysis using ephapax
+
+// Bebop type constants
+fn bebop_int32() -> i32 { 1 }
+fn bebop_int64() -> i32 { 2 }
+fn bebop_uint32() -> i32 { 3 }
+fn bebop_uint64() -> i32 { 4 }
+fn bebop_float32() -> i32 { 5 }
+fn bebop_float64() -> i32 { 6 }
+fn bebop_bool() -> i32 { 7 }
+fn bebop_string() -> i32 { 8 }
+fn bebop_guid() -> i32 { 9 }
+fn bebop_date() -> i32 { 10 }
+
+// IR type constants
+fn ir_i32() -> i32 { 100 }
+fn ir_i64() -> i32 { 101 }
+fn ir_u32() -> i32 { 102 }
+fn ir_u64() -> i32 { 103 }
+fn ir_f32() -> i32 { 104 }
+fn ir_f64() -> i32 { 105 }
+fn ir_bool() -> i32 { 106 }
+fn ir_string() -> i32 { 107 }
+fn ir_uuid() -> i32 { 108 }
+fn ir_datetime() -> i32 { 109 }
+
+// Transport class constants
+fn transport_concorde() -> i32 { 0 }   // Zero-copy
+fn transport_business() -> i32 { 1 }   // Safe conversion
+fn transport_economy() -> i32 { 2 }    // Lossy conversion
+fn transport_wheelbarrow() -> i32 { 3 } // JSON fallback
+
+// Convert Bebop type to IR type
+fn bebop_to_ir(bebop_type: i32) -> i32 {
+    match bebop_type {
+        1 => ir_i32(),
+        2 => ir_i64(),
+        3 => ir_u32(),
+        4 => ir_u64(),
+        5 => ir_f32(),
+        6 => ir_f64(),
+        7 => ir_bool(),
+        8 => ir_string(),
+        9 => ir_uuid(),
+        10 => ir_datetime(),
+        _ => 0  // Unknown type
+    }
+}
+
+// Check if type is zero-copy compatible
+fn is_zero_copy(bebop_type: i32) -> bool {
+    match bebop_type {
+        1 => true,  // int32
+        2 => true,  // int64
+        5 => true,  // float32
+        6 => true,  // float64
+        7 => true,  // bool
+        _ => false
+    }
+}
+
+// Calculate squishability score (0 = zero-copy, higher = more overhead)
+fn calculate_squishability(bebop_type: i32) -> i32 {
+    let zero_copy = is_zero_copy(bebop_type);
+    match zero_copy {
+        true => 0,
+        false => {
+            match bebop_type {
+                8 => 60,   // string - moderate overhead
+                9 => 80,   // guid - high overhead
+                10 => 80,  // date - high overhead
+                _ => 100   // unknown - maximum overhead
+            }
+        }
+    }
+}
+
+// Determine transport class for a type
+fn get_transport_class(bebop_type: i32, target_type: i32) -> i32 {
+    let bebop_ir = bebop_to_ir(bebop_type);
+
+    // Exact match - Concorde (zero-copy)
+    if bebop_ir == target_type {
+        transport_concorde()
+    } else {
+        // Different types - check if safe widening
+        match bebop_type {
+            1 => {  // int32 source
+                match target_type {
+                    101 => transport_business(),  // int32 → int64 (safe widening)
+                    _ => transport_wheelbarrow()
+                }
+            }
+            3 => {  // uint32 source
+                match target_type {
+                    103 => transport_concorde(),   // uint32 → uint64 (safe widening)
+                    _ => transport_wheelbarrow()
+                }
+            }
+            _ => transport_wheelbarrow()  // Incompatible types
+        }
+    }
+}
+
+// Analyze a field with bebop type → target IR type
+fn analyze_field(bebop_type: i32, target_type: i32) -> i32 {
+    let squish_score = calculate_squishability(bebop_type);
+    let transport_class = get_transport_class(bebop_type, target_type);
+
+    // Combine scores: squishability + (transport_class * 10)
+    squish_score + (transport_class * 10)
+}
+
+// Analyze a simple schema with 3 fields
+fn analyze_schema() -> i32 {
+    // Field 1: int32 → int32 (zero-copy match)
+    let field1_score = analyze_field(bebop_int32(), ir_i32());
+
+    // Field 2: string → string (non-zero-copy but exact match)
+    let field2_score = analyze_field(bebop_string(), ir_string());
+
+    // Field 3: float64 → float64 (zero-copy match)
+    let field3_score = analyze_field(bebop_float64(), ir_f64());
+
+    // Total analysis score
+    field1_score + field2_score + field3_score
+}
+
+fn main() {
+    analyze_schema()
+}

@@ -1,0 +1,66 @@
+// Simple Avro Protocol Analyzer
+// Apache Avro uses schema-based binary serialization
+
+// Avro primitive types
+fn avro_null() -> i32 { 0 }
+fn avro_boolean() -> i32 { 1 }
+fn avro_int() -> i32 { 2 }
+fn avro_long() -> i32 { 3 }
+fn avro_float() -> i32 { 4 }
+fn avro_double() -> i32 { 5 }
+fn avro_bytes() -> i32 { 6 }
+fn avro_string() -> i32 { 7 }
+
+// Avro complex types
+fn avro_record() -> i32 { 10 }
+fn avro_enum() -> i32 { 11 }
+fn avro_array() -> i32 { 12 }
+fn avro_map() -> i32 { 13 }
+fn avro_union() -> i32 { 14 }
+fn avro_fixed() -> i32 { 15 }
+
+// IR types
+fn ir_unit() -> i32 { 100 }
+fn ir_bool() -> i32 { 101 }
+fn ir_i32() -> i32 { 102 }
+fn ir_i64() -> i32 { 103 }
+fn ir_f32() -> i32 { 104 }
+fn ir_f64() -> i32 { 105 }
+fn ir_bytes() -> i32 { 106 }
+fn ir_string() -> i32 { 107 }
+
+// Avro uses compact variable-length encoding
+fn encoding_overhead(avro_type: i32) -> i32 {
+    match avro_type {
+        0 => 0,   // null - no encoding
+        1 => 1,   // boolean - 1 byte
+        2 => 5,   // int - variable length zigzag encoding
+        3 => 10,  // long - variable length zigzag encoding
+        4 => 4,   // float - 4 bytes
+        5 => 8,   // double - 8 bytes
+        6 => 40,  // bytes - length prefix + data
+        7 => 35,  // string - length prefix + UTF-8
+        10 => 60, // record - field overhead
+        11 => 4,  // enum - int encoding
+        12 => 50, // array - block encoding
+        13 => 55, // map - block encoding
+        14 => 20, // union - discriminator + value
+        15 => 10, // fixed - fixed size
+        _ => 100
+    }
+}
+
+// Analyze Avro schema
+fn analyze_schema() -> i32 {
+    // Example schema: User record with id, name, score
+    let id_field = encoding_overhead(avro_long());
+    let name_field = encoding_overhead(avro_string());
+    let score_field = encoding_overhead(avro_double());
+    let record_overhead = encoding_overhead(avro_record());
+
+    id_field + name_field + score_field + record_overhead
+}
+
+fn main() {
+    analyze_schema()
+}

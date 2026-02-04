@@ -1,0 +1,70 @@
+// Simple MessagePack Protocol Analyzer
+// MessagePack is a binary serialization format (not zero-copy)
+
+// MessagePack type constants
+fn msgpack_nil() -> i32 { 0 }
+fn msgpack_bool() -> i32 { 1 }
+fn msgpack_int() -> i32 { 2 }
+fn msgpack_float32() -> i32 { 3 }
+fn msgpack_float64() -> i32 { 4 }
+fn msgpack_str() -> i32 { 5 }
+fn msgpack_bin() -> i32 { 6 }
+fn msgpack_array() -> i32 { 7 }
+fn msgpack_map() -> i32 { 8 }
+
+// IR types
+fn ir_unit() -> i32 { 100 }
+fn ir_bool() -> i32 { 101 }
+fn ir_i64() -> i32 { 102 }
+fn ir_f32() -> i32 { 103 }
+fn ir_f64() -> i32 { 104 }
+fn ir_string() -> i32 { 105 }
+fn ir_bytes() -> i32 { 106 }
+fn ir_vec() -> i32 { 107 }
+fn ir_map() -> i32 { 108 }
+
+fn msgpack_to_ir(msgpack_type: i32) -> i32 {
+    match msgpack_type {
+        0 => ir_unit(),
+        1 => ir_bool(),
+        2 => ir_i64(),
+        3 => ir_f32(),
+        4 => ir_f64(),
+        5 => ir_string(),
+        6 => ir_bytes(),
+        7 => ir_vec(),
+        8 => ir_map(),
+        _ => 0
+    }
+}
+
+// MessagePack always requires serialization (never zero-copy)
+fn serialization_overhead(msgpack_type: i32) -> i32 {
+    match msgpack_type {
+        0 => 1,   // nil - 1 byte
+        1 => 1,   // bool - 1 byte
+        2 => 9,   // int - up to 9 bytes
+        3 => 5,   // float32 - 5 bytes (marker + 4)
+        4 => 9,   // float64 - 9 bytes (marker + 8)
+        5 => 50,  // string - variable length + overhead
+        6 => 60,  // binary - variable length + overhead
+        7 => 70,  // array - recursive overhead
+        8 => 80,  // map - recursive overhead
+        _ => 100
+    }
+}
+
+// Calculate total overhead for schema
+fn analyze_schema() -> i32 {
+    // Example schema with mixed types
+    let field1 = serialization_overhead(msgpack_int());
+    let field2 = serialization_overhead(msgpack_str());
+    let field3 = serialization_overhead(msgpack_float64());
+    let field4 = serialization_overhead(msgpack_map());
+
+    field1 + field2 + field3 + field4
+}
+
+fn main() {
+    analyze_schema()
+}

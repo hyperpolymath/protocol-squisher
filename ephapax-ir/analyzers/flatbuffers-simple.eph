@@ -1,0 +1,87 @@
+// Simple FlatBuffers Protocol Analyzer
+// FlatBuffers uses zero-copy design with vtables
+
+// FlatBuffers type constants
+fn fb_byte() -> i32 { 1 }
+fn fb_ubyte() -> i32 { 2 }
+fn fb_bool() -> i32 { 3 }
+fn fb_short() -> i32 { 4 }
+fn fb_ushort() -> i32 { 5 }
+fn fb_int() -> i32 { 6 }
+fn fb_uint() -> i32 { 7 }
+fn fb_long() -> i32 { 8 }
+fn fb_ulong() -> i32 { 9 }
+fn fb_float() -> i32 { 10 }
+fn fb_double() -> i32 { 11 }
+fn fb_string() -> i32 { 12 }
+
+// IR types
+fn ir_i8() -> i32 { 100 }
+fn ir_u8() -> i32 { 101 }
+fn ir_i16() -> i32 { 102 }
+fn ir_u16() -> i32 { 103 }
+fn ir_i32() -> i32 { 104 }
+fn ir_u32() -> i32 { 105 }
+fn ir_i64() -> i32 { 106 }
+fn ir_u64() -> i32 { 107 }
+fn ir_f32() -> i32 { 108 }
+fn ir_f64() -> i32 { 109 }
+fn ir_bool() -> i32 { 110 }
+fn ir_string() -> i32 { 111 }
+
+// Convert FlatBuffers type to IR
+fn fb_to_ir(fb_type: i32) -> i32 {
+    match fb_type {
+        1 => ir_i8(),
+        2 => ir_u8(),
+        3 => ir_bool(),
+        4 => ir_i16(),
+        5 => ir_u16(),
+        6 => ir_i32(),
+        7 => ir_u32(),
+        8 => ir_i64(),
+        9 => ir_u64(),
+        10 => ir_f32(),
+        11 => ir_f64(),
+        12 => ir_string(),
+        _ => 0
+    }
+}
+
+// FlatBuffers is zero-copy for most types except strings
+fn is_zero_copy(fb_type: i32) -> bool {
+    match fb_type {
+        12 => false,  // string requires offset indirection
+        _ => true     // all numeric types are zero-copy
+    }
+}
+
+// Calculate overhead score
+fn calculate_overhead(fb_type: i32) -> i32 {
+    let zero_copy = is_zero_copy(fb_type);
+    match zero_copy {
+        true => 0,
+        false => 30  // strings have vtable overhead
+    }
+}
+
+// Analyze FlatBuffers schema efficiency
+fn analyze_schema() -> i32 {
+    // Field 1: int (zero-copy)
+    let field1 = calculate_overhead(fb_int());
+
+    // Field 2: double (zero-copy)
+    let field2 = calculate_overhead(fb_double());
+
+    // Field 3: string (has overhead)
+    let field3 = calculate_overhead(fb_string());
+
+    // Field 4: bool (zero-copy)
+    let field4 = calculate_overhead(fb_bool());
+
+    field1 + field2 + field3 + field4
+}
+
+fn main() {
+    analyze_schema()
+}
