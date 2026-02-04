@@ -25,9 +25,11 @@ use std::collections::HashMap;
 
 mod analysis;
 mod codegen;
+mod ephapax_optimizer;
 
 pub use analysis::*;
 pub use codegen::*;
+pub use ephapax_optimizer::*;
 
 /// Optimization level for a type conversion
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
