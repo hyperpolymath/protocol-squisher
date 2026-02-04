@@ -224,28 +224,99 @@ impl Interpreter {
             }
 
             Expr::Call { func, args } => {
-                let func_def = self
-                    .functions
-                    .get(func)
-                    .ok_or_else(|| format!("Function '{}' not found", func))?
-                    .clone();
+                // Check for built-in functions first
+                match func.as_str() {
+                    "read_file" => {
+                        if args.len() != 1 {
+                            return Err(format!("read_file expects 1 argument, got {}", args.len()));
+                        }
+                        let path_val = self.eval_expr(&args[0], env)?;
+                        let path = path_val.as_string()?;
 
-                if func_def.params.len() != args.len() {
-                    return Err(format!(
-                        "Function '{}' expects {} arguments, got {}",
-                        func,
-                        func_def.params.len(),
-                        args.len()
-                    ));
+                        match std::fs::read_to_string(path) {
+                            Ok(content) => Ok(Value::String(content)),
+                            Err(e) => Err(format!("Failed to read file '{}': {}", path, e)),
+                        }
+                    }
+                    "write_file" => {
+                        if args.len() != 2 {
+                            return Err(format!("write_file expects 2 arguments, got {}", args.len()));
+                        }
+                        let path_val = self.eval_expr(&args[0], env)?;
+                        let content_val = self.eval_expr(&args[1], env)?;
+                        let path = path_val.as_string()?;
+                        let content = content_val.as_string()?;
+
+                        match std::fs::write(path, content) {
+                            Ok(_) => Ok(Value::Int(0)),  // Success
+                            Err(e) => Err(format!("Failed to write file '{}': {}", path, e)),
+                        }
+                    }
+                    "print" => {
+                        if args.len() != 1 {
+                            return Err(format!("print expects 1 argument, got {}", args.len()));
+                        }
+                        let val = self.eval_expr(&args[0], env)?;
+                        match &val {
+                            Value::Int(n) => print!("{}", n),
+                            Value::Bool(b) => print!("{}", b),
+                            Value::String(s) => print!("{}", s),
+                            Value::Vec(elements) => {
+                                print!("[");
+                                for (i, elem) in elements.iter().enumerate() {
+                                    if i > 0 { print!(", "); }
+                                    match elem {
+                                        Value::Int(n) => print!("{}", n),
+                                        Value::Bool(b) => print!("{}", b),
+                                        Value::String(s) => print!("{}", s),
+                                        _ => print!("{:?}", elem),
+                                    }
+                                }
+                                print!("]");
+                            }
+                            Value::Struct(name, fields) => {
+                                print!("{} {{ ", name);
+                                for (i, (field_name, field_val)) in fields.iter().enumerate() {
+                                    if i > 0 { print!(", "); }
+                                    print!("{}: ", field_name);
+                                    match field_val {
+                                        Value::Int(n) => print!("{}", n),
+                                        Value::Bool(b) => print!("{}", b),
+                                        Value::String(s) => print!("{}", s),
+                                        _ => print!("{:?}", field_val),
+                                    }
+                                }
+                                print!(" }}");
+                            }
+                        }
+                        Ok(Value::Int(0))  // Return 0 (unit placeholder)
+                    }
+                    _ => {
+                        // User-defined function
+                        let func_def = self
+                            .functions
+                            .get(func)
+                            .ok_or_else(|| format!("Function '{}' not found", func))?
+                            .clone();
+
+                        if func_def.params.len() != args.len() {
+                            return Err(format!(
+                                "Function '{}' expects {} arguments, got {}",
+                                func,
+                                func_def.params.len(),
+                                args.len()
+                            ));
+                        }
+
+                        let mut new_env = HashMap::new();
+                        for (param, arg) in func_def.params.iter().zip(args.iter()) {
+                            let arg_val = self.eval_expr(arg, env)?;
+                            new_env.insert(param.name.clone(), arg_val);
+                        }
+
+                        self.eval_expr(&func_def.body, &mut new_env)
+                    }
                 }
-
-                let mut new_env = HashMap::new();
-                for (param, arg) in func_def.params.iter().zip(args.iter()) {
-                    let arg_val = self.eval_expr(arg, env)?;
-                    new_env.insert(param.name.clone(), arg_val);
-                }
-
-                self.eval_expr(&func_def.body, &mut new_env)
             }
 
             Expr::Let { name, value, body } => {

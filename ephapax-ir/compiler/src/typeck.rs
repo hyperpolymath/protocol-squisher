@@ -356,26 +356,88 @@ impl TypeChecker {
             }
 
             Expr::Call { func, args } => {
-                let func_def = self.functions.get(func).ok_or_else(|| {
-                    TypeError::VariableNotFound {
-                        var: func.clone(),
+                // Check for built-in functions
+                match func.as_str() {
+                    "read_file" => {
+                        if args.len() != 1 {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::String,
+                                found: Type::I32,
+                                context: format!("read_file expects 1 argument, got {}", args.len()),
+                            });
+                        }
+                        let arg_ty = self.check_expr(&args[0], env)?;
+                        if arg_ty != Type::String {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::String,
+                                found: arg_ty,
+                                context: "read_file argument must be String".to_string(),
+                            });
+                        }
+                        Ok(Type::String)  // Returns file contents as String
                     }
-                })?;
+                    "write_file" => {
+                        if args.len() != 2 {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::String,
+                                found: Type::I32,
+                                context: format!("write_file expects 2 arguments, got {}", args.len()),
+                            });
+                        }
+                        let path_ty = self.check_expr(&args[0], env)?;
+                        let content_ty = self.check_expr(&args[1], env)?;
+                        if path_ty != Type::String {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::String,
+                                found: path_ty,
+                                context: "write_file first argument (path) must be String".to_string(),
+                            });
+                        }
+                        if content_ty != Type::String {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::String,
+                                found: content_ty,
+                                context: "write_file second argument (content) must be String".to_string(),
+                            });
+                        }
+                        Ok(Type::I32)  // Returns 0 on success
+                    }
+                    "print" => {
+                        if args.len() != 1 {
+                            return Err(TypeError::TypeMismatch {
+                                expected: Type::I32,
+                                found: Type::I32,
+                                context: format!("print expects 1 argument, got {}", args.len()),
+                            });
+                        }
+                        // print accepts any type
+                        self.check_expr(&args[0], env)?;
+                        Ok(Type::I32)  // Returns 0 (unit placeholder)
+                    }
+                    _ => {
+                        // User-defined function
+                        let func_def = self.functions.get(func).ok_or_else(|| {
+                            TypeError::VariableNotFound {
+                                var: func.clone(),
+                            }
+                        })?;
 
-                // Check argument types
-                for (param, arg) in func_def.params.iter().zip(args.iter()) {
-                    let arg_ty = self.check_expr(arg, env)?;
-                    if param.ty != Type::Infer && param.ty != arg_ty {
-                        return Err(TypeError::TypeMismatch {
-                            expected: param.ty.clone(),
-                            found: arg_ty,
-                            context: format!("argument to function '{}'", func),
-                        });
+                        // Check argument types
+                        for (param, arg) in func_def.params.iter().zip(args.iter()) {
+                            let arg_ty = self.check_expr(arg, env)?;
+                            if param.ty != Type::Infer && param.ty != arg_ty {
+                                return Err(TypeError::TypeMismatch {
+                                    expected: param.ty.clone(),
+                                    found: arg_ty,
+                                    context: format!("argument to function '{}'", func),
+                                });
+                            }
+                        }
+
+                        // Return type is the function's return type
+                        Ok(func_def.return_type.clone())
                     }
                 }
-
-                // Return type is the function's return type
-                Ok(func_def.return_type.clone())
             }
 
             Expr::Let { name, value, body } => {
