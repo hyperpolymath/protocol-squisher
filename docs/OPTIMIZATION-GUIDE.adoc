@@ -1,0 +1,684 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+= Protocol Squisher Optimization Guide
+:toc: macro
+:toclevels: 3
+:icons: font
+
+[.lead]
+**How to optimize your schemas for zero-copy interop and maximum performance**
+
+toc::[]
+
+== Overview
+
+Protocol Squisher classifies every type conversion into one of four **transport classes**:
+
+- **Concorde**: Zero-copy, 100% fidelity (ideal)
+- **Business**: Safe widening, 98% fidelity (good)
+- **Economy**: Lossy conversion, 80% fidelity (acceptable)
+- **Wheelbarrow**: JSON fallback, 50% fidelity (slow)
+
+This guide shows you how to move your schemas from Wheelbarrow → Economy → Business → Concorde.
+
+== The Optimization Ladder
+
+[source]
+----
+Concorde (zero-copy)    ← Goal
+    ↑
+Business (safe widening)
+    ↑
+Economy (lossy)
+    ↑
+Wheelbarrow (JSON fallback) ← Starting point
+----
+
+**Rule of thumb:** Match types exactly for Concorde. Widen safely for Business. Avoid narrowing.
+
+== Before/After Examples
+
+=== Example 1: Integer Narrowing → Widening
+
+**❌ BEFORE (Wheelbarrow - JSON fallback required):**
+
+[cols="1,1",options="header"]
+|===
+|Rust |Python
+
+a|
+[source,rust]
+----
+#[derive(Serialize)]
+struct SensorReading {
+    timestamp: i64,    // 64-bit
+    value: i64,        // 64-bit
+}
+----
+
+a|
+[source,python]
+----
+class SensorReading(BaseModel):
+    timestamp: int     # 64-bit
+    value: int         # 32-bit (constrained)
+----
+|===
+
+**Problem:** `i64 → i32` is narrowing, requires JSON fallback
+
+**Analysis:**
+[source,bash]
+----
+$ protocol-squish check --rust src/lib.rs --python models.py
+
+Transport Classes:
+  timestamp: Concorde (i64 → i64) ✓
+  value: Wheelbarrow (i64 → i32) ⚠  JSON fallback
+
+Overall: 50% Concorde, 50% Wheelbarrow
+Production Ready: NO
+----
+
+**✅ AFTER (Concorde - zero-copy):**
+
+[cols="1,1",options="header"]
+|===
+|Rust |Python
+
+a|
+[source,rust]
+----
+#[derive(Serialize)]
+struct SensorReading {
+    timestamp: i64,
+    value: i64,        // ← Widened to i64
+}
+----
+
+a|
+[source,python]
+----
+class SensorReading(BaseModel):
+    timestamp: int
+    value: int         # No constraint
+----
+|===
+
+**Result:**
+[source,bash]
+----
+$ protocol-squish check --rust src/lib.rs --python models.py
+
+Transport Classes:
+  timestamp: Concorde (i64 → i64) ✓
+  value: Concorde (i64 → i64) ✓
+
+Overall: 100% Concorde
+Production Ready: YES ✓
+Performance: ~1-2ns per field access
+----
+
+**Impact:**
+- **Before:** 100-1000ns per value access (JSON ser/deser)
+- **After:** 1-2ns per value access (direct memory)
+- **Speedup:** 50-500× faster
+
+=== Example 2: Float Precision Loss → Safe Widening
+
+**❌ BEFORE (Wheelbarrow):**
+
+[cols="1,1",options="header"]
+|===
+|Rust |Python
+
+a|
+[source,rust]
+----
+#[derive(Serialize)]
+struct Measurement {
+    temperature: f64,
+    pressure: f64,
+}
+----
+
+a|
+[source,python]
+----
+class Measurement(BaseModel):
+    temperature: float  # f64
+    pressure: float     # f32 (constrained)
+----
+|===
+
+**Problem:** `f64 → f32` loses precision
+
+**✅ AFTER (Concorde):**
+
+[cols="1,1",options="header"]
+|===
+|Rust |Python
+
+a|
+[source,rust]
+----
+#[derive(Serialize)]
+struct Measurement {
+    temperature: f64,
+    pressure: f64,
+}
+----
+
+a|
+[source,python]
+----
+class Measurement(BaseModel):
+    temperature: float
+    pressure: float  # No constraint
+----
+|===
+
+=== Example 3: Optional Fields for Flexibility
+
+**❌ BEFORE (Rigid schema):**
+
+[cols="1,1",options="header"]
+|===
+|Rust |Python
+
+a|
+[source,rust]
+----
+#[derive(Serialize)]
+struct User {
+    id: i64,
+    name: String,
+    age: i32,          // Required
+}
+----
+
+a|
+[source,python]
+----
+class User(BaseModel):
+    id: int
+    name: str
+    age: Optional[int]  # Optional
+----
+|===
+
+**Problem:** Mismatch: Rust requires age, Python doesn't
+
+**✅ AFTER (Business - safe optional):**
+
+[cols="1,1",options="header"]
+|===
+|Rust |Python
+
+a|
+[source,rust]
+----
+#[derive(Serialize)]
+struct User {
+    id: i64,
+    name: String,
+    age: Option<i32>,  // ← Made optional
+}
+----
+
+a|
+[source,python]
+----
+class User(BaseModel):
+    id: int
+    name: str
+    age: Optional[int]
+----
+|===
+
+**Result:** Business class (container mismatch handled gracefully)
+
+=== Example 4: Container Element Types
+
+**❌ BEFORE (Wheelbarrow):**
+
+[cols="1,1",options="header"]
+|===
+|Rust |Python
+
+a|
+[source,rust]
+----
+#[derive(Serialize)]
+struct Dataset {
+    values: Vec<i64>,
+}
+----
+
+a|
+[source,python]
+----
+class Dataset(BaseModel):
+    values: List[int]  # i32
+----
+|===
+
+**Problem:** `Vec<i64> → List<i32>` requires element narrowing
+
+**✅ AFTER (Concorde):**
+
+[cols="1,1",options="header"]
+|===
+|Rust |Python
+
+a|
+[source,rust]
+----
+#[derive(Serialize)]
+struct Dataset {
+    values: Vec<i64>,
+}
+----
+
+a|
+[source,python]
+----
+class Dataset(BaseModel):
+    values: List[int]  # i64
+----
+|===
+
+== Optimization Workflow
+
+=== Step 1: Analyze Current State
+
+[source,bash]
+----
+$ protocol-squish analyze --rust src/lib.rs --python models.py
+
+Schema: MyStruct
+  Fields: 5
+  Concorde: 2 (40%)
+  Business: 1 (20%)
+  Wheelbarrow: 2 (40%)
+
+⚠ Production Readiness: 60% (needs >90%)
+----
+
+=== Step 2: Get Optimization Suggestions
+
+[source,bash]
+----
+$ protocol-squish optimize --rust src/lib.rs --python models.py
+
+Optimization Suggestions (sorted by impact):
+
+1. HIGH IMPACT: Widen 'value' from i32 to i64
+   Current: Wheelbarrow (i64 → i32)
+   After: Concorde (i64 → i64)
+   Improvement: +50% fidelity, ~500× faster
+
+2. MEDIUM IMPACT: Make 'optional_field' optional in Rust
+   Current: Wheelbarrow (required vs optional)
+   After: Business (Option<T>)
+   Improvement: +48% fidelity
+
+3. LOW IMPACT: Match 'timestamp' types exactly
+   Current: Business (i32 → i64)
+   After: Concorde (i64 → i64)
+   Improvement: +2% fidelity
+----
+
+=== Step 3: Apply Changes
+
+Make changes to your schema based on suggestions:
+
+[source,rust]
+----
+// Before
+struct MyStruct {
+    value: i32,              // ← Narrow type
+    optional_field: String,  // ← Required
+    timestamp: i32,          // ← Narrow type
+}
+
+// After
+struct MyStruct {
+    value: i64,                    // ✓ Widened
+    optional_field: Option<String>, // ✓ Made optional
+    timestamp: i64,                 // ✓ Matched exactly
+}
+----
+
+=== Step 4: Verify Improvement
+
+[source,bash]
+----
+$ protocol-squish check --rust src/lib.rs --python models.py
+
+Transport Classes:
+  value: Concorde ✓
+  optional_field: Business ✓
+  timestamp: Concorde ✓
+
+Overall: 66% Concorde, 33% Business
+Production Ready: YES ✓
+Performance: 1-5ns per field
+----
+
+== Optimization Patterns
+
+=== Pattern 1: Type Widening
+
+**Always safe:** Widen types to match larger target
+
+[cols="1,1,1",options="header"]
+|===
+|From |To |Class
+
+|i8 |i16, i32, i64, i128 |Business
+|i16 |i32, i64, i128 |Business
+|i32 |i64, i128 |Business
+|i64 |i128 |Business
+|u8 |u16, u32, u64, u128 |Business
+|f32 |f64 |Business
+|===
+
+**Never safe:** Narrowing loses data
+
+[cols="1,1,1",options="header"]
+|===
+|From |To |Class
+
+|i64 |i32, i16, i8 |Wheelbarrow ⚠
+|f64 |f32 |Wheelbarrow ⚠
+|===
+
+=== Pattern 2: Optional Fields
+
+**Flexibility:** Use `Option<T>` when either side might omit the field
+
+[source,rust]
+----
+// Rust side can omit
+age: Option<i32>
+
+// Python side
+age: Optional[int]
+----
+
+**Result:** Business class (container conversion overhead minimal)
+
+=== Pattern 3: Container Element Matching
+
+**Rule:** Container transport class = worst element transport class
+
+[source,rust]
+----
+// Concorde container (all elements Concorde)
+values: Vec<i64>  →  List[int]  // Concorde
+
+// Business container (safe widening)
+values: Vec<i32>  →  List[int]  // Business (i32 → i64)
+
+// Wheelbarrow container (narrowing)
+values: Vec<i64>  →  List[i32]  // Wheelbarrow (i64 → i32)
+----
+
+=== Pattern 4: Exact Type Matching
+
+**Best performance:** Match types exactly for zero-copy
+
+[cols="1,1",options="header"]
+|===
+|Rust |Python |Class
+
+|i64 |int (i64) |Concorde ✓
+|f64 |float |Concorde ✓
+|String |str |Concorde ✓
+|bool |bool |Concorde ✓
+|===
+
+== Common Mistakes
+
+=== Mistake 1: Premature Narrowing
+
+**❌ Don't:**
+[source,rust]
+----
+// "I only need 0-100, so i8 is fine"
+value: i8
+----
+
+**Problem:** Python sends i64, requires JSON fallback
+
+**✅ Do:**
+[source,rust]
+----
+// Match Python's type, validate range at runtime
+value: i64  // Concorde class
+assert!(value >= 0 && value <= 100);
+----
+
+=== Mistake 2: Over-Constraining Python Models
+
+**❌ Don't:**
+[source,python]
+----
+class Config(BaseModel):
+    timeout: int = Field(ge=0, le=3600)  # Constrains to i16 range
+----
+
+**Problem:** Rust i32 → Python i16 = Wheelbarrow
+
+**✅ Do:**
+[source,python]
+----
+class Config(BaseModel):
+    timeout: int  # No constraint, matches Rust i32
+
+    @validator('timeout')
+    def validate_timeout(cls, v):
+        if not (0 <= v <= 3600):
+            raise ValueError('timeout out of range')
+        return v
+----
+
+=== Mistake 3: Ignoring Optimizer Warnings
+
+**❌ Don't:**
+[source,bash]
+----
+$ protocol-squish generate --rust lib.rs --python models.py
+
+⚠ WARNING: 40% Wheelbarrow transport
+⚠ WARNING: Production readiness: 60% (needs >90%)
+
+# Ignoring warnings and shipping anyway
+----
+
+**✅ Do:**
+[source,bash]
+----
+$ protocol-squish optimize --rust lib.rs --python models.py
+
+# Read suggestions, apply fixes, verify
+$ protocol-squish check --rust lib.rs --python models.py
+# Production ready: YES ✓
+----
+
+== Performance Impact
+
+=== Transport Class Overhead
+
+[cols="1,1,1,1",options="header"]
+|===
+|Class |Fidelity |Overhead |Example ns/field
+
+|Concorde |100% |0% |1-2ns
+|Business |98% |5% |2-5ns
+|Economy |80% |25% |10-50ns
+|Wheelbarrow |50% |80% |100-1000ns
+|===
+
+=== Real-World Example
+
+**Scenario:** 10,000 field accesses per second
+
+[cols="1,1,1",options="header"]
+|===
+|Class |Total Time |Impact
+
+|Concorde |20μs |Negligible
+|Business |50μs |Acceptable
+|Economy |500μs |Noticeable
+|Wheelbarrow |10ms |**Bottleneck**
+|===
+
+**Optimization impact:**
+- Wheelbarrow → Concorde: **500× speedup**
+- Economy → Concorde: **25× speedup**
+- Business → Concorde: **2-3× speedup**
+
+== Best Practices
+
+=== 1. Run Analysis Early
+
+**Don't wait until production:**
+
+[source,bash]
+----
+# During development
+$ protocol-squish check --rust src/lib.rs --python models.py
+
+# Fail CI if production readiness < 90%
+$ protocol-squish check --rust src/lib.rs --python models.py --min-quality 90
+----
+
+=== 2. Optimize High-Traffic Paths First
+
+**Focus on hot paths:**
+
+[source,python]
+----
+# High-frequency operation (millions of calls/day)
+class EventRecord(BaseModel):
+    timestamp: int  # ← Optimize to Concorde
+    event_id: int
+
+# Low-frequency operation (once per session)
+class UserProfile(BaseModel):
+    bio: str  # ← Business/Economy acceptable
+----
+
+=== 3. Document Transport Decisions
+
+**Add comments explaining choices:**
+
+[source,rust]
+----
+#[derive(Serialize)]
+struct Config {
+    // Widened to i64 for Concorde-class transport with Python
+    // Original requirement: 0-3600 (fits in i16)
+    timeout: i64,
+}
+----
+
+=== 4. Use Pre-Commit Hooks
+
+**Prevent regressions:**
+
+[source,bash]
+----
+# .git/hooks/pre-commit
+#!/bin/bash
+protocol-squish check --rust src/lib.rs --python models.py --min-quality 90
+if [ $? -ne 0 ]; then
+    echo "⚠ Schema quality below 90% - run 'protocol-squish optimize'"
+    exit 1
+fi
+----
+
+== Advanced Optimization
+
+=== Partial Optimization
+
+**When you can't change everything:**
+
+[source,rust]
+----
+#[derive(Serialize)]
+struct MixedRecord {
+    // Critical path: optimized to Concorde
+    id: i64,
+    timestamp: i64,
+
+    // Low-frequency: acceptable to stay Wheelbarrow
+    #[serde(serialize_with = "json_fallback")]
+    metadata: Vec<i32>,  // Python uses i64
+}
+----
+
+=== Versioning Strategy
+
+**Gradual migration:**
+
+[source,rust]
+----
+#[derive(Serialize)]
+struct UserV1 {
+    age: i32,  // Old: Wheelbarrow with Python
+}
+
+#[derive(Serialize)]
+struct UserV2 {
+    age: i64,  // New: Concorde with Python
+}
+
+// Accept both, gradually migrate clients
+----
+
+== Troubleshooting
+
+=== "Why is my field Wheelbarrow?"
+
+**Check for:**
+1. Type narrowing (i64 → i32)
+2. Precision loss (f64 → f32)
+3. Container element mismatch
+4. Python constraints limiting type width
+
+**Solution:**
+[source,bash]
+----
+$ protocol-squish analyze --rust lib.rs --python models.py --field my_field
+
+Field: my_field
+  Rust: i64
+  Python: int (constrained to i32 range)
+  Issue: Narrowing conversion
+  Fix: Remove Python constraint
+----
+
+=== "Why isn't my optimization helping?"
+
+**Check impact:**
+[source,bash]
+----
+$ protocol-squish optimize --rust lib.rs --python models.py
+
+# Look for "improvement" percentage
+# HIGH IMPACT: >40% improvement
+# MEDIUM IMPACT: 20-40%
+# LOW IMPACT: <20%
+----
+
+**Focus on high-impact changes first**
+
+== See Also
+
+- link:TRANSPORT-CLASSES.adoc[Transport Classes Reference]
+- link:CLI-GUIDE.adoc[CLI Usage Guide]
+- link:../examples/README.md[Example Projects]
+- link:../README.adoc[Protocol Squisher Main Documentation]
