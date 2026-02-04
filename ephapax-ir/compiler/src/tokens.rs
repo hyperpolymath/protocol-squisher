@@ -174,8 +174,15 @@ impl Lexer {
     }
 
     pub fn next_token(&mut self) -> Token {
-        self.skip_whitespace();
-        self.skip_comment();
+        // Loop to skip multiple comments/whitespace in a row
+        loop {
+            self.skip_whitespace();
+            let before_comment = self.pos;
+            self.skip_comment();
+            if self.pos == before_comment {
+                break; // No comment found, exit loop
+            }
+        }
         self.skip_whitespace();
 
         match self.current() {

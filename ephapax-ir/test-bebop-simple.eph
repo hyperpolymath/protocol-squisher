@@ -1,0 +1,18 @@
+// Simple Bebop analyzer test without dots in comments
+
+fn bebop_int32() -> i32 { 1 }
+fn bebop_string() -> i32 { 2 }
+
+fn bebop_to_ir(bebop_type: i32) -> i32 {
+    if bebop_type == bebop_int32() {
+        10
+    } else {
+        20
+    }
+}
+
+fn main() {
+    let field1 = bebop_int32();
+    let field2 = bebop_string();
+    bebop_to_ir(field1) + bebop_to_ir(field2)
+}
