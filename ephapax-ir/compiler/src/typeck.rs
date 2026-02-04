@@ -482,7 +482,7 @@ impl TypeChecker {
                 let mut else_env = env.clone();
                 let else_ty = self.check_expr(else_branch, &mut else_env)?;
 
-                if then_ty != else_ty {
+                if !self.types_compatible(&then_ty, &else_ty) {
                     return Err(TypeError::TypeMismatch {
                         expected: then_ty.clone(),
                         found: else_ty,
@@ -494,7 +494,10 @@ impl TypeChecker {
                 env.merge(&then_env);
                 env.merge(&else_env);
 
-                Ok(then_ty)
+                // Return the more specific type (prefer concrete over Infer)
+                let result_ty = self.unify_types(&then_ty, &else_ty);
+
+                Ok(result_ty)
             }
 
             Expr::Block(exprs) => {
@@ -524,7 +527,7 @@ impl TypeChecker {
                 for arm in arms {
                     // Check pattern type matches scrutinee
                     let pattern_ty = self.pattern_type(&arm.pattern);
-                    if pattern_ty != Type::Infer && pattern_ty != scrutinee_ty {
+                    if !self.types_compatible(&pattern_ty, &scrutinee_ty) {
                         return Err(TypeError::TypeMismatch {
                             expected: scrutinee_ty,
                             found: pattern_ty,
@@ -544,15 +547,17 @@ impl TypeChecker {
                     // Check arm body
                     let body_ty = self.check_expr(&arm.body, &mut arm_env)?;
 
-                    // All arms must have same type
+                    // All arms must have compatible types
                     if let Some(ref expected_ty) = arm_type {
-                        if body_ty != *expected_ty {
+                        if !self.types_compatible(&body_ty, expected_ty) {
                             return Err(TypeError::TypeMismatch {
                                 expected: expected_ty.clone(),
                                 found: body_ty,
                                 context: "match arm".to_string(),
                             });
                         }
+                        // Unify to get most specific type
+                        arm_type = Some(self.unify_types(expected_ty, &body_ty));
                     } else {
                         arm_type = Some(body_ty);
                     }
@@ -771,6 +776,83 @@ impl TypeChecker {
         }
     }
 
+    /// Check if two types are compatible (can unify)
+    /// Infer type is compatible with any type
+    /// Option<Infer> is compatible with Option<T> for any T
+    /// Result<Infer, X> is compatible with Result<T, X>, etc.
+    fn types_compatible(&self, ty1: &Type, ty2: &Type) -> bool {
+        match (ty1, ty2) {
+            // Infer matches anything
+            (Type::Infer, _) | (_, Type::Infer) => true,
+
+            // Identical types
+            _ if ty1 == ty2 => true,
+
+            // Option types: compatible if inner types are compatible
+            (Type::Option(inner1), Type::Option(inner2)) => {
+                self.types_compatible(inner1, inner2)
+            }
+
+            // Result types: compatible if both inner types are compatible
+            (Type::Result(ok1, err1), Type::Result(ok2, err2)) => {
+                self.types_compatible(ok1, ok2) && self.types_compatible(err1, err2)
+            }
+
+            // Vec types: compatible if element types are compatible
+            (Type::Vec(elem1), Type::Vec(elem2)) => {
+                self.types_compatible(elem1, elem2)
+            }
+
+            // Ref types: compatible if inner types are compatible
+            (Type::Ref(inner1), Type::Ref(inner2)) => {
+                self.types_compatible(inner1, inner2)
+            }
+
+            // Otherwise incompatible
+            _ => false,
+        }
+    }
+
+    /// Unify two compatible types, preferring the more specific type
+    /// When one type is Infer, prefer the other
+    /// When Option<Infer> and Option<T>, prefer Option<T>
+    fn unify_types(&self, ty1: &Type, ty2: &Type) -> Type {
+        match (ty1, ty2) {
+            // Prefer non-Infer type
+            (Type::Infer, _) => ty2.clone(),
+            (_, Type::Infer) => ty1.clone(),
+
+            // If identical, return either
+            _ if ty1 == ty2 => ty1.clone(),
+
+            // Option types: unify inner types
+            (Type::Option(inner1), Type::Option(inner2)) => {
+                Type::Option(Box::new(self.unify_types(inner1, inner2)))
+            }
+
+            // Result types: unify both inner types
+            (Type::Result(ok1, err1), Type::Result(ok2, err2)) => {
+                Type::Result(
+                    Box::new(self.unify_types(ok1, ok2)),
+                    Box::new(self.unify_types(err1, err2)),
+                )
+            }
+
+            // Vec types: unify element types
+            (Type::Vec(elem1), Type::Vec(elem2)) => {
+                Type::Vec(Box::new(self.unify_types(elem1, elem2)))
+            }
+
+            // Ref types: unify inner types
+            (Type::Ref(inner1), Type::Ref(inner2)) => {
+                Type::Ref(Box::new(self.unify_types(inner1, inner2)))
+            }
+
+            // Otherwise, prefer ty1 (they should be compatible if this is called)
+            _ => ty1.clone(),
+        }
+    }
+
     fn pattern_type(&self, pattern: &Pattern) -> Type {
         match pattern {
             Pattern::IntLit(_) => Type::I32,
@@ -788,7 +870,27 @@ impl TypeChecker {
             Pattern::Var(name) => {
                 env.insert(name.clone(), ty.clone());
             }
-            _ => {}
+            Pattern::Some(inner_pattern) => {
+                // Extract inner type from Option<T>
+                if let Type::Option(inner_ty) = ty {
+                    self.add_pattern_bindings(inner_pattern, inner_ty, env);
+                }
+            }
+            Pattern::Ok(inner_pattern) => {
+                // Extract ok type from Result<T, E>
+                if let Type::Result(ok_ty, _err_ty) = ty {
+                    self.add_pattern_bindings(inner_pattern, ok_ty, env);
+                }
+            }
+            Pattern::Err(inner_pattern) => {
+                // Extract err type from Result<T, E>
+                if let Type::Result(_ok_ty, err_ty) = ty {
+                    self.add_pattern_bindings(inner_pattern, err_ty, env);
+                }
+            }
+            Pattern::None | Pattern::IntLit(_) | Pattern::BoolLit(_) | Pattern::Wildcard => {
+                // No bindings for these patterns
+            }
         }
     }
 }
