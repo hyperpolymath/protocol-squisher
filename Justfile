@@ -27,29 +27,52 @@ info:
 # BUILD
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# Build the project
-build:
+# Build ephapax IR (compile .eph to WASM)
+build-ephapax-ir:
+    @echo "Building ephapax IR..."
+    @echo "Note: ephapax compiler not yet available, using Rust stubs"
+    @# TODO: Uncomment when ephapax-cli is ready
+    @# ephapax-cli compile ephapax-ir/src/types.eph -o ephapax-ir/target/types.wasm
+    @# ephapax-cli compile ephapax-ir/src/compat.eph -o ephapax-ir/target/compat.wasm
+
+# Build the project (ephapax IR + Rust crates)
+build: build-ephapax-ir
     @echo "Building {{project}}..."
+    cargo build --workspace
+
+# Build release
+build-release: build-ephapax-ir
+    cargo build --workspace --release
 
 # Clean build artifacts
 clean:
     @echo "Cleaning..."
+    cargo clean
+    rm -rf ephapax-ir/target/*.wasm
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TEST & QUALITY
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # Run tests
-test:
+test: build-ephapax-ir
     @echo "Running tests..."
+    cargo test --workspace
+
+# Run property-based tests (longer running)
+test-prop: build-ephapax-ir
+    cargo test --workspace --release -- --ignored
 
 # Run linter
 lint:
     @echo "Linting..."
+    cargo clippy --workspace -- -D warnings
 
 # Format code
 fmt:
     @echo "Formatting..."
+    cargo fmt --all
+    @echo "Note: ephapax formatting not yet available"
 
 # Run all quality checks
 quality: fmt lint test

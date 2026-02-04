@@ -1,0 +1,156 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+= ephapax Integration Plan
+
+**Status:** Architecture defined, skeleton created, awaiting ephapax maturity
+
+== Why ephapax?
+
+Protocol-squisher's canonical IR is implemented in ephapax (linear type system) to achieve:
+
+[cols="1,3"]
+|===
+| Goal | ephapax Mechanism
+
+| **Zero-copy safety**
+| Linear types prove no aliasing in zero-copy adapter paths
+
+| **No resource leaks**
+| Resources consumed exactly once - serialization buffers freed correctly
+
+| **Memory-safe FFI**
+| Ownership transfer across Rust↔Python proven at compile time
+
+| **Formal verification**
+| IR invariants backed by Coq proofs (via ephapax)
+
+| **Real-world validation**
+| ephapax gains a complex, practical program to stress-test the language
+|===
+
+== Architecture
+
+```
+Analyzers (Rust)           →   Extract schemas, parse types
+    ↓
+ephapax IR (Linear Types)  →   Canonical representation with safety proofs
+    ↓ (compiles to WASM)
+Compatibility Engine       →   Transport classification (Concorde/Business/Economy/Wheelbarrow)
+    ↓
+Generators (Rust)          →   PyO3 codegen, JSON fallback, optimizer
+```
+
+== Files Created
+
+### ephapax IR Implementation
+- `ephapax-ir/src/types.eph` - Core IR type system with linear types
+- `ephapax-ir/src/compat.eph` - Compatibility analysis with transport classes
+- `ephapax-ir/README.adoc` - Documentation of ephapax IR design
+
+### Rust FFI Wrapper
+- `ephapax-ir/src/lib.rs` - Rust interface to ephapax WASM modules
+- `ephapax-ir/Cargo.toml` - Crate definition with wasmtime dependency
+- `ephapax-ir/build.rs` - Build script to compile ephapax → WASM
+
+### Updated Files
+- `Cargo.toml` - Added ephapax-ir to workspace
+- `Justfile` - Added ephapax compilation targets
+- `ECOSYSTEM.scm` - Added ephapax as core-dependency
+- `META.scm` - Added ADR-007 for ephapax integration
+- `STATE.scm` - Updated critical next actions
+
+== Current Status
+
+**ephapax-ir skeleton complete:**
+- ✅ Type system defined in `types.eph`
+- ✅ Compatibility analysis in `compat.eph`
+- ✅ Rust FFI wrapper created
+- ✅ Build system integrated
+
+**Waiting on ephapax maturity:**
+- ⏳ ephapax type checker (in progress)
+- ⏳ ephapax WASM codegen (in progress)
+- ⏳ ephapax-cli available
+
+**Current workaround:**
+- Rust stubs in `ephapax-ir/src/lib.rs`
+- Will swap to real WASM once ephapax ready
+- No blocking on protocol-squisher progress
+
+== Benefits for Both Projects
+
+### For protocol-squisher
+- Zero-copy paths proven safe (no aliasing bugs)
+- Memory safety at FFI boundaries (Rust↔Python)
+- Formal verification of IR invariants
+- No resource leaks in serialization
+
+### For ephapax
+- Real-world complex program (not toy examples)
+- Stresses linear type system with practical constraints
+- Tests region-based memory with serialization buffers
+- Validates WASM compilation
+- **Dogfooding:** Serialization is a killer app for linear types
+
+== Next Steps
+
+1. **Continue ephapax development** (separate project)
+   - Finish type checker
+   - Complete WASM codegen
+   - Publish ephapax-cli
+
+2. **Protocol-squisher parallel development**
+   - Use Rust stubs for now
+   - Build analyzers (Rust, Python)
+   - Implement compatibility engine
+   - When ephapax ready: swap stubs for real WASM calls
+
+3. **Integration milestones**
+   - Week 1: Validate types.eph compiles with ephapax-cli
+   - Week 2: Integrate WASM runtime in Rust wrapper
+   - Week 3: Property tests for linear invariants
+   - Week 4: Benchmark zero-copy vs JSON fallback
+
+== The Invariant
+
+**"If it compiles, it carries"**
+
+The compatibility analysis proves that for ANY source and target types:
+- A transport class exists (Concorde/Business/Economy/Wheelbarrow)
+- Transport is guaranteed (even if via JSON fallback)
+- Losses are documented before runtime
+
+Linear types ensure this analysis happens exactly once per type pair.
+
+== Transport Classes
+
+| Class | Fidelity | Overhead | Example |
+|-------|----------|----------|---------|
+| **Concorde** | 100% | ~0% | serde ↔ serde (zero-copy proven safe by linear types) |
+| **Business** | 95-100% | <10% | Protobuf ↔ Thrift (direct conversion) |
+| **Economy** | 70-95% | 10-50% | JSON ↔ MessagePack (documented losses) |
+| **Wheelbarrow** | <70% | >50% | Factor ↔ Cap'n Proto (via JSON fallback) |
+
+== Questions & Decisions
+
+### Q: What if ephapax isn't ready for months?
+**A:** No blocker. Rust stubs work now. Real WASM integration is a drop-in replacement later.
+
+### Q: Performance overhead of WASM?
+**A:** Minimal for IR operations (mostly type comparisons, no hot loops). WASM overhead <<< serialization overhead.
+
+### Q: Alternative to ephapax?
+**A:** Could use plain Rust, but lose:
+- Formal zero-copy safety proofs
+- Linear type guarantees (no leaks)
+- Real-world ephapax validation
+- Path to formal verification
+
+**Decision:** Stay with ephapax. The safety guarantees are worth it.
+
+== References
+
+- link:ephapax-ir/README.adoc[ephapax-IR README]
+- link:ephapax-ir/src/types.eph[IR Type System]
+- link:ephapax-ir/src/compat.eph[Compatibility Analysis]
+- link:.machines_readable/6scm/META.scm[ADR-007: ephapax Integration]

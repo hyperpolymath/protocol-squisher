@@ -16,6 +16,9 @@
    (layer . "interoperability"))
 
   (related-projects
+   ((name . "ephapax")
+    (relationship . "core-dependency")
+    (note . "Linear type system - canonical IR implemented in ephapax for zero-copy safety proofs"))
    ((name . "serde")
     (relationship . "dependency")
     (note . "Rust serialization framework - source format"))
@@ -28,9 +31,9 @@
    ((name . "proven")
     (relationship . "sibling-standard")
     (note . "Formal verification for adapter correctness proofs"))
-   ((name . "ephapax")
-    (relationship . "potential-consumer")
-    (note . "Could use protocol-squisher for format bridging in distributed systems")))
+   ((name . "wasmtime")
+    (relationship . "dependency")
+    (note . "WASM runtime for executing ephapax-compiled IR")))
 
   (what-this-is
    "A code generator that synthesizes type-safe adapters between serialization formats"

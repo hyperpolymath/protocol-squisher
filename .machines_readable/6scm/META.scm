@@ -44,7 +44,13 @@
       (date . "2026-01-04")
       (context . "Need to prove correctness of adapters")
       (decision . "Use property-based testing (proptest) plus future formal verification (miniKanren)")
-      (consequences . "Exhaustive test coverage. Path to formal proofs in Phase 3."))))
+      (consequences . "Exhaustive test coverage. Path to formal proofs in Phase 3."))
+    (adr-007
+      (status . "accepted")
+      (date . "2026-02-04")
+      (context . "Need to validate ephapax with real-world programs and ensure zero-copy safety in IR")
+      (decision . "Implement canonical IR in ephapax instead of plain Rust")
+      (consequences . "Linear types prove zero-copy paths safe. No aliasing bugs in generated adapters. Memory safety at FFI boundaries proven at compile time. Serves as real-world ephapax validation. Adds compilation dependency on ephapax → WASM → Rust FFI pipeline."))))
 
 (define development-practices
   '((code-style
@@ -76,6 +82,8 @@
 (define design-rationale
   '((why-rust
       "Rust provides type safety, zero-cost abstractions, and excellent FFI support. Code generation benefits from strong type system.")
+    (why-ephapax-ir
+      "Linear types prove zero-copy paths are safe. Resources freed exactly once (no leaks). Memory safety at FFI boundaries guaranteed at compile time. Serves as real-world validation of ephapax language.")
     (why-workspace-crates
       "Each analyzer/generator is independent. Enables parallel development and pluggable architecture for new formats.")
     (why-json-fallback

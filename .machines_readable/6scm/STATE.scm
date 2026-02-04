@@ -82,16 +82,19 @@
 
 (define critical-next-actions
   '((immediate
-      "Design IR type system (primitives, containers, composites, constraints)"
-      "Set up property-based testing infrastructure with proptest"
-      "Implement IR↔JSON serialization for tooling")
+      "Define IR types in ephapax (types.eph) with linear annotations"
+      "Implement compatibility analysis in ephapax (compat.eph)"
+      "Set up Rust FFI wrapper for calling ephapax WASM modules"
+      "Write property tests for linear type invariants")
     (this-week
-      "Complete protocol-squisher-ir crate with comprehensive tests"
+      "Validate ephapax IR compiles to WASM (when ephapax-cli ready)"
+      "Create Rust stubs for IR operations (until ephapax mature)"
       "Start Rust analyzer implementation using syn crate"
-      "Extract serde types and convert to IR")
+      "Design FFI boundary between Rust analyzers and ephapax IR")
     (this-month
+      "Integrate ephapax → WASM → Rust FFI pipeline"
       "Finish Rust and Python analyzers"
-      "Implement compatibility engine with transport classification"
+      "Implement compatibility engine calling ephapax compat.eph"
       "Begin JSON fallback mechanism")))
 
 (define session-history

@@ -1,0 +1,194 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+// Protocol Squisher - Canonical IR Type System
+//
+// This module defines the intermediate representation for protocol-squisher
+// using ephapax linear types to guarantee:
+// - Zero-copy paths are safe (no aliasing)
+// - Resources are freed exactly once (no leaks)
+// - FFI boundaries are memory-safe
+
+// ============================================================================
+// Core Type System
+// ============================================================================
+
+// Primitive types (copyable - no linearity required)
+type Primitive =
+    | I8 | I16 | I32 | I64
+    | U8 | U16 | U32 | U64
+    | F32 | F64
+    | Bool
+    | Char
+    | String
+    | Unit
+
+// Size specification for fixed-size containers
+type Size =
+    | Fixed(u64)      // Exactly N elements
+    | Bounded(u64)    // Up to N elements
+    | Unbounded       // Dynamic size
+
+// Container types (linear - consumed on use)
+// The ! suffix indicates linearity requirement
+type! Container =
+    | Array(IRType!, Size)      // Fixed or bounded array
+    | Vec(IRType!)              // Dynamic vector
+    | Map(IRType!, IRType!)     // Key-value mapping
+    | Set(IRType!)              // Unique elements
+    | Optional(IRType!)         // Nullable wrapper
+
+// Field definition for struct types
+type FieldDef = {
+    name: String,
+    ty: IRType!,
+    required: Bool
+}
+
+// Variant definition for enum types
+type VariantDef = {
+    name: String,
+    payload: IRType!
+}
+
+// Main IR type (linear - represents a type in the IR)
+type! IRType =
+    | Prim(Primitive)                    // Primitive type
+    | Cont(Container!)                   // Container type
+    | Struct(Vec<FieldDef>!)             // Product type
+    | Enum(Vec<VariantDef>!)             // Sum type
+    | Tuple(Vec<IRType!>!)               // Tuple type
+    | Reference(IRType!)                 // Reference/pointer type
+
+// ============================================================================
+// Constraint System
+// ============================================================================
+
+// Constraints on types (linear - must be checked exactly once)
+type! Constraint =
+    | Range(i64, i64)                    // Numeric range [min, max]
+    | Length(usize, usize)               // String/array length [min, max]
+    | Pattern(String)                    // Regex pattern
+    | Custom(String)                     // Custom validation rule
+    | NonNull                            // Must not be null/none
+    | Unique                             // Must be unique in collection
+
+// Type with constraints (linear)
+type! ConstrainedType = {
+    base: IRType!,
+    constraints: Vec<Constraint!>!
+}
+
+// ============================================================================
+// Schema Definition
+// ============================================================================
+
+// Top-level schema (linear - consumed when converting)
+type! Schema = {
+    name: String,
+    version: String,
+    root: ConstrainedType!,
+    definitions: Vec<(String, ConstrainedType!)>!
+}
+
+// ============================================================================
+// Core Functions
+// ============================================================================
+
+// Create a primitive IR type
+fn prim(p: Primitive) -> IRType! {
+    Prim(p)
+}
+
+// Create a struct type from fields
+fn struct(fields: Vec<FieldDef>!) -> IRType! {
+    Struct(fields)
+}
+
+// Create an enum type from variants
+fn enum(variants: Vec<VariantDef>!) -> IRType! {
+    Enum(variants)
+}
+
+// Create an optional type
+fn optional(inner: IRType!) -> IRType! {
+    Cont(Optional(inner))
+}
+
+// Create a vector type
+fn vec(element: IRType!) -> IRType! {
+    Cont(Vec(element))
+}
+
+// Create a map type
+fn map(key: IRType!, value: IRType!) -> IRType! {
+    Cont(Map(key, value))
+}
+
+// ============================================================================
+// Type Comparison (for compatibility analysis)
+// ============================================================================
+
+// Check if two primitive types are compatible
+fn primitives_compatible(a: Primitive, b: Primitive) -> Bool {
+    // Exact match
+    if a == b {
+        true
+    } else {
+        // Numeric widening allowed (i32 -> i64, f32 -> f64)
+        match (a, b) {
+            (I8, I16) => true,
+            (I8, I32) => true,
+            (I8, I64) => true,
+            (I16, I32) => true,
+            (I16, I64) => true,
+            (I32, I64) => true,
+            (U8, U16) => true,
+            (U8, U32) => true,
+            (U8, U64) => true,
+            (U16, U32) => true,
+            (U16, U64) => true,
+            (U32, U64) => true,
+            (F32, F64) => true,
+            _ => false
+        }
+    }
+}
+
+// Check if two sizes are compatible
+fn sizes_compatible(a: Size, b: Size) -> Bool {
+    match (a, b) {
+        (Fixed(n), Fixed(m)) => n == m,
+        (Fixed(n), Bounded(m)) => n <= m,
+        (Bounded(_), Unbounded) => true,
+        (Fixed(_), Unbounded) => true,
+        _ => false
+    }
+}
+
+// ============================================================================
+// Region-based allocation for IR construction
+// ============================================================================
+
+// Create a new IR in a region (bulk deallocation when region exits)
+region ir_construction:
+    fn build_schema(name: String, root: ConstrainedType!) -> Schema! {
+        let definitions = Vec::new@ir_construction()
+        Schema {
+            name: name,
+            version: "1.0.0",
+            root: root,
+            definitions: definitions
+        }
+    }
+
+    // Add a type definition to the schema
+    fn add_definition(schema: Schema!, name: String, ty: ConstrainedType!) -> Schema! {
+        let mut defs = schema.definitions
+        Vec::push(&mut defs, (name, ty))
+        Schema {
+            name: schema.name,
+            version: schema.version,
+            root: schema.root,
+            definitions: defs
+        }
+    }

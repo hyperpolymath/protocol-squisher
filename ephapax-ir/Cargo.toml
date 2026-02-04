@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+
+[package]
+name = "protocol-squisher-ephapax-ir"
+version = "0.1.0"
+edition = "2021"
+authors = ["Jonathan D.A. Jewell <jonathan.jewell@open.ac.uk>"]
+license = "PMPL-1.0-or-later"
+description = "ephapax-based canonical IR for protocol-squisher with linear type guarantees"
+repository = "https://github.com/hyperpolymath/protocol-squisher"
+
+[dependencies]
+# WASM runtime for executing compiled ephapax IR
+wasmtime = "26.0"
+anyhow = "1.0"
+
+[dev-dependencies]
+proptest = "1.4.0"
+
+[build-dependencies]
+# Build script will compile ephapax sources to WASM
+anyhow = "1.0"
+
+[[bin]]
+name = "compile-ir"
+path = "src/bin/compile.rs"

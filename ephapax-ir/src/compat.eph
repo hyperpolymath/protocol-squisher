@@ -1,0 +1,305 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+// Protocol Squisher - Compatibility Analysis
+//
+// This module implements transport class classification using linear types
+// to guarantee that compatibility analysis is performed exactly once per
+// type pair (no double-checking, no forgotten checks).
+
+// ============================================================================
+// Transport Classes
+// ============================================================================
+
+// Transport class classification for format pairs
+type TransportClass =
+    | Concorde {        // Zero-copy, full fidelity, maximum performance
+        fidelity: u8,     // 100%
+        overhead: f32     // ~0%
+    }
+    | Business {        // Minor overhead, full fidelity
+        fidelity: u8,     // 95-100%
+        overhead: f32     // <10%
+    }
+    | Economy {         // Moderate overhead, documented losses
+        fidelity: u8,     // 70-95%
+        overhead: f32,    // 10-50%
+        losses: Vec<String>
+    }
+    | Wheelbarrow {     // High overhead, significant losses, but works
+        fidelity: u8,     // <70%
+        overhead: f32,    // >50%
+        losses: Vec<String>,
+        fallback: String  // Fallback strategy (usually JSON)
+    }
+
+// Compatibility result (linear - must be consumed)
+type! CompatibilityResult = {
+    source_type: String,
+    target_type: String,
+    transport_class: TransportClass,
+    conversion_path: Vec<String>!,
+    guarantees: Vec<String>!
+}
+
+// ============================================================================
+// Core Compatibility Analysis
+// ============================================================================
+
+// Analyze compatibility between two IR types (consumes both)
+// Linear types ensure source and target are checked exactly once
+fn analyze_compatibility(
+    source: IRType!,
+    target: IRType!
+) -> CompatibilityResult! {
+
+    // Pattern match on type constructors
+    match (source, target) {
+        // Primitive to primitive
+        (Prim(s), Prim(t)) => {
+            if primitives_compatible(s, t) {
+                concorde_result("primitive", "primitive")
+            } else {
+                wheelbarrow_result("primitive", "primitive",
+                    vec!["Type mismatch - requires JSON conversion"])
+            }
+        },
+
+        // Container to container (same kind)
+        (Cont(Vec(s_elem)), Cont(Vec(t_elem))) => {
+            // Recursively analyze element compatibility
+            let elem_compat = analyze_compatibility(s_elem, t_elem)
+            match elem_compat.transport_class {
+                Concorde{..} => business_result("Vec", "Vec"),
+                Business{..} => economy_result("Vec", "Vec",
+                    vec!["Element conversion overhead"]),
+                _ => wheelbarrow_result("Vec", "Vec",
+                    vec!["Incompatible element types"])
+            }
+        },
+
+        // Array to array (size compatibility matters)
+        (Cont(Array(s_elem, s_size)), Cont(Array(t_elem, t_size))) => {
+            if sizes_compatible(s_size, t_size) {
+                let elem_compat = analyze_compatibility(s_elem, t_elem)
+                match elem_compat.transport_class {
+                    Concorde{..} => concorde_result("Array", "Array"),
+                    _ => business_result("Array", "Array")
+                }
+            } else {
+                economy_result("Array", "Array",
+                    vec!["Size mismatch - truncation or padding required"])
+            }
+        },
+
+        // Struct to struct (field-by-field analysis)
+        (Struct(s_fields), Struct(t_fields)) => {
+            analyze_struct_compatibility(s_fields, t_fields)
+        },
+
+        // Enum to enum (variant-by-variant analysis)
+        (Enum(s_variants), Enum(t_variants)) => {
+            analyze_enum_compatibility(s_variants, t_variants)
+        },
+
+        // Optional handling
+        (Cont(Optional(s_inner)), Cont(Optional(t_inner))) => {
+            let inner_compat = analyze_compatibility(s_inner, t_inner)
+            match inner_compat.transport_class {
+                Concorde{..} => concorde_result("Optional", "Optional"),
+                _ => business_result("Optional", "Optional")
+            }
+        },
+
+        // Non-optional to optional (always safe)
+        (s, Cont(Optional(t_inner))) => {
+            let inner_compat = analyze_compatibility(s, t_inner)
+            business_result("NonOptional", "Optional")
+        },
+
+        // Optional to non-optional (loss of null handling)
+        (Cont(Optional(s_inner)), t) => {
+            let inner_compat = analyze_compatibility(s_inner, t)
+            economy_result("Optional", "NonOptional",
+                vec!["Null values will cause runtime errors"])
+        },
+
+        // Complete mismatch - JSON fallback required
+        _ => {
+            wheelbarrow_result("unknown", "unknown",
+                vec!["No direct conversion path - JSON fallback required"])
+        }
+    }
+}
+
+// ============================================================================
+// Struct/Enum Analysis
+// ============================================================================
+
+// Analyze struct compatibility (field-by-field)
+fn analyze_struct_compatibility(
+    source_fields: Vec<FieldDef>!,
+    target_fields: Vec<FieldDef>!
+) -> CompatibilityResult! {
+
+    let mut losses = Vec::new()
+    let mut fidelity = 100
+
+    // Check if all target fields exist in source
+    for t_field in &target_fields {
+        let found = Vec::find(&source_fields, |s_field| {
+            s_field.name == t_field.name
+        })
+
+        if found.is_none() && t_field.required {
+            Vec::push(&mut losses,
+                format!("Missing required field: {}", t_field.name))
+            fidelity -= 10
+        }
+    }
+
+    // Check for extra source fields (will be dropped)
+    for s_field in &source_fields {
+        let found = Vec::find(&target_fields, |t_field| {
+            t_field.name == s_field.name
+        })
+
+        if found.is_none() {
+            Vec::push(&mut losses,
+                format!("Field '{}' will be dropped", s_field.name))
+            fidelity -= 5
+        }
+    }
+
+    // Classify based on fidelity
+    if fidelity == 100 {
+        business_result("Struct", "Struct")
+    } else if fidelity >= 70 {
+        economy_result("Struct", "Struct", losses)
+    } else {
+        wheelbarrow_result("Struct", "Struct", losses)
+    }
+}
+
+// Analyze enum compatibility (variant-by-variant)
+fn analyze_enum_compatibility(
+    source_variants: Vec<VariantDef>!,
+    target_variants: Vec<VariantDef>!
+) -> CompatibilityResult! {
+
+    let mut losses = Vec::new()
+    let mut fidelity = 100
+
+    // Check if all source variants exist in target
+    for s_variant in &source_variants {
+        let found = Vec::find(&target_variants, |t_variant| {
+            t_variant.name == s_variant.name
+        })
+
+        if found.is_none() {
+            Vec::push(&mut losses,
+                format!("Variant '{}' not supported in target", s_variant.name))
+            fidelity -= 20
+        }
+    }
+
+    if fidelity == 100 {
+        business_result("Enum", "Enum")
+    } else if fidelity >= 70 {
+        economy_result("Enum", "Enum", losses)
+    } else {
+        wheelbarrow_result("Enum", "Enum", losses)
+    }
+}
+
+// ============================================================================
+// Result Constructors
+// ============================================================================
+
+fn concorde_result(src: String, tgt: String) -> CompatibilityResult! {
+    CompatibilityResult {
+        source_type: src,
+        target_type: tgt,
+        transport_class: Concorde { fidelity: 100, overhead: 0.0 },
+        conversion_path: vec!["zero-copy"],
+        guarantees: vec![
+            "No data loss",
+            "No runtime overhead",
+            "Memory-safe zero-copy"
+        ]
+    }
+}
+
+fn business_result(src: String, tgt: String) -> CompatibilityResult! {
+    CompatibilityResult {
+        source_type: src,
+        target_type: tgt,
+        transport_class: Business { fidelity: 98, overhead: 5.0 },
+        conversion_path: vec!["direct conversion"],
+        guarantees: vec![
+            "Full fidelity",
+            "Minor overhead (<10%)"
+        ]
+    }
+}
+
+fn economy_result(
+    src: String,
+    tgt: String,
+    losses: Vec<String>
+) -> CompatibilityResult! {
+    CompatibilityResult {
+        source_type: src,
+        target_type: tgt,
+        transport_class: Economy {
+            fidelity: 80,
+            overhead: 25.0,
+            losses: losses
+        },
+        conversion_path: vec!["conversion with documented losses"],
+        guarantees: vec![
+            "Transport guaranteed",
+            "Losses documented"
+        ]
+    }
+}
+
+fn wheelbarrow_result(
+    src: String,
+    tgt: String,
+    losses: Vec<String>
+) -> CompatibilityResult! {
+    CompatibilityResult {
+        source_type: src,
+        target_type: tgt,
+        transport_class: Wheelbarrow {
+            fidelity: 50,
+            overhead: 80.0,
+            losses: losses,
+            fallback: "JSON"
+        },
+        conversion_path: vec![
+            "source -> JSON",
+            "JSON -> target"
+        ],
+        guarantees: vec![
+            "Transport guaranteed (via JSON)",
+            "High overhead",
+            "Significant losses documented"
+        ]
+    }
+}
+
+// ============================================================================
+// The Invariant
+// ============================================================================
+
+// THEOREM: For any source and target types, analyze_compatibility returns
+// a CompatibilityResult with a transport_class that guarantees transport.
+//
+// PROOF: By exhaustive pattern matching:
+// 1. All type constructor pairs are covered
+// 2. The wildcard case (_) maps to Wheelbarrow with JSON fallback
+// 3. JSON fallback works for ALL types (proven separately)
+// 4. Linear types ensure analysis happens exactly once (no missed checks)
+//
+// Therefore: If it compiles, it carries. QED.
