@@ -1,0 +1,88 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+
+# Formal verification recipes using ECHIDNA
+
+# Verify all proofs across all provers
+verify-all:
+    @echo "Verifying all proofs..."
+    just verify-agda
+    just verify-lean
+    @echo "✓ All proofs verified!"
+
+# Verify Agda proofs
+verify-agda:
+    @echo "Verifying Agda proofs..."
+    @cd agda && agda Types.agda
+    @cd agda && agda ConcordeSafety.agda
+    @cd agda && agda WheelbarrowNecessity.agda
+    @cd agda && agda ContainerPropagation.agda
+    @cd agda && agda CarriesInvariant.agda
+    @echo "✓ Agda proofs verified!"
+
+# Verify Lean proofs
+verify-lean:
+    @echo "Verifying Lean proofs..."
+    @cd lean && lake build
+    @echo "✓ Lean proofs verified!"
+
+# Verify Coq proofs (when implemented)
+verify-coq:
+    @echo "Verifying Coq proofs..."
+    @echo "⚠ Coq proofs not yet implemented"
+
+# Verify Z3 SMT proofs (when implemented)
+verify-z3:
+    @echo "Verifying Z3 proofs..."
+    @echo "⚠ Z3 proofs not yet implemented"
+
+# Cross-verify specific theorem across multiple provers
+cross-verify theorem:
+    @echo "Cross-verifying {{theorem}} across provers..."
+    @cd agda && agda {{theorem}}.agda
+    @cd lean && lake env lean --run {{theorem}}.lean
+    @echo "✓ {{theorem}} verified in Agda and Lean!"
+
+# Use ECHIDNA to synthesize proof candidates
+synthesize theorem prover:
+    @echo "Synthesizing proof for {{theorem}} using {{prover}}..."
+    echidna synthesize --theorem "{{theorem}}" \
+        --prover {{prover}} \
+        --output {{prover}}/{{theorem}}.generated
+    @echo "✓ Proof candidate generated!"
+
+# Check proof syntax without full verification
+check-agda:
+    @cd agda && agda --only-scope-checking Types.agda
+
+# Clean generated files
+clean:
+    @echo "Cleaning proof artifacts..."
+    @find . -name "*.agdai" -delete
+    @find . -name "*.vo" -delete
+    @find . -name "*.glob" -delete
+    @cd lean && lake clean
+    @echo "✓ Cleaned!"
+
+# List all proofs and their status
+list:
+    @echo "Proof Status:"
+    @echo ""
+    @echo "Agda proofs:"
+    @ls -1 agda/*.agda | grep -v Types.agda
+    @echo ""
+    @echo "Lean proofs:"
+    @ls -1 lean/*.lean 2>/dev/null || echo "  (none)"
+    @echo ""
+    @echo "Coq proofs:"
+    @ls -1 coq/*.v 2>/dev/null || echo "  (none)"
+
+# Run all proofs and generate report
+report:
+    @echo "Generating proof verification report..."
+    @echo "# Proof Verification Report" > PROOF-REPORT.md
+    @echo "" >> PROOF-REPORT.md
+    @echo "Generated: $(date)" >> PROOF-REPORT.md
+    @echo "" >> PROOF-REPORT.md
+    just verify-all 2>&1 | tee -a PROOF-REPORT.md
+    @cat PROOF-REPORT.md

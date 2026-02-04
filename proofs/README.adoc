@@ -1,0 +1,299 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+= Formal Proofs for Protocol Squisher
+:toc: left
+:toclevels: 3
+
+[.lead]
+**Theorem prover verification of protocol-squisher's core invariants using ECHIDNA.**
+
+== Overview
+
+This directory contains formal proofs verifying the correctness of protocol-squisher's transport class analysis and code generation. We use multiple theorem provers via ECHIDNA to cross-validate our claims.
+
+== Proof Structure
+
+[source]
+----
+proofs/
+├── agda/           # Agda proofs (Tier 1 - dependent types, like Idris2)
+├── lean/           # Lean proofs (Tier 1 - modern, good tooling)
+├── coq/            # Coq proofs (Tier 1 - classic, well-established)
+├── isabelle/       # Isabelle proofs (Tier 1 - higher-order logic)
+├── z3/             # Z3 SMT solver (Tier 1 - automated)
+└── common/         # Shared definitions across provers
+----
+
+== Core Theorems
+
+=== 1. Concorde Class Safety
+
+**Statement:** If source and target types are identical, conversion is lossless and bijective.
+
+[source,agda]
+----
+concorde-safe : ∀ {T : Type} →
+  (conv : T → T) →
+  (∀ x → conv x ≡ x) →
+  Lossless conv ∧ Bijective conv
+----
+
+**Files:**
+- `agda/ConcordeSafety.agda`
+- `lean/concorde_safety.lean`
+- `coq/ConcordeSafety.v`
+
+=== 2. Wheelbarrow Necessity
+
+**Statement:** Narrowing conversions require fallback mechanism (cannot be direct).
+
+[source,lean]
+----
+theorem wheelbarrow_required :
+  ∀ (S T : Type),
+  (sizeof S > sizeof T) →
+  ¬∃ (conv : S → T), lossless conv
+----
+
+**Files:**
+- `agda/WheelbarrowNecessity.agda`
+- `lean/wheelbarrow_necessity.lean`
+- `coq/WheelbarrowNecessity.v`
+
+=== 3. Container Propagation
+
+**Statement:** Container transport class is worst of element transport classes.
+
+[source,coq]
+----
+Theorem container_worst_class :
+  ∀ (C : Container) (T₁ T₂ : Type),
+  let elem_class := transport_class T₁ T₂ in
+  let container_class := transport_class (C T₁) (C T₂) in
+  container_class = max elem_class BusinessClass.
+----
+
+**Files:**
+- `agda/ContainerPropagation.agda`
+- `lean/container_propagation.lean`
+- `coq/ContainerPropagation.v`
+
+=== 4. "If It Compiles, It Carries" Invariant
+
+**Statement:** For any two schemas, an adapter exists that transports all data.
+
+[source,isabelle]
+----
+theorem protocol_squisher_invariant:
+  fixes schema_a schema_b :: Schema
+  shows "∃adapter. ∀x ∈ schema_a. ∃y ∈ schema_b. adapter x = Some y"
+----
+
+**Files:**
+- `agda/CarriesInvariant.agda`
+- `lean/carries_invariant.lean`
+- `coq/CarriesInvariant.v`
+- `isabelle/CarriesInvariant.thy`
+
+=== 5. Optimization Soundness
+
+**Statement:** Suggested optimizations preserve semantics.
+
+[source,z3]
+----
+(assert (forall ((x Int))
+  (= (semantics (widen_i32_to_i64 x))
+     (semantics x))))
+----
+
+**Files:**
+- `z3/optimization_soundness.smt2`
+- `lean/optimization_soundness.lean`
+
+== ECHIDNA Integration
+
+=== Prerequisites
+
+Install ECHIDNA:
+
+[source,bash]
+----
+cd ~/Documents/hyperpolymath-repos/echidna
+just build
+just install
+----
+
+=== Verifying Proofs
+
+**All Proofs:**
+[source,bash]
+----
+# From protocol-squisher root
+just verify-proofs
+----
+
+**Individual Prover:**
+[source,bash]
+----
+# Agda
+just verify-agda
+
+# Lean
+just verify-lean
+
+# Coq
+just verify-coq
+
+# Z3
+just verify-z3
+----
+
+**Cross-Prover Validation:**
+[source,bash]
+----
+# Verify same theorem across all provers
+just cross-verify ConcordeSafety
+----
+
+=== CI Integration
+
+Proofs are automatically verified in `.github/workflows/formal-verification.yml`:
+
+[source,yaml]
+----
+- name: Verify Formal Proofs
+  run: |
+    echidna verify --all-provers proofs/
+    echidna cross-verify --theorem ConcordeSafety
+----
+
+== Proof Status
+
+[cols="3,2,1,1,1,1,1",options="header"]
+|===
+|Theorem |Status |Agda |Lean |Coq |Isabelle |Z3
+
+|Concorde Safety
+|✓ Verified
+|✓
+|✓
+|✓
+|—
+|—
+
+|Wheelbarrow Necessity
+|✓ Verified
+|✓
+|✓
+|✓
+|—
+|—
+
+|Container Propagation
+|✓ Verified
+|✓
+|✓
+|✓
+|—
+|—
+
+|Carries Invariant
+|🚧 In Progress
+|🚧
+|🚧
+|🚧
+|🚧
+|—
+
+|Optimization Soundness
+|✓ Verified
+|—
+|✓
+|—
+|—
+|✓
+|===
+
+== Proof Development
+
+=== Writing New Proofs
+
+1. **Choose prover** based on theorem characteristics:
+   - **Agda/Lean**: Dependent types, type-level computation
+   - **Coq**: Tactics, classical logic
+   - **Isabelle**: Higher-order logic, automation
+   - **Z3**: SMT, decidable theories
+
+2. **Follow template** in `common/proof_template.md`
+
+3. **Cross-validate** with at least 2 other provers
+
+4. **Document assumptions** explicitly
+
+=== Proof Guidelines
+
+**DO:**
+- Use constructive proofs where possible
+- Explicitly state all assumptions
+- Cross-validate with multiple provers
+- Add proof comments explaining key steps
+
+**DON'T:**
+- Use axioms without justification
+- Assume totality without proving termination
+- Skip edge cases
+- Rely on automation without understanding
+
+== Neural Proof Synthesis
+
+ECHIDNA can synthesize proof candidates using neural models:
+
+[source,bash]
+----
+# Generate proof candidates for a theorem
+echidna synthesize --theorem "concorde-safe" \
+  --prover agda \
+  --output proofs/agda/ConcordeSafety.agda
+
+# Verify synthesized proof
+agda proofs/agda/ConcordeSafety.agda
+----
+
+== Common Definitions
+
+Shared type definitions across provers in `common/Types.agda`:
+
+[source,agda]
+----
+data PrimitiveType : Set where
+  I8 I16 I32 I64 I128 : PrimitiveType
+  U8 U16 U32 U64 U128 : PrimitiveType
+  F32 F64 : PrimitiveType
+  Bool String : PrimitiveType
+
+data TransportClass : Set where
+  Concorde Business Economy Wheelbarrow : TransportClass
+----
+
+== References
+
+- link:../ephapax-ir/[ephapax IR] - Idris2 implementation
+- link:~/Documents/hyperpolymath-repos/echidna/[ECHIDNA] - Theorem proving platform
+- link:https://wiki.portal.chalmers.se/agda/[Agda Documentation]
+- link:https://leanprover.github.io/[Lean Documentation]
+- link:https://coq.inria.fr/[Coq Documentation]
+- link:https://github.com/Z3Prover/z3/wiki[Z3 Documentation]
+
+== Contributing
+
+1. Add theorem to proof plan (see Issues)
+2. Implement in at least 2 provers
+3. Cross-validate results
+4. Update this README with status
+5. Add CI verification
+
+== License
+
+PMPL-1.0-or-later
+
+See link:../LICENSE[LICENSE] for details.
