@@ -1,6 +1,23 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-FileCopyrightText: 2025 hyperpolymath
+
 [package]
 name = "protocol-squisher-flatbuffers-analyzer"
 version = "0.1.0"
 edition = "2021"
+authors = ["Jonathan D.A. Jewell <jonathan.jewell@open.ac.uk>"]
+license = "PMPL-1.0-or-later"
+description = "FlatBuffers schema analyzer for protocol-squisher"
+repository = "https://github.com/hyperpolymath/protocol-squisher"
+keywords = ["flatbuffers", "schema", "analyzer", "serialization", "zero-copy"]
+categories = ["development-tools", "parsing"]
 
 [dependencies]
+protocol-squisher-ir = { path = "../protocol-squisher-ir" }
+protocol-squisher-ephapax-ir = { path = "../../ephapax-ir" }
+thiserror = "1.0"
+regex = "1.10"
+serde_json = "1.0"
+
+[dev-dependencies]
+pretty_assertions = "1.4"

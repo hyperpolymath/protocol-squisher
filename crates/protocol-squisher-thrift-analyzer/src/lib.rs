@@ -1,243 +1,125 @@
 // SPDX-License-Identifier: PMPL-1.0-or-later
-// Copyright (c) 2025 Jonathan D.A. Jewell
+// SPDX-FileCopyrightText: 2025 hyperpolymath
 
-//! Apache Thrift IDL analyzer for protocol-squisher.
+//! Apache Thrift IDL analyzer for protocol-squisher
 //!
-//! **Hypothesis Test: "Evolution = Gold" (Part 2)**
+//! Converts Thrift IDL definitions to the protocol-squisher IR format with
+//! ephapax transport class analysis. Thrift is an enterprise RPC framework
+//! with IDL-based schemas designed for cross-language service development.
 //!
-//! Thrift is designed with backward compatibility and evolution in mind:
-//! - Explicit `required`, `optional`, and default field modifiers
-//! - Multiple protocol formats (Binary, Compact, JSON)
-//! - Field IDs allow reordering and evolution
+//! # Features
 //!
-//! **Prediction:** Thrift should show HIGH squishability scores because:
-//! 1. `optional` fields create Optional bloat (Business → Economy)
-//! 2. Default values suggest fields could be required (Wheelbarrow → Business)
-//! 3. Multiple protocols mean conservative type choices (i32 instead of i16)
+//! - **IDL syntax**: C-style interface definition language
+//! - **All field types**: Structs, enums, exceptions, typedefs
+//! - **Field modifiers**: Required/optional/default field semantics
+//! - **Versioning**: Field numbers for schema evolution
+//! - **Transport analysis**: Ephapax-powered compatibility checking
 //!
-//! **Comparison with Avro:**
-//! - Avro uses union types for optionals → Thrift uses `optional` keyword
-//! - Avro has single encoding → Thrift has multiple protocols
-//! - Which approach creates more squishing opportunities?
+//! # Quick Start
+//!
+//! ```rust,no_run
+//! use protocol_squisher_thrift_analyzer::ThriftAnalyzer;
+//! use std::path::Path;
+//!
+//! let analyzer = ThriftAnalyzer::new();
+//!
+//! // Analyze from file
+//! let schema = analyzer.analyze_file(Path::new("schema.thrift")).unwrap();
+//!
+//! // Analyze from string
+//! let thrift = r#"
+//!     struct User {
+//!         1: required i64 id
+//!         2: required string name
+//!         3: optional string email
+//!     }
+//! "#;
+//! let schema = analyzer.analyze_str(thrift, "user").unwrap();
+//!
+//! // Access types
+//! for (name, type_def) in &schema.types {
+//!     println!("Found type: {}", name);
+//! }
+//! ```
+//!
+//! # Thrift Type Mappings
+//!
+//! | Thrift | IR Type | Transport Compatible With |
+//! |--------|---------|---------------------------|
+//! | `bool` | `Bool` | `Bool` only |
+//! | `byte`/`i8` | `I8` | `I8`, `I16`, `I32`, `I64`, `I128` (widening) |
+//! | `i16` | `I16` | `I16`, `I32`, `I64`, `I128` (widening) |
+//! | `i32` | `I32` | `I32`, `I64`, `I128` (widening) |
+//! | `i64` | `I64` | `I64`, `I128` (widening) |
+//! | `double` | `F64` | `F64` only |
+//! | `string` | `String` | `String` only |
+//! | `binary` | `Vec<U8>` | `Vec<U8>` only |
+//! | `list<T>` | `Vec<T>` | `Vec<T>` with compatible T |
+//! | `set<T>` | `Vec<T>` | `Vec<T>` (with uniqueness constraint) |
+//! | `map<K,V>` | `Map<K,V>` | `Map<K,V>` with compatible K,V |
 
-use lazy_static::lazy_static;
-use protocol_squisher_meta_analysis::{
-    Blocker, Pattern, SquishabilityReport, TransportClass,
-};
-use regex::Regex;
-use std::collections::HashMap;
+mod converter;
+mod parser;
+mod ephapax_bridge;
 
-lazy_static! {
-    // Match struct definitions: struct MyStruct { ... }
-    static ref STRUCT_RE: Regex = Regex::new(r"struct\s+(\w+)\s*\{([^}]+)\}").unwrap();
+pub use converter::ThriftConverter;
+pub use parser::ThriftParser;
+pub use ephapax_bridge::{TransportAnalysis, analyze_transport_compatibility};
 
-    // Match field definitions: 1: required i32 id
-    static ref FIELD_RE: Regex = Regex::new(
-        r"(\d+):\s*(required|optional)?\s*(\w+(?:<[^>]+>)?)\s+(\w+)\s*(=\s*[^,\n]+)?"
-    ).unwrap();
+use protocol_squisher_ir::IrSchema;
+use std::path::Path;
+use thiserror::Error;
+
+/// Errors that can occur during Thrift analysis
+#[derive(Debug, Error)]
+pub enum AnalyzerError {
+    /// Failed to parse thrift file
+    #[error("Thrift parse error: {0}")]
+    ParseError(String),
+
+    /// Invalid thrift structure
+    #[error("Invalid thrift: {0}")]
+    InvalidThrift(String),
+
+    /// Unsupported thrift feature
+    #[error("Unsupported feature: {0}")]
+    UnsupportedFeature(String),
+
+    /// IO error
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
 }
 
-/// Analyze a Thrift IDL file and generate squishability reports
-pub fn analyze_schema(thrift_idl: &str, schema_name: &str) -> Result<Vec<SquishabilityReport>, String> {
-    let mut reports = Vec::new();
-
-    // Find all struct definitions
-    for struct_cap in STRUCT_RE.captures_iter(thrift_idl) {
-        let struct_name = struct_cap.get(1).unwrap().as_str();
-        let struct_body = struct_cap.get(2).unwrap().as_str();
-
-        let report = analyze_struct(struct_name, struct_body, schema_name)?;
-        reports.push(report);
-    }
-
-    if reports.is_empty() {
-        return Err("No struct definitions found in Thrift IDL".to_string());
-    }
-
-    Ok(reports)
+/// Main analyzer for Thrift files
+#[derive(Debug, Default)]
+pub struct ThriftAnalyzer {
+    /// Parser for thrift files
+    parser: ThriftParser,
+    /// Converter from parsed thrift to IR
+    converter: ThriftConverter,
 }
 
-/// Analyze a single Thrift struct
-fn analyze_struct(
-    struct_name: &str,
-    struct_body: &str,
-    schema_name: &str,
-) -> Result<SquishabilityReport, String> {
-    let mut patterns = Vec::new();
-    let mut field_transport_classes = HashMap::new();
-    let mut blockers = Vec::new();
-
-    // Parse each field
-    for field_cap in FIELD_RE.captures_iter(struct_body) {
-        let _field_id = field_cap.get(1).unwrap().as_str();
-        let requiredness = field_cap.get(2).map(|m| m.as_str());
-        let field_type = field_cap.get(3).unwrap().as_str();
-        let field_name = field_cap.get(4).unwrap().as_str();
-        let has_default = field_cap.get(5).is_some();
-
-        let (transport_class, field_patterns, field_blockers) =
-            analyze_field(field_name, field_type, requiredness, has_default);
-
-        field_transport_classes.insert(field_name.to_string(), transport_class);
-        patterns.extend(field_patterns);
-        blockers.extend(field_blockers);
+impl ThriftAnalyzer {
+    /// Create a new Thrift analyzer
+    pub fn new() -> Self {
+        Self::default()
     }
 
-    // Determine best achievable class
-    let best_class = field_transport_classes
-        .values()
-        .min_by_key(|&&c| class_rank(c))
-        .copied()
-        .unwrap_or(TransportClass::Wheelbarrow);
-
-    // Calculate predicted speedup
-    let speedup = calculate_speedup(&field_transport_classes);
-
-    Ok(SquishabilityReport {
-        protocol: "Thrift".to_string(),
-        schema: schema_name.to_string(),
-        message: struct_name.to_string(),
-        patterns,
-        field_transport_classes,
-        best_achievable_class: best_class,
-        predicted_speedup: speedup,
-        blockers,
-        confidence: 0.80, // Slightly lower than Avro (regex-based parsing)
-    })
-}
-
-/// Analyze a single Thrift field
-fn analyze_field(
-    field_name: &str,
-    field_type: &str,
-    requiredness: Option<&str>,
-    has_default: bool,
-) -> (
-    TransportClass,
-    Vec<Pattern>,
-    Vec<Blocker>,
-) {
-    let mut patterns = Vec::new();
-    let mut blockers = Vec::new();
-
-    // Check if field is optional
-    let is_optional = matches!(requiredness, Some("optional"));
-    let is_required = matches!(requiredness, Some("required"));
-
-    let transport_class = match field_type {
-        // Primitive types
-        "bool" => TransportClass::Concorde,
-        "byte" | "i8" => TransportClass::Concorde,
-        "i16" => TransportClass::Concorde,
-        "i32" => {
-            // Detect safe widening opportunity
-            patterns.push(Pattern::SafeWidening {
-                field: field_name.to_string(),
-                from_type: "i32".to_string(),
-                to_type: "i64".to_string(),
-                expected_class: TransportClass::Business,
-            });
-            TransportClass::Concorde
-        }
-        "i64" => TransportClass::Concorde,
-        "double" => TransportClass::Concorde,
-        "string" => TransportClass::Economy, // String allocation
-        "binary" => TransportClass::Economy, // Vec<u8> allocation
-
-        // Container types
-        t if t.starts_with("list<") => {
-            if is_primitive_container(t) {
-                patterns.push(Pattern::RepeatedCopyable {
-                    field: field_name.to_string(),
-                    item_type: t.to_string(),
-                    count_estimate: 0,
-                    can_use_class: TransportClass::Economy,
-                });
-            }
-            TransportClass::Economy
-        }
-        t if t.starts_with("set<") => TransportClass::Economy,
-        t if t.starts_with("map<") => TransportClass::Economy,
-
-        // Custom types (struct references)
-        _ => {
-            patterns.push(Pattern::UnnecessaryNesting {
-                field: field_name.to_string(),
-                depth: 1,
-                blocker_to: TransportClass::Concorde,
-            });
-            TransportClass::Economy
-        }
-    };
-
-    // Handle optional fields (key pattern for evolution hypothesis!)
-    if is_optional {
-        patterns.push(Pattern::UnnecessaryOption {
-            field: field_name.to_string(),
-            reason: "Thrift optional field for backwards compatibility".to_string(),
-            blocker_to: TransportClass::Concorde,
-        });
-
-        blockers.push(Blocker::OptionalField {
-            field: field_name.to_string(),
-            prevents: TransportClass::Concorde,
-        });
-
-        // Optional fields always use Business class (best case for Option<T>)
-        // This is better than Economy/Wheelbarrow, worse than Concorde
-        return (TransportClass::Business, patterns, blockers);
+    /// Analyze a thrift file from a path
+    pub fn analyze_file(&self, path: &Path) -> Result<IrSchema, AnalyzerError> {
+        let parsed = self.parser.parse_file(path)?;
+        let name = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("schema");
+        self.converter.convert(&parsed, name)
     }
 
-    // Handle default values (also indicates evolution concern)
-    if has_default && !is_required {
-        patterns.push(Pattern::DeprecatedField {
-            field: field_name.to_string(),
-            reason: "Has default value, suggests evolution compatibility".to_string(),
-            cost_ns: 5.0, // Estimate
-        });
-
-        blockers.push(Blocker::BackwardsCompatibility {
-            requirement: format!("Field {} has default value", field_name),
-            prevents: TransportClass::Concorde,
-        });
+    /// Analyze thrift content from a string
+    pub fn analyze_str(&self, content: &str, name: &str) -> Result<IrSchema, AnalyzerError> {
+        let parsed = self.parser.parse_str(content)?;
+        self.converter.convert(&parsed, name)
     }
-
-    (transport_class, patterns, blockers)
-}
-
-/// Check if a container type contains primitives
-fn is_primitive_container(container_type: &str) -> bool {
-    container_type.contains("<i") || container_type.contains("<bool") || container_type.contains("<double")
-}
-
-/// Rank transport classes (lower = better)
-fn class_rank(class: TransportClass) -> u8 {
-    match class {
-        TransportClass::Concorde => 0,
-        TransportClass::Business => 1,
-        TransportClass::Economy => 2,
-        TransportClass::Wheelbarrow => 3,
-    }
-}
-
-/// Calculate predicted speedup based on transport class distribution
-fn calculate_speedup(classes: &HashMap<String, TransportClass>) -> f64 {
-    let total = classes.len() as f64;
-    if total == 0.0 {
-        return 1.0;
-    }
-
-    let mut speedup = 0.0;
-    for class in classes.values() {
-        speedup += match class {
-            TransportClass::Concorde => 100.0,
-            TransportClass::Business => 50.0,
-            TransportClass::Economy => 10.0,
-            TransportClass::Wheelbarrow => 1.0,
-        };
-    }
-
-    speedup / total
 }
 
 #[cfg(test)]
@@ -247,129 +129,205 @@ mod tests {
     #[test]
     fn test_simple_struct() {
         let thrift = r#"
-        struct User {
-            1: required i64 id
-            2: required string name
-        }
+            struct Person {
+                1: required string name
+                2: required i32 age
+            }
         "#;
 
-        let reports = analyze_schema(thrift, "user.thrift").unwrap();
-        assert_eq!(reports.len(), 1);
+        let analyzer = ThriftAnalyzer::new();
+        let result = analyzer.analyze_str(thrift, "person");
+        assert!(result.is_ok());
 
-        let report = &reports[0];
-        assert_eq!(report.protocol, "Thrift");
-        assert_eq!(report.message, "User");
-        assert_eq!(report.field_transport_classes.len(), 2);
-
-        // id: i64 → Concorde
-        assert_eq!(
-            report.field_transport_classes.get("id"),
-            Some(&TransportClass::Concorde)
-        );
-
-        // name: string → Economy
-        assert_eq!(
-            report.field_transport_classes.get("name"),
-            Some(&TransportClass::Economy)
-        );
+        let ir = result.unwrap();
+        assert!(ir.types.contains_key("Person"));
     }
 
     #[test]
-    fn test_optional_field() {
+    fn test_enum() {
         let thrift = r#"
-        struct User {
-            1: required i64 id
-            2: optional string email
-        }
+            enum Status {
+                UNKNOWN = 0
+                ACTIVE = 1
+                INACTIVE = 2
+            }
+
+            struct Task {
+                1: required string title
+                2: required Status status
+            }
         "#;
 
-        let reports = analyze_schema(thrift, "user.thrift").unwrap();
-        let report = &reports[0];
+        let analyzer = ThriftAnalyzer::new();
+        let result = analyzer.analyze_str(thrift, "task");
+        assert!(result.is_ok());
 
-        // email: optional string → Business (optional blocker)
-        assert_eq!(
-            report.field_transport_classes.get("email"),
-            Some(&TransportClass::Business)
-        );
-
-        // Should detect unnecessary option pattern
-        let has_optional_pattern = report.patterns.iter().any(|p| {
-            matches!(p, Pattern::UnnecessaryOption { field, .. } if field == "email")
-        });
-        assert!(has_optional_pattern, "Should detect optional pattern");
-
-        // Should have OptionalField blocker
-        let has_optional_blocker = report.blockers.iter().any(|b| {
-            matches!(b, Blocker::OptionalField { field, prevents }
-                if field == "email" && *prevents == TransportClass::Concorde)
-        });
-        assert!(has_optional_blocker, "Should have optional blocker");
-    }
-
-    #[test]
-    fn test_default_value() {
-        let thrift = r#"
-        struct Config {
-            1: i32 timeout = 30
-            2: string host = "localhost"
-        }
-        "#;
-
-        let reports = analyze_schema(thrift, "config.thrift").unwrap();
-        let report = &reports[0];
-
-        // Should detect deprecated fields (fields with defaults)
-        let deprecated_count = report.patterns.iter().filter(|p| {
-            matches!(p, Pattern::DeprecatedField { .. })
-        }).count();
-
-        assert!(deprecated_count >= 2, "Should detect fields with defaults");
+        let ir = result.unwrap();
+        assert!(ir.types.contains_key("Status"));
+        assert!(ir.types.contains_key("Task"));
     }
 
     #[test]
     fn test_list_field() {
         let thrift = r#"
-        struct UserList {
-            1: list<i64> user_ids
-        }
+            struct TaggedItem {
+                1: required string name
+                2: required list<string> tags
+            }
         "#;
 
-        let reports = analyze_schema(thrift, "user_list.thrift").unwrap();
-        let report = &reports[0];
-
-        // user_ids: list<i64> → Economy
-        assert_eq!(
-            report.field_transport_classes.get("user_ids"),
-            Some(&TransportClass::Economy)
-        );
-
-        // Should detect repeated copyable pattern
-        let has_repeated_pattern = report.patterns.iter().any(|p| {
-            matches!(p, Pattern::RepeatedCopyable { field, .. } if field == "user_ids")
-        });
-        assert!(has_repeated_pattern, "Should detect repeated copyable pattern");
+        let analyzer = ThriftAnalyzer::new();
+        let result = analyzer.analyze_str(thrift, "tagged");
+        assert!(result.is_ok());
     }
 
     #[test]
-    fn test_squishability_score() {
+    fn test_map_field() {
         let thrift = r#"
-        struct MixedTypes {
-            1: required i64 id
-            2: required i32 count
-            3: optional string description
-            4: list<string> tags
-        }
+            struct Config {
+                1: required map<string, string> settings
+            }
         "#;
 
-        let reports = analyze_schema(thrift, "mixed.thrift").unwrap();
-        let report = &reports[0];
+        let analyzer = ThriftAnalyzer::new();
+        let result = analyzer.analyze_str(thrift, "config");
+        if let Err(e) = &result {
+            eprintln!("Error: {:?}", e);
+        }
+        assert!(result.is_ok());
+    }
 
-        // Calculate squishability score
-        let score = report.squishability_score();
+    #[test]
+    fn test_optional_field() {
+        let thrift = r#"
+            struct Person {
+                1: required string name
+                2: optional i32 age
+            }
+        "#;
 
-        // Expect moderate score (mix of Concorde, Business, Economy)
-        // id: Concorde (1.0), count: Concorde (1.0), description: Business (0.8), tags: Economy (0.4)
-        // Score = (1.0 + 1.0 + 0.8 + 0.4) / 4 = 0.8
-        assert!((score - 0.8).abs() < 0.01, "Score was: {}", score);
+        let analyzer = ThriftAnalyzer::new();
+        let result = analyzer.analyze_str(thrift, "person");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_default_value() {
+        let thrift = r#"
+            struct Config {
+                1: i32 timeout = 30
+                2: string host = "localhost"
+            }
+        "#;
+
+        let analyzer = ThriftAnalyzer::new();
+        let result = analyzer.analyze_str(thrift, "config");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_all_thrift_types() {
+        let thrift = r#"
+            struct AllTypes {
+                1: required bool bool_field
+                2: required byte byte_field
+                3: required i16 int16_field
+                4: required i32 int32_field
+                5: required i64 int64_field
+                6: required double double_field
+                7: required string string_field
+                8: required binary binary_field
+            }
+        "#;
+
+        let analyzer = ThriftAnalyzer::new();
+        let result = analyzer.analyze_str(thrift, "alltypes");
+        assert!(result.is_ok());
+
+        let ir = result.unwrap();
+        let all_types = ir.types.get("AllTypes").unwrap();
+
+        if let protocol_squisher_ir::TypeDef::Struct(s) = all_types {
+            assert_eq!(s.fields.len(), 8);
+        } else {
+            panic!("Expected struct type");
+        }
+    }
+
+    #[test]
+    fn test_multiple_definitions() {
+        let thrift = r#"
+            struct User {
+                1: required string username
+                2: required string email
+            }
+
+            struct Post {
+                1: required string title
+                2: required string content
+                3: required string author_username
+            }
+
+            enum PostStatus {
+                DRAFT = 0
+                PUBLISHED = 1
+                ARCHIVED = 2
+            }
+        "#;
+
+        let analyzer = ThriftAnalyzer::new();
+        let result = analyzer.analyze_str(thrift, "schema");
+        assert!(result.is_ok());
+
+        let ir = result.unwrap();
+        assert_eq!(ir.types.len(), 3);
+        assert!(ir.types.contains_key("User"));
+        assert!(ir.types.contains_key("Post"));
+        assert!(ir.types.contains_key("PostStatus"));
+    }
+
+    #[test]
+    fn test_exception() {
+        let thrift = r#"
+            exception UserNotFound {
+                1: required string message
+                2: optional i64 user_id
+            }
+        "#;
+
+        let analyzer = ThriftAnalyzer::new();
+        let result = analyzer.analyze_str(thrift, "exceptions");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_typedef() {
+        let thrift = r#"
+            typedef i64 UserId
+
+            struct User {
+                1: required UserId id
+                2: required string name
+            }
+        "#;
+
+        let analyzer = ThriftAnalyzer::new();
+        let result = analyzer.analyze_str(thrift, "user");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_const_declaration() {
+        let thrift = r#"
+            const i32 MAX_USERS = 1000
+
+            struct UserLimit {
+                1: required i32 current_count
+            }
+        "#;
+
+        let analyzer = ThriftAnalyzer::new();
+        let result = analyzer.analyze_str(thrift, "limits");
+        assert!(result.is_ok());
     }
 }

@@ -1,175 +1,120 @@
 // SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+
 //! ReScript schema analyzer for protocol-squisher
 //!
 //! Analyzes ReScript type definitions and converts them to protocol-squisher IR.
+//! ReScript is the **primary application language** in the hyperpolymath ecosystem,
+//! making this analyzer critical for ReScript ↔ everything else interoperability.
 //!
-//! # Example
+//! # Features
 //!
-//! ```ignore
-//! use protocol_squisher_rescript_analyzer::analyze_rescript_source;
+//! - **Full AST parsing**: Record types, variant types, option types, tuples
+//! - **Module system**: Type definitions across module boundaries
+//! - **JS interop**: `@as` attributes, `@deriving`, external declarations
+//! - **Type inference**: Handles polymorphic types ('a, 'b)
+//! - **Transport analysis**: Ephapax-powered compatibility checking
 //!
-//! let source = r#"
-//! type user = {
-//!   id: int,
-//!   name: string,
-//!   email: string,
-//!   active: bool,
-//! }
+//! # Quick Start
+//!
+//! ```rust,no_run
+//! use protocol_squisher_rescript_analyzer::ReScriptAnalyzer;
+//! use std::path::Path;
+//!
+//! let analyzer = ReScriptAnalyzer::new();
+//!
+//! // Analyze from file
+//! let schema = analyzer.analyze_file(Path::new("Types.res")).unwrap();
+//!
+//! // Analyze from string
+//! let rescript = r#"
+//!     type user = {
+//!       id: int,
+//!       name: string,
+//!       email: option<string>,
+//!     }
 //! "#;
+//! let schema = analyzer.analyze_str(rescript, "user").unwrap();
 //!
-//! let schema = analyze_rescript_source(source, "user-schema").unwrap();
+//! // Access types
+//! for (name, type_def) in &schema.types {
+//!     println!("Found type: {}", name);
+//! }
 //! ```
+//!
+//! # ReScript Type Mappings
+//!
+//! | ReScript | IR Type | Transport Compatible With |
+//! |----------|---------|---------------------------|
+//! | `int` | `I64` | `I64`, `I128` (widening) |
+//! | `float` | `F64` | `F64` only |
+//! | `string` | `String` | `String` only |
+//! | `bool` | `Bool` | `Bool` only |
+//! | `option<T>` | `Option<T>` | `Option<T>` with compatible T |
+//! | `array<T>` | `Vec<T>` | `Vec<T>` with compatible T |
+//! | `(T1, T2, ...)` | `Tuple<T1, T2, ...>` | Matching tuples |
 
-use protocol_squisher_ir::{
-    ContainerType, FieldDef, FieldMetadata, IrSchema, IrType, PrimitiveType, StructDef, TypeDef,
-    TypeMetadata,
-};
-use serde::{Deserialize, Serialize};
+mod converter;
+mod parser;
+mod ephapax_bridge;
 
-/// ReScript type information
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ReScriptType {
-    pub name: String,
-    pub fields: Vec<ReScriptField>,
+pub use converter::ReScriptConverter;
+pub use parser::ReScriptParser;
+pub use ephapax_bridge::{TransportAnalysis, analyze_transport_compatibility};
+
+use protocol_squisher_ir::IrSchema;
+use std::path::Path;
+use thiserror::Error;
+
+/// Errors that can occur during ReScript analysis
+#[derive(Debug, Error)]
+pub enum AnalyzerError {
+    /// Failed to parse ReScript file
+    #[error("ReScript parse error: {0}")]
+    ParseError(String),
+
+    /// Invalid ReScript structure
+    #[error("Invalid ReScript: {0}")]
+    InvalidReScript(String),
+
+    /// Unsupported ReScript feature
+    #[error("Unsupported feature: {0}")]
+    UnsupportedFeature(String),
+
+    /// IO error
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ReScriptField {
-    pub name: String,
-    pub field_type: ReScriptFieldType,
-    pub optional: bool,
+/// Main analyzer for ReScript files
+#[derive(Debug, Default)]
+pub struct ReScriptAnalyzer {
+    /// Parser for ReScript files
+    parser: ReScriptParser,
+    /// Converter from parsed ReScript to IR
+    converter: ReScriptConverter,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ReScriptFieldType {
-    Int,
-    String,
-    Bool,
-    Float,
-    Record(String),
-    Array(Box<ReScriptFieldType>),
-    Option(Box<ReScriptFieldType>),
-}
-
-/// Parse ReScript source and extract type definitions
-///
-/// This is a simplified parser for proof-of-concept.
-/// A production implementation would use a full ReScript AST parser.
-pub fn parse_rescript_type(source: &str) -> Result<Vec<ReScriptType>, String> {
-    let mut types = Vec::new();
-
-    // Simple pattern matching for "type name = { ... }" syntax
-    if source.contains("type user") {
-        types.push(ReScriptType {
-            name: "user".to_string(),
-            fields: vec![
-                ReScriptField {
-                    name: "id".to_string(),
-                    field_type: ReScriptFieldType::Int,
-                    optional: false,
-                },
-                ReScriptField {
-                    name: "name".to_string(),
-                    field_type: ReScriptFieldType::String,
-                    optional: false,
-                },
-                ReScriptField {
-                    name: "email".to_string(),
-                    field_type: ReScriptFieldType::String,
-                    optional: false,
-                },
-                ReScriptField {
-                    name: "active".to_string(),
-                    field_type: ReScriptFieldType::Bool,
-                    optional: false,
-                },
-            ],
-        });
+impl ReScriptAnalyzer {
+    /// Create a new ReScript analyzer
+    pub fn new() -> Self {
+        Self::default()
     }
 
-    if types.is_empty() {
-        Err("No type definitions found".to_string())
-    } else {
-        Ok(types)
-    }
-}
-
-/// Convert ReScript type to protocol-squisher IR type
-pub fn rescript_type_to_ir(rs_type: &ReScriptFieldType) -> IrType {
-    match rs_type {
-        ReScriptFieldType::Int => IrType::Primitive(PrimitiveType::I64),
-        ReScriptFieldType::String => IrType::Primitive(PrimitiveType::String),
-        ReScriptFieldType::Bool => IrType::Primitive(PrimitiveType::Bool),
-        ReScriptFieldType::Float => IrType::Primitive(PrimitiveType::F64),
-        ReScriptFieldType::Record(name) => IrType::Reference(name.clone()),
-        ReScriptFieldType::Array(inner) => {
-            IrType::Container(ContainerType::Vec(Box::new(rescript_type_to_ir(inner))))
-        }
-        ReScriptFieldType::Option(inner) => {
-            IrType::Container(ContainerType::Option(Box::new(rescript_type_to_ir(inner))))
-        }
-    }
-}
-
-/// Convert ReScript type definition to IR struct definition
-pub fn rescript_to_struct_def(rs_type: &ReScriptType) -> StructDef {
-    let fields = rs_type
-        .fields
-        .iter()
-        .map(|field| FieldDef {
-            name: field.name.clone(),
-            ty: rescript_type_to_ir(&field.field_type),
-            optional: field.optional,
-            constraints: Vec::new(), // Add constraints based on field type
-            metadata: FieldMetadata::default(),
-        })
-        .collect();
-
-    StructDef {
-        name: rs_type.name.clone(),
-        fields,
-        metadata: TypeMetadata::default(),
-    }
-}
-
-/// Analyze ReScript source code and generate IR schema
-pub fn analyze_rescript_source(
-    source: &str,
-    schema_name: impl Into<String>,
-) -> Result<IrSchema, String> {
-    let types = parse_rescript_type(source)?;
-    let mut schema = IrSchema::new(schema_name, "rescript");
-
-    for rs_type in types {
-        let type_id = rs_type.name.clone();
-        let struct_def = rescript_to_struct_def(&rs_type);
-        schema.add_type(type_id.clone(), TypeDef::Struct(struct_def));
-        schema.add_root(type_id);
+    /// Analyze a ReScript file from a path
+    pub fn analyze_file(&self, path: &Path) -> Result<IrSchema, AnalyzerError> {
+        let parsed = self.parser.parse_file(path)?;
+        let name = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("schema");
+        self.converter.convert(&parsed, name)
     }
 
-    Ok(schema)
-}
-
-/// Calculate compatibility score with target language
-pub fn compatibility_score(_rescript_type: &ReScriptType, target: &str) -> f32 {
-    match target {
-        "rust" => {
-            // All ReScript types map perfectly to Rust
-            1.0
-        }
-        "julia" => {
-            // All ReScript types map perfectly to Julia
-            1.0
-        }
-        "gleam" => {
-            // All ReScript types map perfectly to Gleam
-            1.0
-        }
-        "python" => {
-            // Python lacks strict typing but can represent all ReScript types
-            0.95
-        }
-        _ => 0.0,
+    /// Analyze ReScript content from a string
+    pub fn analyze_str(&self, content: &str, name: &str) -> Result<IrSchema, AnalyzerError> {
+        let parsed = self.parser.parse_str(content)?;
+        self.converter.convert(&parsed, name)
     }
 }
 
@@ -178,60 +123,187 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parse_user_type() {
-        let source = r#"
-type user = {
-  id: int,
-  name: string,
-  email: string,
-  active: bool,
-}
-"#;
-        let types = parse_rescript_type(source).unwrap();
-        assert_eq!(types.len(), 1);
-        assert_eq!(types[0].name, "user");
-        assert_eq!(types[0].fields.len(), 4);
+    fn test_simple_record() {
+        let rescript = r#"
+            type person = {
+                name: string,
+                age: int,
+                active: bool,
+            }
+        "#;
+
+        let analyzer = ReScriptAnalyzer::new();
+        let result = analyzer.analyze_str(rescript, "person");
+        assert!(result.is_ok());
+
+        let ir = result.unwrap();
+        assert!(ir.types.contains_key("person"));
     }
 
     #[test]
-    fn test_rescript_to_ir() {
-        let source = r#"
-type user = {
-  id: int,
-  name: string,
-  email: string,
-  active: bool,
-}
-"#;
-        let schema = analyze_rescript_source(source, "user-schema").unwrap();
-        assert_eq!(schema.name, "user-schema");
-        assert_eq!(schema.source_format, "rescript");
-        assert_eq!(schema.types.len(), 1);
-        assert_eq!(schema.roots.len(), 1);
+    fn test_variant_type() {
+        let rescript = r#"
+            type status =
+              | Active
+              | Inactive
+              | Pending
+        "#;
+
+        let analyzer = ReScriptAnalyzer::new();
+        let result = analyzer.analyze_str(rescript, "status");
+        assert!(result.is_ok());
+
+        let ir = result.unwrap();
+        assert!(ir.types.contains_key("status"));
     }
 
     #[test]
-    fn test_type_conversion() {
-        assert_eq!(
-            rescript_type_to_ir(&ReScriptFieldType::Int),
-            IrType::Primitive(PrimitiveType::I64)
-        );
-        assert_eq!(
-            rescript_type_to_ir(&ReScriptFieldType::String),
-            IrType::Primitive(PrimitiveType::String)
-        );
-        assert_eq!(
-            rescript_type_to_ir(&ReScriptFieldType::Bool),
-            IrType::Primitive(PrimitiveType::Bool)
-        );
+    fn test_option_type() {
+        let rescript = r#"
+            type user = {
+                id: int,
+                name: string,
+                email: option<string>,
+            }
+        "#;
+
+        let analyzer = ReScriptAnalyzer::new();
+        let result = analyzer.analyze_str(rescript, "user");
+        assert!(result.is_ok());
     }
 
     #[test]
-    fn test_compatibility_rust() {
-        let rs_type = ReScriptType {
-            name: "test".to_string(),
-            fields: vec![],
-        };
-        assert_eq!(compatibility_score(&rs_type, "rust"), 1.0);
+    fn test_array_type() {
+        let rescript = r#"
+            type post = {
+                title: string,
+                tags: array<string>,
+            }
+        "#;
+
+        let analyzer = ReScriptAnalyzer::new();
+        let result = analyzer.analyze_str(rescript, "post");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_tuple_type() {
+        let rescript = r#"
+            type coordinates = (float, float)
+
+            type location = {
+                name: string,
+                coords: coordinates,
+            }
+        "#;
+
+        let analyzer = ReScriptAnalyzer::new();
+        let result = analyzer.analyze_str(rescript, "location");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_js_dict_type() {
+        let rescript = r#"
+            type config = {
+                name: string,
+                settings: Js.Dict.t<string>,
+            }
+        "#;
+
+        let analyzer = ReScriptAnalyzer::new();
+        let result = analyzer.analyze_str(rescript, "config");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_variant_with_payload() {
+        let rescript = r#"
+            type result<'a, 'e> =
+              | Ok('a)
+              | Error('e)
+        "#;
+
+        let analyzer = ReScriptAnalyzer::new();
+        let result = analyzer.analyze_str(rescript, "result");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_multiple_types() {
+        let rescript = r#"
+            type userId = int
+
+            type user = {
+                id: userId,
+                name: string,
+                email: string,
+            }
+
+            type post = {
+                id: int,
+                authorId: userId,
+                title: string,
+                content: string,
+            }
+        "#;
+
+        let analyzer = ReScriptAnalyzer::new();
+        let result = analyzer.analyze_str(rescript, "schema");
+        assert!(result.is_ok());
+
+        let ir = result.unwrap();
+        assert_eq!(ir.types.len(), 3);
+        assert!(ir.types.contains_key("userId"));
+        assert!(ir.types.contains_key("user"));
+        assert!(ir.types.contains_key("post"));
+    }
+
+    #[test]
+    fn test_nested_record() {
+        let rescript = r#"
+            type address = {
+                street: string,
+                city: string,
+                zipCode: string,
+            }
+
+            type person = {
+                name: string,
+                address: address,
+            }
+        "#;
+
+        let analyzer = ReScriptAnalyzer::new();
+        let result = analyzer.analyze_str(rescript, "person");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_js_interop_attributes() {
+        let rescript = r#"
+            type user = {
+                @as("user_id") id: int,
+                @as("user_name") name: string,
+            }
+        "#;
+
+        let analyzer = ReScriptAnalyzer::new();
+        let result = analyzer.analyze_str(rescript, "user");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_polymorphic_type() {
+        let rescript = r#"
+            type response<'data> = {
+                status: int,
+                data: 'data,
+            }
+        "#;
+
+        let analyzer = ReScriptAnalyzer::new();
+        let result = analyzer.analyze_str(rescript, "response");
+        assert!(result.is_ok());
     }
 }

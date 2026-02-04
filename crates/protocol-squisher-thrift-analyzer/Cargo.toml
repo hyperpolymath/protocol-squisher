@@ -4,14 +4,14 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Jonathan D.A. Jewell <jonathan.jewell@open.ac.uk>"]
 license = "PMPL-1.0-or-later"
-description = "Apache Thrift IDL analyzer for protocol-squisher (hypothesis: evolution = squishing gold)"
+description = "Apache Thrift IDL analyzer for protocol-squisher - converts .thrift schemas to IR"
 
 [dependencies]
 regex = "1.10"
-lazy_static = "1.5"
-serde = { version = "1.0", features = ["derive"] }
+thiserror = "1.0"
 serde_json = "1.0"
-protocol-squisher-meta-analysis = { path = "../protocol-squisher-meta-analysis" }
+protocol-squisher-ir = { path = "../protocol-squisher-ir" }
+protocol-squisher-ephapax-ir = { path = "../../ephapax-ir" }
 
 [dev-dependencies]
 criterion = "0.5"
