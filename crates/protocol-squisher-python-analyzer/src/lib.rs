@@ -40,10 +40,12 @@ use protocol_squisher_ir::IrSchema;
 pub mod types;
 pub mod converter;
 pub mod runner;
+pub mod ephapax_bridge;
 
 pub use types::*;
 pub use converter::convert_python_type;
 pub use runner::{PythonRunnerConfig, INTROSPECTION_SCRIPT};
+pub use ephapax_bridge::*;
 
 /// Errors that can occur during Python analysis
 #[derive(Debug, Clone)]
