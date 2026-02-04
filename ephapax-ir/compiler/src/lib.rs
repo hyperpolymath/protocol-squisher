@@ -7,12 +7,14 @@
 //! for the ephapax language with linear types.
 
 pub mod ast;
+pub mod codegen;
 pub mod interpreter;
 pub mod parser;
 pub mod tokens;
 pub mod typeck;
 
 pub use ast::{Expr, Function, Program, Type};
+pub use codegen::WasmCodeGen;
 pub use interpreter::{Interpreter, Value};
 pub use parser::Parser;
 pub use tokens::Lexer;
@@ -67,6 +69,20 @@ pub fn check_source(source: &str) -> Result<(), String> {
 
     let checker = TypeChecker::new(&program);
     checker.check().map_err(|e| e.to_string())
+}
+
+/// Compile ephapax source code to WebAssembly Text (WAT) format
+pub fn compile_to_wat(source: &str) -> Result<String, String> {
+    let mut parser = Parser::new(source);
+    let program = parser.parse_program()?;
+
+    // Type check before compilation
+    let checker = TypeChecker::new(&program);
+    checker.check().map_err(|e| e.to_string())?;
+
+    // Generate WAT
+    let mut codegen = WasmCodeGen::new();
+    codegen.generate(&program)
 }
 
 #[cfg(test)]
