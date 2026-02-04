@@ -39,10 +39,12 @@ use protocol_squisher_ir::{
 mod parser;
 mod converter;
 mod attributes;
+mod ephapax_bridge;
 
 pub use parser::*;
 pub use converter::*;
 pub use attributes::*;
+pub use ephapax_bridge::*;
 
 /// Errors that can occur during Rust analysis
 #[derive(Debug, Clone)]
