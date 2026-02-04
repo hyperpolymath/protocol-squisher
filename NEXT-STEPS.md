@@ -225,17 +225,17 @@ Linear check: ✅ Pass
 
 ### Long Term (Advanced Features)
 
-7. **Borrowing system**
-   - Reference types (&T)
-   - Lifetime tracking
-   - Mutable vs. immutable
+7. **Borrowing system** ✅ (basic implementation)
+   - Reference types (&T) ✅
+   - Lifetime tracking (future work)
+   - Mutable vs. immutable (future work)
 
-8. **WASM backend**
+8. **WASM backend** (next priority)
    - Compile to WASM
    - No GC needed (linear types!)
    - Integrate with browsers
 
-9. **Full analyzer suite**
+9. **Full analyzer suite** (next priority)
    - Rewrite all 7 analyzers in ephapax
    - Benchmarks vs. Rust
    - Integration with protocol-squisher
