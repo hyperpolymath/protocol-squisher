@@ -1,115 +1,149 @@
 // SPDX-License-Identifier: PMPL-1.0-or-later
-//! FFI wrapper for ephapax IR compiled to WASM
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+//! Protocol Squisher - Canonical IR with Linear Types (ephapax)
 //!
-//! This crate provides a Rust interface to the ephapax-based canonical IR
-//! for protocol-squisher. The IR is written in ephapax and compiled to WASM,
-//! then called via FFI from Rust analyzers and generators.
+//! This crate provides the canonical intermediate representation for protocol-squisher,
+//! implemented in Idris2 with dependent types and linear type guarantees.
+//!
+//! ## Architecture
+//!
+//! - **Types**: IR type system (primitives, containers, composites)
+//! - **Compatibility**: Transport class analysis with totality-checked proofs
+//! - **Linear Safety**: Zero-copy paths proven safe at compile-time
+//! - **Backend**: Idris2 implementation with Rust FFI bindings
+//!
+//! ## Transport Classes
+//!
+//! - **Concorde**: Zero-copy, 100% fidelity
+//! - **Business**: Minor overhead, 98% fidelity
+//! - **Economy**: Moderate overhead, 80% fidelity
+//! - **Wheelbarrow**: High overhead (50%), JSON fallback
+//!
+//! ## The Invariant
+//!
+//! **"If it compiles, it carries AND cannot crash"**
+//!
+//! Proven by:
+//! - Idris2 totality checking (all cases handled)
+//! - Dependent types (types encode proofs)
+//! - Linear types (resource safety)
 
-use anyhow::{Context, Result};
-use std::sync::Arc;
+mod ffi;
 
-/// Handle to the ephapax IR WASM runtime
+use std::marker::PhantomData;
+
+/// Primitive types in the IR
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[repr(u8)]
+pub enum PrimitiveType {
+    I8 = 0,
+    I16 = 1,
+    I32 = 2,
+    I64 = 3,
+    U8 = 4,
+    U16 = 5,
+    U32 = 6,
+    U64 = 7,
+    F32 = 8,
+    F64 = 9,
+    Bool = 10,
+    Char = 11,
+    String = 12,
+    Unit = 13,
+}
+
+/// Container types in the IR
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ContainerType {
+    Array,
+    Vec,
+    Map,
+    Set,
+    Optional,
+}
+
+/// Composite types in the IR
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CompositeType {
+    Struct,
+    Enum,
+    Tuple,
+}
+
+/// Transport class classification
+///
+/// Represents the quality of type conversion:
+/// - **Concorde**: Perfect match, zero overhead
+/// - **Business**: Safe conversion, minor overhead
+/// - **Economy**: Lossy conversion, moderate overhead
+/// - **Wheelbarrow**: Major incompatibility, high overhead
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[repr(u8)]
+pub enum TransportClass {
+    /// Zero-copy, 100% fidelity
+    Concorde = 100,
+    /// Minor overhead, 98% fidelity
+    Business = 101,
+    /// Moderate overhead, 80% fidelity
+    Economy = 102,
+    /// High overhead, 50% fidelity (JSON fallback)
+    Wheelbarrow = 103,
+}
+
+impl TransportClass {
+    /// Get fidelity percentage (0-100)
+    pub fn fidelity(&self) -> u8 {
+        ffi::get_fidelity(*self)
+    }
+
+    /// Get overhead percentage (0-100)
+    pub fn overhead(&self) -> u8 {
+        ffi::get_overhead(*self)
+    }
+}
+
+/// Canonical IR context (ephapax linear state)
+///
+/// This context provides access to the Idris2-proven transport class analysis.
 pub struct IRContext {
-    // TODO: Initialize wasmtime runtime when ephapax compilation is ready
-    // For now, this is a stub that will be filled in once ephapax is mature
-    _phantom: std::marker::PhantomData<()>,
+    _phantom: PhantomData<()>,
 }
 
 impl IRContext {
-    /// Create a new IR context (loads compiled ephapax WASM modules)
-    pub fn new() -> Result<Self> {
-        // TODO: Load ephapax IR WASM modules
-        // let types_wasm = include_bytes!(concat!(env!("OUT_DIR"), "/types.wasm"));
-        // let compat_wasm = include_bytes!(concat!(env!("OUT_DIR"), "/compat.wasm"));
+    /// Create new IR context
+    pub fn new() -> Self {
+        Self {
+            _phantom: PhantomData,
+        }
+    }
 
-        println!("IR Context: ephapax compilation not yet available, using stub");
+    /// Analyze compatibility between two primitive types
+    ///
+    /// Returns the transport class representing the quality of conversion.
+    /// This function's correctness is proven by Idris2's totality checker.
+    pub fn analyze_compatibility(
+        &self,
+        source: PrimitiveType,
+        target: PrimitiveType,
+    ) -> TransportClass {
+        ffi::analyze_primitive_compat(source, target)
+    }
 
-        Ok(Self {
-            _phantom: std::marker::PhantomData,
-        })
+    /// Get fidelity percentage for a transport class
+    pub fn get_fidelity(&self, class: TransportClass) -> u8 {
+        class.fidelity()
+    }
+
+    /// Get overhead percentage for a transport class
+    pub fn get_overhead(&self, class: TransportClass) -> u8 {
+        class.overhead()
     }
 }
 
 impl Default for IRContext {
     fn default() -> Self {
-        Self::new().expect("Failed to create IR context")
+        Self::new()
     }
-}
-
-/// Primitive types in the IR
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Primitive {
-    I8, I16, I32, I64,
-    U8, U16, U32, U64,
-    F32, F64,
-    Bool,
-    Char,
-    String,
-    Unit,
-}
-
-/// Transport class classification
-#[derive(Debug, Clone, PartialEq)]
-pub enum TransportClass {
-    /// Zero-copy, full fidelity, maximum performance
-    Concorde {
-        fidelity: u8,
-        overhead: f32,
-    },
-    /// Minor overhead, full fidelity
-    Business {
-        fidelity: u8,
-        overhead: f32,
-    },
-    /// Moderate overhead, documented losses
-    Economy {
-        fidelity: u8,
-        overhead: f32,
-        losses: Vec<String>,
-    },
-    /// High overhead, significant losses, but works
-    Wheelbarrow {
-        fidelity: u8,
-        overhead: f32,
-        losses: Vec<String>,
-        fallback: String,
-    },
-}
-
-/// Compatibility analysis result
-#[derive(Debug, Clone)]
-pub struct CompatibilityResult {
-    pub source_type: String,
-    pub target_type: String,
-    pub transport_class: TransportClass,
-    pub conversion_path: Vec<String>,
-    pub guarantees: Vec<String>,
-}
-
-/// IR type representation (mirrors ephapax types.eph)
-#[derive(Debug, Clone)]
-pub enum IRType {
-    Prim(Primitive),
-    Vec(Box<IRType>),
-    Map(Box<IRType>, Box<IRType>),
-    Optional(Box<IRType>),
-    Struct(Vec<FieldDef>),
-    Enum(Vec<VariantDef>),
-}
-
-/// Field definition for struct types
-#[derive(Debug, Clone)]
-pub struct FieldDef {
-    pub name: String,
-    pub ty: IRType,
-    pub required: bool,
-}
-
-/// Variant definition for enum types
-#[derive(Debug, Clone)]
-pub struct VariantDef {
-    pub name: String,
-    pub payload: IRType,
 }
 
 #[cfg(test)]
@@ -117,30 +151,36 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_ir_context_creation() {
+    fn test_exact_match() {
         let ctx = IRContext::new();
-        assert!(ctx.is_ok(), "Should create IR context stub");
+        let class = ctx.analyze_compatibility(PrimitiveType::I32, PrimitiveType::I32);
+        assert_eq!(class, TransportClass::Concorde);
+        assert_eq!(class.fidelity(), 100);
+        assert_eq!(class.overhead(), 0);
     }
 
     #[test]
-    fn test_primitive_types() {
-        let i32_ty = IRType::Prim(Primitive::I32);
-        matches!(i32_ty, IRType::Prim(Primitive::I32));
+    fn test_safe_widening() {
+        let ctx = IRContext::new();
+        let class = ctx.analyze_compatibility(PrimitiveType::I32, PrimitiveType::I64);
+        assert_eq!(class, TransportClass::Business);
+        assert_eq!(class.fidelity(), 98);
+        assert_eq!(class.overhead(), 5);
     }
 
     #[test]
-    fn test_transport_class_construction() {
-        let concorde = TransportClass::Concorde {
-            fidelity: 100,
-            overhead: 0.0,
-        };
+    fn test_incompatible() {
+        let ctx = IRContext::new();
+        let class = ctx.analyze_compatibility(PrimitiveType::I32, PrimitiveType::String);
+        assert_eq!(class, TransportClass::Wheelbarrow);
+        assert_eq!(class.fidelity(), 50);
+        assert_eq!(class.overhead(), 80);
+    }
 
-        match concorde {
-            TransportClass::Concorde { fidelity, overhead } => {
-                assert_eq!(fidelity, 100);
-                assert_eq!(overhead, 0.0);
-            },
-            _ => panic!("Expected Concorde class"),
-        }
+    #[test]
+    fn test_float_widening() {
+        let ctx = IRContext::new();
+        let class = ctx.analyze_compatibility(PrimitiveType::F32, PrimitiveType::F64);
+        assert_eq!(class, TransportClass::Business);
     }
 }
