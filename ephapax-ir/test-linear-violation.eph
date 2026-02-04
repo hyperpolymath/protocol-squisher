@@ -1,0 +1,6 @@
+// This should fail type checking: variable used twice
+
+fn main() {
+    let x = 42;
+    x + x  // ERROR: x used twice (linear type violation)
+}

@@ -1,0 +1,420 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+
+//! Linear type checker for ephapax
+//!
+//! Enforces linear type constraints:
+//! - Values used exactly once (no aliasing)
+//! - Move semantics (ownership transfer)
+//! - Resource safety (no leaks)
+
+use crate::ast::*;
+use std::collections::{HashMap, HashSet};
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TypeError {
+    VariableUsedTwice {
+        var: String,
+        first_use: String,
+        second_use: String,
+    },
+    VariableNotUsed {
+        var: String,
+    },
+    VariableNotFound {
+        var: String,
+    },
+    TypeMismatch {
+        expected: Type,
+        found: Type,
+        context: String,
+    },
+    IncompatibleTypes {
+        left: Type,
+        right: Type,
+        op: String,
+    },
+}
+
+impl std::fmt::Display for TypeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TypeError::VariableUsedTwice {
+                var,
+                first_use,
+                second_use,
+            } => {
+                write!(
+                    f,
+                    "Linear type violation: variable '{}' used twice (first: {}, second: {})",
+                    var, first_use, second_use
+                )
+            }
+            TypeError::VariableNotUsed { var } => {
+                write!(
+                    f,
+                    "Linear type violation: variable '{}' not used (must use exactly once)",
+                    var
+                )
+            }
+            TypeError::VariableNotFound { var } => {
+                write!(f, "Variable '{}' not found in scope", var)
+            }
+            TypeError::TypeMismatch {
+                expected,
+                found,
+                context,
+            } => {
+                write!(
+                    f,
+                    "Type mismatch in {}: expected {}, found {}",
+                    context, expected, found
+                )
+            }
+            TypeError::IncompatibleTypes { left, right, op } => {
+                write!(
+                    f,
+                    "Incompatible types for operator '{}': {} and {}",
+                    op, left, right
+                )
+            }
+        }
+    }
+}
+
+/// Type environment tracking variable types and usage
+#[derive(Debug, Clone)]
+struct TypeEnv {
+    /// Variable types
+    types: HashMap<String, Type>,
+    /// Variables that have been used (for linear checking)
+    used: HashSet<String>,
+    /// Variables that must be used before scope ends
+    must_use: HashSet<String>,
+}
+
+impl TypeEnv {
+    fn new() -> Self {
+        Self {
+            types: HashMap::new(),
+            used: HashSet::new(),
+            must_use: HashSet::new(),
+        }
+    }
+
+    fn insert(&mut self, name: String, ty: Type) {
+        self.types.insert(name.clone(), ty);
+        self.must_use.insert(name);
+    }
+
+    fn get(&self, name: &str) -> Option<&Type> {
+        self.types.get(name)
+    }
+
+    fn mark_used(&mut self, name: &str) -> Result<(), TypeError> {
+        if self.used.contains(name) {
+            return Err(TypeError::VariableUsedTwice {
+                var: name.to_string(),
+                first_use: "previous usage".to_string(),
+                second_use: "current usage".to_string(),
+            });
+        }
+        self.used.insert(name.to_string());
+        Ok(())
+    }
+
+    fn check_all_used(&self) -> Result<(), TypeError> {
+        for var in &self.must_use {
+            if !self.used.contains(var) {
+                return Err(TypeError::VariableNotUsed {
+                    var: var.clone(),
+                });
+            }
+        }
+        Ok(())
+    }
+
+    fn merge(&mut self, other: &TypeEnv) {
+        // Merge used variables from both branches
+        for var in &other.used {
+            self.used.insert(var.clone());
+        }
+    }
+}
+
+pub struct TypeChecker {
+    functions: HashMap<String, Function>,
+}
+
+impl TypeChecker {
+    pub fn new(program: &Program) -> Self {
+        let mut functions = HashMap::new();
+        for func in &program.functions {
+            functions.insert(func.name.clone(), func.clone());
+        }
+        Self { functions }
+    }
+
+    pub fn check(&self) -> Result<(), TypeError> {
+        // Check all functions
+        for func in self.functions.values() {
+            self.check_function(func)?;
+        }
+        Ok(())
+    }
+
+    fn check_function(&self, func: &Function) -> Result<Type, TypeError> {
+        let mut env = TypeEnv::new();
+
+        // Add parameters to environment
+        for param in &func.params {
+            env.insert(param.name.clone(), param.ty.clone());
+        }
+
+        // Check function body
+        let body_type = self.check_expr(&func.body, &mut env)?;
+
+        // Verify all variables were used
+        env.check_all_used()?;
+
+        // Check return type matches
+        if func.return_type != Type::Infer && func.return_type != body_type {
+            return Err(TypeError::TypeMismatch {
+                expected: func.return_type.clone(),
+                found: body_type.clone(),
+                context: format!("function '{}' return type", func.name),
+            });
+        }
+
+        Ok(body_type)
+    }
+
+    fn check_expr(&self, expr: &Expr, env: &mut TypeEnv) -> Result<Type, TypeError> {
+        match expr {
+            Expr::IntLit(_) => Ok(Type::I32),
+            Expr::BoolLit(_) => Ok(Type::Bool),
+
+            Expr::Var(name) => {
+                let ty = env
+                    .get(name)
+                    .ok_or_else(|| TypeError::VariableNotFound {
+                        var: name.clone(),
+                    })?
+                    .clone();
+
+                // Mark variable as used (linear type check)
+                env.mark_used(name)?;
+
+                Ok(ty)
+            }
+
+            Expr::BinOp { op, left, right } => {
+                let left_ty = self.check_expr(left, env)?;
+                let right_ty = self.check_expr(right, env)?;
+
+                match op {
+                    BinOp::Add | BinOp::Sub | BinOp::Mul | BinOp::Div | BinOp::Mod => {
+                        if left_ty != right_ty {
+                            return Err(TypeError::IncompatibleTypes {
+                                left: left_ty,
+                                right: right_ty,
+                                op: op.to_string(),
+                            });
+                        }
+                        match left_ty {
+                            Type::I32 | Type::I64 => Ok(left_ty),
+                            _ => Err(TypeError::IncompatibleTypes {
+                                left: left_ty,
+                                right: right_ty,
+                                op: op.to_string(),
+                            }),
+                        }
+                    }
+                    BinOp::Eq | BinOp::Ne | BinOp::Lt | BinOp::Gt | BinOp::Le | BinOp::Ge => {
+                        if left_ty != right_ty {
+                            return Err(TypeError::IncompatibleTypes {
+                                left: left_ty,
+                                right: right_ty,
+                                op: op.to_string(),
+                            });
+                        }
+                        Ok(Type::Bool)
+                    }
+                }
+            }
+
+            Expr::Call { func, args } => {
+                let func_def = self.functions.get(func).ok_or_else(|| {
+                    TypeError::VariableNotFound {
+                        var: func.clone(),
+                    }
+                })?;
+
+                // Check argument types
+                for (param, arg) in func_def.params.iter().zip(args.iter()) {
+                    let arg_ty = self.check_expr(arg, env)?;
+                    if param.ty != Type::Infer && param.ty != arg_ty {
+                        return Err(TypeError::TypeMismatch {
+                            expected: param.ty.clone(),
+                            found: arg_ty,
+                            context: format!("argument to function '{}'", func),
+                        });
+                    }
+                }
+
+                // Return type is the function's return type
+                Ok(func_def.return_type.clone())
+            }
+
+            Expr::Let { name, value, body } => {
+                // Check value type
+                let val_ty = self.check_expr(value, env)?;
+
+                // Create new scope with the bound variable
+                let mut new_env = env.clone();
+                new_env.insert(name.clone(), val_ty);
+
+                // Check body in new scope
+                let body_ty = self.check_expr(body, &mut new_env)?;
+
+                // Verify the bound variable was used in body
+                new_env.check_all_used()?;
+
+                // Merge usage information back to parent scope
+                env.merge(&new_env);
+
+                Ok(body_ty)
+            }
+
+            Expr::If {
+                cond,
+                then_branch,
+                else_branch,
+            } => {
+                // Check condition is bool
+                let cond_ty = self.check_expr(cond, env)?;
+                if cond_ty != Type::Bool {
+                    return Err(TypeError::TypeMismatch {
+                        expected: Type::Bool,
+                        found: cond_ty,
+                        context: "if condition".to_string(),
+                    });
+                }
+
+                // Check both branches have same type
+                let mut then_env = env.clone();
+                let then_ty = self.check_expr(then_branch, &mut then_env)?;
+
+                let mut else_env = env.clone();
+                let else_ty = self.check_expr(else_branch, &mut else_env)?;
+
+                if then_ty != else_ty {
+                    return Err(TypeError::TypeMismatch {
+                        expected: then_ty.clone(),
+                        found: else_ty,
+                        context: "if/else branches".to_string(),
+                    });
+                }
+
+                // Merge usage from both branches
+                env.merge(&then_env);
+                env.merge(&else_env);
+
+                Ok(then_ty)
+            }
+
+            Expr::Block(exprs) => {
+                let mut result_ty = Type::I32;
+                for expr in exprs {
+                    result_ty = self.check_expr(expr, env)?;
+                }
+                Ok(result_ty)
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::parser::Parser;
+
+    #[test]
+    fn test_simple_program() {
+        let input = "fn main() { 42 }";
+        let mut parser = Parser::new(input);
+        let program = parser.parse_program().unwrap();
+        let checker = TypeChecker::new(&program);
+        assert!(checker.check().is_ok());
+    }
+
+    #[test]
+    fn test_variable_used_once() {
+        let input = "fn main() { let x = 5; x }";
+        let mut parser = Parser::new(input);
+        let program = parser.parse_program().unwrap();
+        let checker = TypeChecker::new(&program);
+        assert!(checker.check().is_ok());
+    }
+
+    #[test]
+    fn test_variable_not_used() {
+        let input = "fn main() { let x = 5; 42 }";
+        let mut parser = Parser::new(input);
+        let program = parser.parse_program().unwrap();
+        let checker = TypeChecker::new(&program);
+        let result = checker.check();
+        assert!(result.is_err());
+        match result {
+            Err(TypeError::VariableNotUsed { var }) => {
+                assert_eq!(var, "x");
+            }
+            _ => panic!("Expected VariableNotUsed error"),
+        }
+    }
+
+    #[test]
+    fn test_variable_used_twice() {
+        let input = "fn main() { let x = 5; x + x }";
+        let mut parser = Parser::new(input);
+        let program = parser.parse_program().unwrap();
+        let checker = TypeChecker::new(&program);
+        let result = checker.check();
+        assert!(result.is_err());
+        match result {
+            Err(TypeError::VariableUsedTwice { var, .. }) => {
+                assert_eq!(var, "x");
+            }
+            _ => panic!("Expected VariableUsedTwice error"),
+        }
+    }
+
+    #[test]
+    fn test_type_mismatch() {
+        let input = "fn add(x: i32, y: i32) -> bool { x + y }";
+        let mut parser = Parser::new(input);
+        let program = parser.parse_program().unwrap();
+        let checker = TypeChecker::new(&program);
+        let result = checker.check();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_if_expression_types() {
+        let input = "fn main() { if true { 1 } else { 2 } }";
+        let mut parser = Parser::new(input);
+        let program = parser.parse_program().unwrap();
+        let checker = TypeChecker::new(&program);
+        assert!(checker.check().is_ok());
+    }
+
+    #[test]
+    fn test_if_branch_type_mismatch() {
+        let input = "fn main() { if true { 1 } else { true } }";
+        let mut parser = Parser::new(input);
+        let program = parser.parse_program().unwrap();
+        let checker = TypeChecker::new(&program);
+        let result = checker.check();
+        assert!(result.is_err());
+    }
+}

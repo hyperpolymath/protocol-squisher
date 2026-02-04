@@ -1,0 +1,16 @@
+// Test linear types - valid usage (each variable used exactly once)
+
+fn identity(x: i32) -> i32 {
+    x  // x used exactly once
+}
+
+fn add_const(x: i32) -> i32 {
+    let y = 10;
+    x + y  // x used once, y used once
+}
+
+fn main() {
+    let a = 5;
+    let b = identity(a);  // a moved to identity, used once
+    add_const(b)  // b moved to add_const, used once
+}
