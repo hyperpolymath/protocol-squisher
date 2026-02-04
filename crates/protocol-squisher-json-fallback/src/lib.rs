@@ -19,9 +19,13 @@ use std::collections::HashSet;
 
 mod rust_codegen;
 mod python_codegen;
+pub mod ephapax_fallback;
 
 pub use rust_codegen::*;
 pub use python_codegen::*;
+pub use ephapax_fallback::{
+    EphapaxFallbackGenerator, EphapaxFallbackConfig, EphapaxFallbackResult, FallbackStats,
+};
 
 /// Configuration for JSON fallback code generation
 #[derive(Debug, Clone)]
