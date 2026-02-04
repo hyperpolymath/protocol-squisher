@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+
+[package]
+name = "protocol-squisher-cli"
+version = "0.1.0"
+edition = "2021"
+license = "PMPL-1.0-or-later"
+description = "CLI tool for schema analysis and PyO3 code generation"
+repository = "https://github.com/hyperpolymath/protocol-squisher"
+keywords = ["cli", "codegen", "interoperability", "pyo3"]
+categories = ["command-line-utilities", "development-tools"]
+
+[[bin]]
+name = "protocol-squisher"
+path = "src/main.rs"
+
+[dependencies]
+protocol-squisher-ir = { path = "../protocol-squisher-ir" }
+protocol-squisher-rust-analyzer = { path = "../protocol-squisher-rust-analyzer" }
+protocol-squisher-python-analyzer = { path = "../protocol-squisher-python-analyzer" }
+protocol-squisher-compat = { path = "../protocol-squisher-compat" }
+protocol-squisher-optimizer = { path = "../protocol-squisher-optimizer" }
+protocol-squisher-pyo3-codegen = { path = "../protocol-squisher-pyo3-codegen" }
+protocol-squisher-json-fallback = { path = "../protocol-squisher-json-fallback" }
+protocol-squisher-ephapax-ir = { path = "../../ephapax-ir" }
+
+clap = { version = "4.5", features = ["derive", "color", "suggestions"] }
+anyhow = "1.0"
+serde_json = "1.0"
+colored = "2.1"
