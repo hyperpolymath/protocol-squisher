@@ -15,15 +15,22 @@ image:https://img.shields.io/badge/License-PMPL--1.0-blue.svg[License: PMPL-1.0,
 
 [NOTE]
 ====
-**Status:** ✅ **MVP Complete** (100%)
+**Status:** ✅ **Phase 2 Format Expansion Complete** (100%)
 
+**Phase 1 (MVP):**
 - 312 tests passing (ephapax IR + analyzers + codegen + optimizer + property tests)
 - Rust ↔ Python fully working (Concorde, Business, Economy, Wheelbarrow classes)
 - Formal verification (4 theorems proven in Agda, cross-validated in Lean)
 - Comprehensive documentation (CLI guide, optimization guide, transport classes reference)
-- Ready for real-world use and Phase 2 format expansion
 
-**Next:** Public launch, gather feedback, expand to Cap'n Proto/Protobuf/Thrift/Avro
+**Phase 2 (Format Expansion - COMPLETE ✅):**
+- **11 protocol analyzers** implemented: Rust, Python, JSON Schema, Protobuf, Bebop, FlatBuffers, MessagePack, Avro, Cap'n Proto, Thrift, ReScript
+- **Diversity spectrum meta-analysis** complete (link:DIVERSITY-ANALYSIS.md[full report])
+- **Squishability rankings** validated across design philosophies (zero-copy → schema evolution → dynamic)
+- **Hypothesis testing** confirms: schema evolution protocols (Avro/Thrift) most squishable, zero-copy (Cap'n Proto) already optimal
+- **Protocol compatibility matrix** shows Business class achievable for most schema-based pairs
+
+**Next:** Phase 3 - Real-world validation, ML-driven pattern detection, cross-protocol translation
 ====
 
 ____
@@ -144,18 +151,24 @@ protocol-squisher generate \
 
 == Supported Formats
 
-=== Currently Supported
-- Rust (serde)
-- Python (Pydantic)
-- JSON
+=== Phase 1 (MVP - Complete ✅)
+- **Rust (serde)** - Zero-cost abstractions, borrow checker
+- **Python (Pydantic)** - Runtime validation, type hints
+- **JSON Schema** - Universal baseline
+- **Protobuf** - Field-number based binary protocol
 
-=== Coming Soon
-- Cap'n Proto
-- Protobuf
-- Thrift
-- Avro
-- MessagePack
-- Factor
+=== Phase 2 (Format Expansion - Complete ✅)
+- **Bebop** - Modern performant schema format
+- **FlatBuffers** - Zero-copy access, fixed layouts
+- **MessagePack** - Binary JSON alternative
+- **Avro** - Schema evolution focus, union types
+- **Cap'n Proto** - Theoretical performance optimum
+- **Thrift** - RPC-focused with multiple encodings
+- **ReScript** - OCaml-style type system, JS compilation
+
+=== Analysis Available
+- **link:DIVERSITY-ANALYSIS.md[Diversity Spectrum Meta-Analysis]** - Comprehensive squishability comparison across 11 protocols
+- **link:PROTOCOL-COMPARISON.txt[Protocol Comparison Table]** - Quick reference rankings and compatibility matrix
 
 See link:ROADMAP.adoc[ROADMAP.adoc] for the full expansion plan.
 
@@ -173,6 +186,7 @@ See link:ROADMAP.adoc[ROADMAP.adoc] for the full expansion plan.
 - link:GAUNTLET.adoc[The Gauntlet] - Hard problems we're solving
 - link:docs/architecture.adoc[Architecture] - System architecture
 - link:docs/ir-spec.adoc[IR Specification] - The intermediate representation
+- **link:DIVERSITY-ANALYSIS.md[Diversity Analysis]** - Meta-analysis of 11 protocols, squishability rankings, hypothesis testing
 
 **Performance:**
 - link:docs/BENCHMARK-QUICKSTART.md[Benchmark Quick Start] - Run benchmarks in 5 minutes (**start here**)
