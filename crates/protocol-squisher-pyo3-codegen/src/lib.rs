@@ -67,11 +67,15 @@ pub mod mapping;
 pub mod struct_gen;
 pub mod enum_gen;
 pub mod module_gen;
+pub mod optimized_gen;
 
 pub use mapping::{MappingContext, PyO3Primitive, PyO3Type};
 pub use struct_gen::{generate_struct, is_hashable, StructGenConfig};
 pub use enum_gen::{generate_enum, EnumGenConfig};
 pub use module_gen::{generate_module, GeneratedModule, ModuleGenConfig};
+pub use optimized_gen::{
+    OptimizedPyO3Generator, OptimizedGenConfig, OptimizedGeneratedCode, GenerationStats,
+};
 
 use protocol_squisher_ir::IrSchema;
 

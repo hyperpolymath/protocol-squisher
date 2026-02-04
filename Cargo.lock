@@ -1215,6 +1215,8 @@ name = "protocol-squisher-pyo3-codegen"
 version = "0.1.0"
 dependencies = [
  "proptest",
+ "protocol-squisher-compat",
+ "protocol-squisher-ephapax-ir",
  "protocol-squisher-ir",
  "serde",
  "serde_json",
