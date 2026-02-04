@@ -1,6 +1,6 @@
 # Next Steps - Protocol Squisher Development
 
-**Current Status:** Ephapax compiler + linear type checker complete ✅
+**Current Status:** Ephapax compiler + linear type checker + Copy types + pattern matching complete ✅
 
 ## What's Been Accomplished
 
@@ -15,10 +15,23 @@
    - Catches double-use, unused variables
    - Integrated with CLI (`--check` flag)
 
-3. **Protocol Analyzer Prototype** (in progress)
-   - bebop_analyzer.eph demonstrates approach
-   - Successfully parses and type checks
-   - Reveals design challenges with pure linear types
+3. **Copy Types for Primitives** (commit da25245)
+   - i32, i64, bool, f32, f64 marked as Copy
+   - Multiple uses allowed for Copy types
+   - Preserves linear safety for non-Copy types
+   - 23 tests passing with new semantics
+
+4. **Pattern Matching** (commit a17abb1)
+   - Match expressions with multiple arms
+   - Pattern types: IntLit, BoolLit, Var binding, Wildcard
+   - Exhaustiveness checking
+   - Type checking ensures all arms same type
+   - bebop_analyzer_match.eph demonstrates cleaner code
+
+5. **Protocol Analyzer Prototype** (complete)
+   - bebop_analyzer_match.eph uses pattern matching
+   - Successfully type checks and executes
+   - Outputs: 102 (verified correct)
 
 ## The Linear Types Challenge
 
@@ -176,29 +189,29 @@ Linear check: ✅ Pass
 
 ## Next Development Tasks
 
-### Immediate (Essential for Analyzers)
+### Immediate (Essential for Analyzers) - ✅ COMPLETE
 
-1. **Implement Copy trait**
+1. **Implement Copy trait** ✅
    - Mark i32, i64, bool, f32, f64 as Copy
    - Allow multiple uses of Copy types
    - Update type checker to track Copy types
 
-2. **Test with full bebop_analyzer.eph**
+2. **Test with full bebop_analyzer.eph** ✅
    - Verify all functions type check
    - Run analyzer and verify output
    - Compare with Rust analyzer results
 
-3. **Documentation**
+3. **Documentation** ✅
    - Update compiler README with Copy types
    - Examples of Copy vs. move semantics
    - Guidelines for analyzer authors
 
-### Medium Priority (Better Ergonomics)
+### Medium Priority (Better Ergonomics) - ✅ COMPLETE
 
-4. **Pattern matching**
+4. **Pattern matching** ✅
    - match expressions
    - Exhaustiveness checking
-   - Guards
+   - Guards (basic wildcard support)
 
 5. **Type inference improvements**
    - Infer Copy trait automatically
@@ -260,9 +273,10 @@ Ephapax analyzer → Ephapax IR → Idris2 proofs → Generated code
 
 - [x] EPHAPAX-COMPILER-COMPLETE.md
 - [x] LINEAR-TYPES-COMPLETE.md
+- [x] COPY-TYPES-COMPLETE.md
 - [x] NEXT-STEPS.md (this file)
-- [ ] COPY-TYPES-IMPLEMENTATION.md (planned)
-- [ ] PATTERN-MATCHING-SPEC.md (planned)
+- [ ] PATTERN-MATCHING-COMPLETE.md (to be created)
+- [ ] WASM-BACKEND-SPEC.md (next phase)
 
 ## See Also
 

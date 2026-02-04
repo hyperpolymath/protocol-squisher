@@ -6,10 +6,10 @@ Canonical intermediate representation for protocol-squisher with linear type gua
 
 **Working Implementations**:
 - Idris2 backend ✅ (proven correctness via dependent types)
-- Ephapax compiler ✅ (lexer, parser, interpreter)
-
-**In Development**:
-- Ephapax linear type checker (resource safety verification)
+- Ephapax compiler ✅ (lexer, parser, interpreter, type checker)
+- Linear type checker ✅ (resource safety verification)
+- Copy types ✅ (primitives can be used multiple times)
+- Pattern matching ✅ (match expressions with exhaustiveness checking)
 
 ## Quick Start
 
