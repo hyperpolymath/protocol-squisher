@@ -26,7 +26,7 @@
 
 (define current-position
   '((phase . "mvp")
-    (overall-completion . 92)
+    (overall-completion . 94)
     (components
       ((ephapax-ir . "working-idris2-with-rust-ffi")
        (protocol-squisher-ir . "working")
@@ -82,7 +82,12 @@
        "mixed-transport: Business-class (safe widening) vs Wheelbarrow-class (narrowing)"
        "Examples include benchmarks showing ~1-2ns for Concorde, ~2-5ns for Business"
        "Comprehensive README.md with CLI usage, best practices, and transport class reference"
-       "All example projects buildable with maturin + runnable test suites"))))
+       "All example projects buildable with maturin + runnable test suites"
+       "Complete CLI usage guide (docs/CLI-GUIDE.adoc)"
+       "CLI guide: command reference (analyze, check, optimize, generate)"
+       "CLI guide: common workflows (new project, optimization, CI/CD, pre-commit hooks)"
+       "CLI guide: best practices (DO/DON'T, troubleshooting, real examples)"
+       "Updated README.adoc with improved Quick Start and documentation links"))))
 
 (define route-to-mvp
   '((milestones
@@ -123,10 +128,10 @@
 
 (define critical-next-actions
   '((immediate
-      "Document CLI usage and common workflows"
       "Add more transport class optimization tests"
       "Add I128/U128 support to ephapax IR"
-      "Create optimization guide with before/after examples")
+      "Create optimization guide with before/after examples (docs/OPTIMIZATION-GUIDE.adoc)"
+      "Document transport classes in detail (docs/TRANSPORT-CLASSES.adoc)")
     (this-week
       "Create compatibility engine that uses both analyzers"
       "Generate PyO3 bindings based on transport class (zero-copy vs conversion)"
@@ -140,7 +145,40 @@
       "Integrate proven library when SafePath module compiles")))
 
 (define session-history
-  '((session-2026-02-04-part10
+  '((session-2026-02-04-part11
+      (date . "2026-02-04")
+      (duration . "continuation")
+      (accomplishments
+        "✓ Created comprehensive CLI usage guide (docs/CLI-GUIDE.adoc, 632 lines)"
+        "✓ Command reference for all 4 CLI commands (analyze, check, optimize, generate)"
+        "✓ Real command examples with expected output for each command"
+        "✓ Common workflows: new project, optimization, CI/CD integration, pre-commit hooks"
+        "✓ Best practices: DO/DON'T sections with rationale"
+        "✓ Troubleshooting section with solutions for common errors"
+        "✓ Generated code examples showing Concorde vs Wheelbarrow differences"
+        "✓ Exit codes documentation for CI/CD integration"
+        "✓ Updated README.adoc Quick Start with actual CLI commands"
+        "✓ Updated README.adoc Documentation section to highlight CLI guide"
+        "✓ Overall completion increased to 94%")
+      (commits
+        "d688f70 - docs: add comprehensive CLI usage guide and update README")
+      (files-created
+        "docs/CLI-GUIDE.adoc - Complete CLI reference and workflows")
+      (files-modified
+        "README.adoc - Updated Quick Start and documentation links")
+      (key-insights
+        "CLI guide provides self-service documentation for new users"
+        "Real examples demonstrate actual tool usage and output"
+        "Workflows show integration with existing dev processes (CI/CD, git hooks)"
+        "Best practices prevent common mistakes (narrowing, ignoring warnings)"
+        "Troubleshooting reduces support burden with concrete solutions"
+        "Documentation now covers: install → use → optimize → troubleshoot")
+      (next-session-priorities
+        "Add more transport class optimization tests (expand test coverage)"
+        "Add I128/U128 support to ephapax IR (complete primitive type coverage)"
+        "Create optimization guide with before/after examples (complement CLI guide)"
+        "Document transport classes in detail (theoretical background)"))
+    (session-2026-02-04-part10
       (date . "2026-02-04")
       (duration . "continuation")
       (accomplishments
