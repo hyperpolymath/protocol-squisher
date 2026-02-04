@@ -1,0 +1,10 @@
+// Test without type annotations
+
+fn double(x) {
+    x + x
+}
+
+fn main() {
+    let result = double(21);
+    result
+}
