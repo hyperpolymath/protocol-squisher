@@ -111,7 +111,13 @@ impl TypeEnv {
         self.types.get(name)
     }
 
-    fn mark_used(&mut self, name: &str) -> Result<(), TypeError> {
+    fn mark_used(&mut self, name: &str, ty: &Type) -> Result<(), TypeError> {
+        // Copy types can be used multiple times
+        if ty.is_copy() {
+            return Ok(());
+        }
+
+        // Non-Copy types can only be used once (linear types)
         if self.used.contains(name) {
             return Err(TypeError::VariableUsedTwice {
                 var: name.to_string(),
@@ -125,6 +131,14 @@ impl TypeEnv {
 
     fn check_all_used(&self) -> Result<(), TypeError> {
         for var in &self.must_use {
+            // Skip Copy types - they don't need to be used
+            if let Some(ty) = self.types.get(var) {
+                if ty.is_copy() {
+                    continue;
+                }
+            }
+
+            // Non-Copy types must be used exactly once
             if !self.used.contains(var) {
                 return Err(TypeError::VariableNotUsed {
                     var: var.clone(),
@@ -202,8 +216,8 @@ impl TypeChecker {
                     })?
                     .clone();
 
-                // Mark variable as used (linear type check)
-                env.mark_used(name)?;
+                // Mark variable as used (Copy types can be used multiple times)
+                env.mark_used(name, &ty)?;
 
                 Ok(ty)
             }
@@ -359,34 +373,24 @@ mod tests {
 
     #[test]
     fn test_variable_not_used() {
+        // Copy types (i32) don't need to be used - this now passes
         let input = "fn main() { let x = 5; 42 }";
         let mut parser = Parser::new(input);
         let program = parser.parse_program().unwrap();
         let checker = TypeChecker::new(&program);
         let result = checker.check();
-        assert!(result.is_err());
-        match result {
-            Err(TypeError::VariableNotUsed { var }) => {
-                assert_eq!(var, "x");
-            }
-            _ => panic!("Expected VariableNotUsed error"),
-        }
+        assert!(result.is_ok()); // Copy types can be unused
     }
 
     #[test]
     fn test_variable_used_twice() {
+        // Copy types (i32) can be used multiple times - this now passes
         let input = "fn main() { let x = 5; x + x }";
         let mut parser = Parser::new(input);
         let program = parser.parse_program().unwrap();
         let checker = TypeChecker::new(&program);
         let result = checker.check();
-        assert!(result.is_err());
-        match result {
-            Err(TypeError::VariableUsedTwice { var, .. }) => {
-                assert_eq!(var, "x");
-            }
-            _ => panic!("Expected VariableUsedTwice error"),
-        }
+        assert!(result.is_ok()); // Copy types can be used multiple times
     }
 
     #[test]

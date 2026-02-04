@@ -13,6 +13,16 @@ pub enum Type {
     Infer, // Type inference placeholder
 }
 
+impl Type {
+    /// Check if this type implements Copy (can be used multiple times)
+    pub fn is_copy(&self) -> bool {
+        match self {
+            Type::I32 | Type::I64 | Type::Bool => true,
+            Type::Infer => false, // Unknown types are not Copy by default
+        }
+    }
+}
+
 impl fmt::Display for Type {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
