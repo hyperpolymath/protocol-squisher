@@ -119,17 +119,31 @@ pub enum Pattern {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BinOp {
+    // Arithmetic
     Add,
     Sub,
     Mul,
     Div,
     Mod,
+
+    // Comparison
     Eq,
     Ne,
     Lt,
     Gt,
     Le,
     Ge,
+
+    // Logical
+    And,  // &&
+    Or,   // ||
+
+    // Bitwise
+    BitAnd,  // &
+    BitOr,   // |
+    BitXor,  // ^
+    Shl,     // <<
+    Shr,     // >>
 }
 
 impl fmt::Display for BinOp {
@@ -146,6 +160,13 @@ impl fmt::Display for BinOp {
             BinOp::Gt => write!(f, ">"),
             BinOp::Le => write!(f, "<="),
             BinOp::Ge => write!(f, ">="),
+            BinOp::And => write!(f, "&&"),
+            BinOp::Or => write!(f, "||"),
+            BinOp::BitAnd => write!(f, "&"),
+            BinOp::BitOr => write!(f, "|"),
+            BinOp::BitXor => write!(f, "^"),
+            BinOp::Shl => write!(f, "<<"),
+            BinOp::Shr => write!(f, ">>"),
         }
     }
 }
