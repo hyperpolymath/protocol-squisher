@@ -5,8 +5,8 @@
 name = "protocol-squisher-protobuf-analyzer"
 version = "0.1.0"
 edition = "2021"
-authors = ["hyperpolymath"]
-license = "PMPL-1.0"
+authors = ["Jonathan D.A. Jewell <jonathan.jewell@open.ac.uk>"]
+license = "PMPL-1.0-or-later"
 description = "Protobuf schema analyzer for protocol-squisher"
 repository = "https://github.com/hyperpolymath/protocol-squisher"
 keywords = ["protobuf", "proto", "schema", "analyzer"]

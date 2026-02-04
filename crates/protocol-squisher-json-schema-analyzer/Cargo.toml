@@ -7,7 +7,7 @@ version = "0.1.0"
 edition = "2021"
 rust-version = "1.83"
 description = "JSON Schema to IR converter for protocol-squisher"
-license = "PMPL-1.0"
+license = "PMPL-1.0-or-later"
 repository = "https://github.com/hyperpolymath/protocol-squisher"
 
 [dependencies]

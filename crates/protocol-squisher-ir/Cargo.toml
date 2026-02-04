@@ -4,8 +4,8 @@
 name = "protocol-squisher-ir"
 version = "0.1.0"
 edition = "2021"
-authors = ["hyperpolymath"]
-license = "PMPL-1.0"
+authors = ["Jonathan D.A. Jewell <jonathan.jewell@open.ac.uk>"]
+license = "PMPL-1.0-or-later"
 description = "Canonical intermediate representation for protocol-squisher"
 repository = "https://github.com/hyperpolymath/protocol-squisher"
 keywords = ["ir", "type-system", "serialization", "interop"]

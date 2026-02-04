@@ -5,7 +5,7 @@
 name = "protocol-squisher-optimizer"
 version = "0.1.0"
 edition = "2021"
-license = "PMPL-1.0"
+license = "PMPL-1.0-or-later"
 description = "Optimization layer for protocol-squisher - Concorde-class adapters"
 repository = "https://github.com/hyperpolymath/protocol-squisher"
 keywords = ["serialization", "interoperability", "optimization", "zero-copy"]

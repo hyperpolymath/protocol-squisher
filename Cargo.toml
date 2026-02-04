@@ -2,8 +2,8 @@
 name = "protocol-squisher"
 version = "0.1.0"
 edition = "2021"
-authors = ["hyperpolymath"]
-license = "PMPL-1.0"
+authors = ["Jonathan D.A. Jewell <jonathan.jewell@open.ac.uk>"]
+license = "PMPL-1.0-or-later"
 description = "Universal protocol interoperability through automatic adapter synthesis"
 repository = "https://github.com/hyperpolymath/protocol-squisher"
 keywords = ["serialization", "interop", "adapter", "protocol", "codegen"]

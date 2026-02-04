@@ -8,18 +8,43 @@
 (ecosystem
   (version . "1.0.0")
   (name . "protocol-squisher")
-  (type . "component")
-  (purpose . "")
+  (type . "library")
+  (purpose . "Universal protocol interoperability through automatic adapter synthesis between incompatible serialization formats")
 
   (position-in-ecosystem
-   (category . "")
-   (layer . ""))
+   (category . "developer-tools")
+   (layer . "interoperability"))
 
-  (related-projects . ())
+  (related-projects
+   ((name . "serde")
+    (relationship . "dependency")
+    (note . "Rust serialization framework - source format"))
+   ((name . "pydantic")
+    (relationship . "target-integration")
+    (note . "Python validation library - target format"))
+   ((name . "PyO3")
+    (relationship . "dependency")
+    (note . "Rust-Python FFI bindings for generated adapters"))
+   ((name . "proven")
+    (relationship . "sibling-standard")
+    (note . "Formal verification for adapter correctness proofs"))
+   ((name . "ephapax")
+    (relationship . "potential-consumer")
+    (note . "Could use protocol-squisher for format bridging in distributed systems")))
 
-  (what-this-is . ())
+  (what-this-is
+   "A code generator that synthesizes type-safe adapters between serialization formats"
+   "A compatibility analyzer that classifies format pairs by transport class (Concorde/Business/Economy/Wheelbarrow)"
+   "A formal guarantee system: if it compiles, data will transport (even if lossy)"
+   "A JSON fallback mechanism that ensures universal compatibility"
+   "A performance optimizer that generates zero-copy paths when possible")
 
-  (what-this-is-not . ())
+  (what-this-is-not
+   "Not an RPC framework - focuses on data serialization only"
+   "Not a runtime library - generates standalone adapter code"
+   "Not a schema registry - analyzes schemas but doesn't store them"
+   "Not a format converter CLI - generates code for integration, not one-off conversions"
+   "Not a replacement for manual FFI when performance is critical")
 
   ;; Maintenance note: Review satellite relationships when:
   ;; - Adding new repos with similar suffix patterns (-ssg, -mcp, -scm, -ffi)
