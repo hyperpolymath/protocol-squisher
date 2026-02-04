@@ -69,7 +69,9 @@ members = [
   "crates/protocol-squisher-property-tests",
 ]
 exclude = [
-  "tests/pyo3-integration",  # Standalone maturin project for integration tests
+  "tests/pyo3-integration",        # Standalone maturin project for integration tests
+  "examples/zero-copy-demo",       # Standalone PyO3 example
+  "examples/mixed-transport",      # Standalone PyO3 example
 ]
 
 [dependencies.protocol-squisher-ir]

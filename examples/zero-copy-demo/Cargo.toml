@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+
+[package]
+name = "zero-copy-demo"
+version = "0.1.0"
+edition = "2021"
+authors = ["Jonathan D.A. Jewell <jonathan.jewell@open.ac.uk>"]
+license = "PMPL-1.0-or-later"
+description = "Example demonstrating zero-copy Rust↔Python interop with Concorde-class transport"
+
+[lib]
+name = "zero_copy_demo"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+pyo3 = { version = "0.22", features = ["extension-module"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[dev-dependencies]
+protocol-squisher-ir = { path = "../../crates/protocol-squisher-ir" }
+protocol-squisher-compat = { path = "../../crates/protocol-squisher-compat" }

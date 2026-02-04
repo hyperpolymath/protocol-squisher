@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "zero-copy-demo"
+version = "0.1.0"
+description = "Example demonstrating zero-copy Rust↔Python interop"
+requires-python = ">=3.8"
+authors = [
+    {name = "Jonathan D.A. Jewell", email = "jonathan.jewell@open.ac.uk"}
+]
+license = {text = "PMPL-1.0-or-later"}
+dependencies = [
+    "pydantic>=2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "maturin>=1.0",
+    "pytest>=7.0",
+]
+
+[tool.maturin]
+python-source = "python"
+module-name = "zero_copy_demo"

@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "mixed-transport"
+version = "0.1.0"
+description = "Example demonstrating mixed transport classes (Business and Wheelbarrow)"
+authors = [
+    {name = "Jonathan D.A. Jewell", email = "jonathan.jewell@open.ac.uk"}
+]
+license = {text = "PMPL-1.0-or-later"}
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+]
+
+[tool.maturin]
+python-source = "."
+module-name = "mixed_transport"
