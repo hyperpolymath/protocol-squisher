@@ -12,6 +12,7 @@ pub enum Type {
     Bool,
     String,            // String type (heap-allocated, not Copy)
     Vec(Box<Type>),    // Vector type Vec<T> (heap-allocated, not Copy)
+    HashMap(Box<Type>, Box<Type>), // HashMap<K, V> type (heap-allocated, not Copy)
     Struct(String),    // Struct type (named, heap-allocated, not Copy)
     Ref(Box<Type>),    // Immutable reference type &T
     Option(Box<Type>), // Option<T> type (heap-allocated, not Copy)
@@ -26,6 +27,7 @@ impl Type {
             Type::I32 | Type::I64 | Type::Bool => true,
             Type::String => false, // Strings are heap-allocated, not Copy
             Type::Vec(_) => false, // Vectors are heap-allocated, not Copy
+            Type::HashMap(_, _) => false, // HashMaps are heap-allocated, not Copy
             Type::Struct(_) => false, // Structs are heap-allocated, not Copy
             Type::Ref(_) => true, // References are Copy (they're just pointers)
             Type::Option(_) => false, // Option is heap-allocated, not Copy
@@ -43,6 +45,7 @@ impl fmt::Display for Type {
             Type::Bool => write!(f, "bool"),
             Type::String => write!(f, "String"),
             Type::Vec(inner) => write!(f, "Vec<{}>", inner),
+            Type::HashMap(key, val) => write!(f, "HashMap<{}, {}>", key, val),
             Type::Struct(name) => write!(f, "{}", name),
             Type::Ref(inner) => write!(f, "&{}", inner),
             Type::Option(inner) => write!(f, "Option<{}>", inner),
@@ -91,6 +94,7 @@ pub enum Expr {
     BoolLit(bool),
     StringLit(String),
     VecLit(Vec<Expr>),  // Vector literal [e1, e2, ...]
+    HashMapLit(Vec<(Expr, Expr)>),  // HashMap literal {key1: val1, key2: val2, ...}
 
     // Variable reference
     Var(String),
@@ -272,6 +276,16 @@ impl fmt::Display for Expr {
                     write!(f, "{}", elem)?;
                 }
                 write!(f, "]")
+            }
+            Expr::HashMapLit(entries) => {
+                write!(f, "{{")?;
+                for (i, (key, val)) in entries.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}: {}", key, val)?;
+                }
+                write!(f, "}}")
             }
             Expr::Var(s) => write!(f, "{}", s),
             Expr::BinOp { op, left, right } => {

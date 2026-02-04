@@ -596,6 +596,41 @@ impl TypeChecker {
                 Ok(Type::Vec(Box::new(elem_ty)))
             }
 
+            Expr::HashMapLit(entries) => {
+                // Empty HashMap needs type annotation (for now, default to HashMap<String, i32>)
+                if entries.is_empty() {
+                    return Ok(Type::HashMap(Box::new(Type::String), Box::new(Type::I32)));
+                }
+
+                // Check first entry key and value types
+                let (first_key, first_val) = &entries[0];
+                let key_ty = self.check_expr(first_key, env)?;
+                let val_ty = self.check_expr(first_val, env)?;
+
+                // All keys must have same type, all values must have same type
+                for (i, (key_expr, val_expr)) in entries.iter().enumerate().skip(1) {
+                    let k_ty = self.check_expr(key_expr, env)?;
+                    let v_ty = self.check_expr(val_expr, env)?;
+
+                    if k_ty != key_ty {
+                        return Err(TypeError::TypeMismatch {
+                            expected: key_ty.clone(),
+                            found: k_ty,
+                            context: format!("HashMap key at index {}", i),
+                        });
+                    }
+                    if v_ty != val_ty {
+                        return Err(TypeError::TypeMismatch {
+                            expected: val_ty.clone(),
+                            found: v_ty,
+                            context: format!("HashMap value at index {}", i),
+                        });
+                    }
+                }
+
+                Ok(Type::HashMap(Box::new(key_ty), Box::new(val_ty)))
+            }
+
             Expr::Index { vec, index } => {
                 // Check vector type
                 let vec_ty = self.check_expr(vec, env)?;
@@ -803,6 +838,11 @@ impl TypeChecker {
                 self.types_compatible(elem1, elem2)
             }
 
+            // HashMap types: compatible if key and value types are compatible
+            (Type::HashMap(k1, v1), Type::HashMap(k2, v2)) => {
+                self.types_compatible(k1, k2) && self.types_compatible(v1, v2)
+            }
+
             // Ref types: compatible if inner types are compatible
             (Type::Ref(inner1), Type::Ref(inner2)) => {
                 self.types_compatible(inner1, inner2)
@@ -841,6 +881,14 @@ impl TypeChecker {
             // Vec types: unify element types
             (Type::Vec(elem1), Type::Vec(elem2)) => {
                 Type::Vec(Box::new(self.unify_types(elem1, elem2)))
+            }
+
+            // HashMap types: unify key and value types
+            (Type::HashMap(k1, v1), Type::HashMap(k2, v2)) => {
+                Type::HashMap(
+                    Box::new(self.unify_types(k1, k2)),
+                    Box::new(self.unify_types(v1, v2)),
+                )
             }
 
             // Ref types: unify inner types

@@ -208,6 +208,13 @@ impl WasmCodeGen {
                     .map_err(|e| e.to_string())?;
             }
 
+            Expr::HashMapLit(_entries) => {
+                // TODO: Implement HashMap literals with linear memory
+                // For now, return null pointer (0)
+                writeln!(&mut self.wat, "{}(i32.const 0) ;; HashMap literal (not yet implemented)", ind)
+                    .map_err(|e| e.to_string())?;
+            }
+
             Expr::Index { vec: _vec, index: _index } => {
                 // TODO: Implement vector indexing with linear memory
                 // For now, return 0
@@ -350,6 +357,7 @@ impl WasmCodeGen {
             Type::Bool => "i32", // Booleans are i32 in WASM
             Type::String => "i32", // Strings are pointers to linear memory (requires memory management)
             Type::Vec(_) => "i32", // Vectors are pointers to linear memory (requires memory management)
+            Type::HashMap(_, _) => "i32", // HashMaps are pointers to linear memory (requires memory management)
             Type::Struct(_) => "i32", // Structs are pointers to linear memory (requires memory management)
             Type::Ref(_) => "i32", // References are pointers (i32 for wasm32)
             Type::Option(_) => "i32", // Option is pointer to linear memory

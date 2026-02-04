@@ -12,6 +12,7 @@ pub enum Value {
     Bool(bool),
     String(String),
     Vec(Vec<Value>),
+    HashMap(HashMap<String, Value>),  // HashMap<String, Value> - keys must be strings for now
     Struct(String, HashMap<String, Value>),  // (struct_name, fields)
     OptionSome(Box<Value>),  // Option::Some(value)
     OptionNone,              // Option::None
@@ -292,6 +293,20 @@ impl Interpreter {
                                 }
                                 print!(" }}");
                             }
+                            Value::HashMap(entries) => {
+                                print!("{{");
+                                for (i, (key, val)) in entries.iter().enumerate() {
+                                    if i > 0 { print!(", "); }
+                                    print!("{}: ", key);
+                                    match val {
+                                        Value::Int(n) => print!("{}", n),
+                                        Value::Bool(b) => print!("{}", b),
+                                        Value::String(s) => print!("{}", s),
+                                        _ => print!("{:?}", val),
+                                    }
+                                }
+                                print!("}}");
+                            }
                             Value::OptionSome(v) => {
                                 print!("Some(");
                                 match v.as_ref() {
@@ -406,6 +421,18 @@ impl Interpreter {
                     values.push(self.eval_expr(elem, env)?);
                 }
                 Ok(Value::Vec(values))
+            }
+
+            Expr::HashMapLit(entries) => {
+                let mut map = HashMap::new();
+                for (key_expr, val_expr) in entries {
+                    let key_val = self.eval_expr(key_expr, env)?;
+                    let val_val = self.eval_expr(val_expr, env)?;
+                    // Keys must be strings
+                    let key_str = key_val.as_string()?.to_string();
+                    map.insert(key_str, val_val);
+                }
+                Ok(Value::HashMap(map))
             }
 
             Expr::Index { vec, index } => {

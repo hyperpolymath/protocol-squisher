@@ -32,6 +32,7 @@ pub enum Token {
     Bool,
     String,
     Vec,
+    HashMap,
     Option,
     Result,
 
@@ -103,6 +104,7 @@ impl fmt::Display for Token {
             Token::Bool => write!(f, "bool"),
             Token::String => write!(f, "String"),
             Token::Vec => write!(f, "Vec"),
+            Token::HashMap => write!(f, "HashMap"),
             Token::Option => write!(f, "Option"),
             Token::Result => write!(f, "Result"),
             Token::Some => write!(f, "Some"),
@@ -460,6 +462,7 @@ impl Lexer {
                         "bool" => Token::Bool,
                         "String" => Token::String,
                         "Vec" => Token::Vec,
+                        "HashMap" => Token::HashMap,
                         "Option" => Token::Option,
                         "Result" => Token::Result,
                         "Some" => Token::Some,

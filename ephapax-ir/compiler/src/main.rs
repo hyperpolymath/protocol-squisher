@@ -153,6 +153,19 @@ fn print_value(value: &Value) {
             }
             print!(" }}");
         }
+        Value::HashMap(entries) => {
+            print!("{{");
+            let mut first = true;
+            for (key, val) in entries {
+                if !first {
+                    print!(", ");
+                }
+                first = false;
+                print!("{}: ", key);
+                print_value(val);
+            }
+            print!("}}");
+        }
         Value::OptionSome(val) => {
             print!("Some(");
             print_value(val);

@@ -175,6 +175,15 @@ impl Parser {
                 self.expect(Token::Gt)?;
                 Ok(Type::Vec(elem_ty))
             }
+            Token::HashMap => {
+                self.advance();
+                self.expect(Token::Lt)?;
+                let key_ty = Box::new(self.parse_type()?);
+                self.expect(Token::Comma)?;
+                let val_ty = Box::new(self.parse_type()?);
+                self.expect(Token::Gt)?;
+                Ok(Type::HashMap(key_ty, val_ty))
+            }
             Token::Option => {
                 self.advance();
                 self.expect(Token::Lt)?;
