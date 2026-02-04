@@ -18,7 +18,10 @@
   (related-projects
    ((name . "ephapax")
     (relationship . "core-dependency")
-    (note . "Linear type system - canonical IR implemented in ephapax for zero-copy safety proofs"))
+    (note . "Linear type system - canonical IR implemented in ephapax with Idris2 dependent types for zero-copy safety proofs"))
+   ((name . "ECHIDNA")
+    (relationship . "verification-platform")
+    (note . "Neurosymbolic theorem proving platform - formal verification of transport class analysis (Agda, Lean, Coq integration)"))
    ((name . "serde")
     (relationship . "dependency")
     (note . "Rust serialization framework - source format"))
@@ -31,9 +34,9 @@
    ((name . "proven")
     (relationship . "sibling-standard")
     (note . "Formal verification for adapter correctness proofs"))
-   ((name . "wasmtime")
-    (relationship . "dependency")
-    (note . "WASM runtime for executing ephapax-compiled IR")))
+   ((name . "Idris2")
+    (relationship . "verification-language")
+    (note . "Dependently-typed language used for ephapax IR implementation with totality checking")))
 
   (what-this-is
    "A code generator that synthesizes type-safe adapters between serialization formats"

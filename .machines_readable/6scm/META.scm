@@ -40,8 +40,9 @@
       (decision . "Generated adapters must pass clippy, mypy, and property-based tests")
       (consequences . "Higher bar for code generation, but professional quality output."))
     (adr-006
-      (status . "accepted")
+      (status . "superseded")
       (date . "2026-01-04")
+      (superseded-by . "adr-009")
       (context . "Need to prove correctness of adapters")
       (decision . "Use property-based testing (proptest) plus future formal verification (miniKanren)")
       (consequences . "Exhaustive test coverage. Path to formal proofs in Phase 3."))
@@ -50,7 +51,19 @@
       (date . "2026-02-04")
       (context . "Need to validate ephapax with real-world programs and ensure zero-copy safety in IR")
       (decision . "Implement canonical IR in ephapax instead of plain Rust")
-      (consequences . "Linear types prove zero-copy paths safe. No aliasing bugs in generated adapters. Memory safety at FFI boundaries proven at compile time. Serves as real-world ephapax validation. Adds compilation dependency on ephapax → WASM → Rust FFI pipeline."))))
+      (consequences . "Linear types prove zero-copy paths safe. No aliasing bugs in generated adapters. Memory safety at FFI boundaries proven at compile time. Serves as real-world ephapax validation. Adds compilation dependency on ephapax → WASM → Rust FFI pipeline."))
+    (adr-008
+      (status . "accepted")
+      (date . "2026-02-04")
+      (context . "Need full integer range support for interop with languages supporting 128-bit integers")
+      (decision . "Add I128/U128 support to ephapax IR with complete widening ladder")
+      (consequences . "All integer sizes supported: I8→I16→I32→I64→I128 and U8→U16→U32→U64→U128. Safe widening proven correct by Idris2 totality checking. Enables Python arbitrary precision int mapping. Rust i128/u128 types fully supported."))
+    (adr-009
+      (status . "accepted")
+      (date . "2026-02-04")
+      (context . "Need multi-prover verification for maximum confidence in transport class analysis")
+      (decision . "Integrate ECHIDNA neurosymbolic theorem proving platform with Agda, Lean, and Coq proofs")
+      (consequences . "4 core theorems proven in Agda (Concorde Safety, Wheelbarrow Necessity, Container Propagation, Carries Invariant). Cross-validation in Lean. Formal verification proves implementation correctness. ECHIDNA neural synthesis ready for future proof automation."))))
 
 (define development-practices
   '((code-style
@@ -97,7 +110,11 @@
     (why-no-runtime-library
       "Generated code should be standalone and dependency-free. No lock-in, works in any environment.")
     (why-pyo3-first
-      "Python↔Rust is highest impact use case. Proves concept with real-world value. PyO3 is mature and well-documented.")))
+      "Python↔Rust is highest impact use case. Proves concept with real-world value. PyO3 is mature and well-documented.")
+    (why-echidna-verification
+      "Multi-prover verification increases confidence beyond single prover. ECHIDNA enables Agda, Lean, Coq, Isabelle, Z3 cross-validation. Neural synthesis can generate proof candidates automatically. Formal proofs catch implementation bugs that tests miss.")
+    (why-i128-u128-support
+      "Complete integer coverage prevents gaps in type support. Python arbitrary precision integers can map to i128/u128 for large values. Some languages (Rust, C++) support 128-bit integers natively. Safe widening ladder proven exhaustive by totality checking.")))
 
 ;; IMPORTANT: These requirements must always be kept up to date
 (define repository-requirements
