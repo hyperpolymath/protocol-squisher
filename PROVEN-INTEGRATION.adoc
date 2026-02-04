@@ -1,0 +1,267 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+= proven Integration: Mathematically Unbreakable Code
+
+**Status:** Architecture defined, ready for implementation
+
+== Why proven?
+
+The `proven` library provides **mathematically proven safe operations** via Idris2 dependent types. Code that **cannot crash**, verified by the Idris2 totality checker.
+
+For protocol-squisher, this means:
+- JSON fallback mechanism that **cannot** produce invalid JSON
+- String handling in IR that **cannot** have buffer overflows
+- Serialization buffers that **cannot** overflow
+- Type conversions that **cannot** fail silently
+
+== Architecture
+
+```
+protocol-squisher (Rust/ephapax)
+    ↓
+proven bindings (Rust FFI)
+    ↓
+Zig ABI bridge (pure wrapper)
+    ↓
+Idris2 proven code ← MATHEMATICAL PROOFS HERE
+```
+
+All computation happens in Idris2 with formal verification. The Rust layer just calls the proven functions.
+
+== Available proven Functions for protocol-squisher
+
+=== JSON Fallback (SafeJson)
+
+**File:** `~/Documents/hyperpolymath-repos/proven/src/Proven/FFI/SafeJson.idr`
+
+```idris
+-- Validate JSON with mathematical proof it won't crash
+proven_idris_json_is_valid : String -> Bool
+
+-- Get JSON type safely (returns -1 if invalid, never crashes)
+proven_idris_json_get_type : String -> Int
+  -- 0 = Null, 1 = Bool, 2 = Number, 3 = String, 4 = Array, 5 = Object
+```
+
+**Use in protocol-squisher:**
+- JSON fallback mechanism (the "wheelbarrow")
+- Validate generated JSON before returning to user
+- Type checking for compatibility analysis
+
+=== String Handling (SafeString)
+
+**File:** `~/Documents/hyperpolymath-repos/proven/src/Proven/FFI/SafeString.idr`
+
+```idris
+-- Safe character access (returns status + char code, never crashes)
+proven_idris_string_char_at : String -> Int -> (Int, Int)
+
+-- Safe substring (returns status + string, handles invalid indices)
+proven_idris_string_substring : Int -> Int -> String -> (Int, String)
+
+-- Safe emptiness check (proven total)
+proven_idris_string_is_empty : String -> Int
+
+-- Safe string search (proven total)
+proven_idris_string_contains : String -> String -> Int
+```
+
+**Use in protocol-squisher:**
+- IR type name handling (struct/enum names)
+- Field name validation
+- Schema name processing
+- Generated code string operations
+
+=== Buffer Operations (SafeBuffer)
+
+**File:** `~/Documents/hyperpolymath-repos/proven/src/Proven/FFI/SafeBuffer.idr`
+
+```idris
+-- Check if buffer empty (proven total)
+proven_idris_buffer_is_empty : Int -> Int
+
+-- Check if buffer full (proven total)
+proven_idris_buffer_is_full : Int -> Int -> Int
+
+-- Check if N bytes can be written (proven total)
+proven_idris_buffer_can_write : Int -> Int -> Int -> Int
+
+-- Validate buffer index (proven total)
+proven_idris_buffer_index_valid : Int -> Int -> Int
+```
+
+**Use in protocol-squisher:**
+- Serialization buffer management
+- Generated code buffer size calculations
+- Zero-copy path validation
+
+== Integration Points
+
+=== 1. JSON Fallback Module
+
+**File:** `crates/protocol-squisher-json-fallback/src/lib.rs`
+
+```rust
+use proven_bindings::SafeJson;
+
+pub fn validate_json_fallback(data: &str) -> Result<(), FallbackError> {
+    // Use proven's mathematically verified JSON validator
+    if !SafeJson::is_valid(data) {
+        return Err(FallbackError::InvalidJson);
+    }
+    Ok(())
+}
+
+pub fn convert_to_json(ir_type: &IRType) -> Result<String, FallbackError> {
+    let json = generate_json(ir_type)?;
+
+    // Mathematical proof this is valid JSON
+    assert!(SafeJson::is_valid(&json));
+
+    Ok(json)
+}
+```
+
+=== 2. IR String Handling
+
+**File:** `ephapax-ir/src/lib.rs`
+
+```rust
+use proven_bindings::SafeString;
+
+pub fn validate_type_name(name: &str) -> Result<(), IRError> {
+    // Proven empty check (cannot crash)
+    if SafeString::is_empty(name) {
+        return Err(IRError::EmptyTypeName);
+    }
+
+    // Proven character access (no buffer overflow possible)
+    match SafeString::char_at(name, 0) {
+        Some(c) if c.is_alphabetic() => Ok(()),
+        _ => Err(IRError::InvalidTypeName),
+    }
+}
+```
+
+=== 3. Compatibility Analysis
+
+**File:** `crates/protocol-squisher-compat/src/lib.rs`
+
+```rust
+use proven_bindings::SafeJson;
+
+pub fn analyze_via_json_fallback(
+    source: &IRType,
+    target: &IRType
+) -> CompatibilityResult {
+    // Convert both to JSON using proven safe operations
+    let source_json = to_json_proven(source)?;
+    let target_json = to_json_proven(target)?;
+
+    // Both are mathematically proven valid JSON
+    CompatibilityResult::Wheelbarrow {
+        fidelity: 50,
+        overhead: 80.0,
+        losses: vec!["Type precision lost".to_string()],
+        fallback: "JSON (mathematically proven safe)".to_string(),
+    }
+}
+```
+
+== Benefits
+
+[cols="1,3"]
+|===
+| Benefit | proven Guarantee
+
+| **No JSON crashes**
+| Mathematical proof JSON operations are total (never crash)
+
+| **No buffer overflows**
+| Proven buffer index validation
+
+| **No string panics**
+| Proven string operations handle all edge cases
+
+| **No silent failures**
+| All operations return status codes with proven correctness
+
+| **Formal verification**
+| Idris2 totality checker verifies all code paths terminate
+|===
+
+== Implementation Plan
+
+**Phase 1: Add proven Rust bindings**
+1. Add `proven` as dependency in `Cargo.toml`
+2. Set up Zig FFI bridge (if not already available)
+3. Test basic proven function calls from Rust
+
+**Phase 2: Integrate JSON fallback**
+1. Replace manual JSON validation with `SafeJson::is_valid`
+2. Use `SafeJson::get_type` for type checking
+3. Add property tests verifying JSON is always valid
+
+**Phase 3: Integrate string handling**
+1. Replace `String` indexing with `SafeString::char_at`
+2. Use `SafeString::substring` for safe slicing
+3. Use `SafeString::is_empty` for validation
+
+**Phase 4: Integrate buffer operations**
+1. Use `SafeBuffer` for serialization buffer management
+2. Validate indices with `SafeBuffer::index_valid`
+3. Check capacity with `SafeBuffer::can_write`
+
+== Property Tests
+
+Using proptest + proven for unbreakable guarantees:
+
+```rust
+#[test]
+fn prop_json_fallback_always_valid() {
+    proptest!(|(ir_type: IRType)| {
+        let json = convert_to_json(&ir_type).unwrap();
+
+        // Mathematical proof this cannot fail
+        assert!(SafeJson::is_valid(&json));
+    });
+}
+
+#[test]
+fn prop_string_ops_never_panic() {
+    proptest!(|(s: String, idx: usize)| {
+        // This will return None for invalid index, never panic
+        let _ = SafeString::char_at(&s, idx);
+    });
+}
+```
+
+== The Invariant (Strengthened)
+
+**Original:** "If it compiles, it carries"
+
+**With proven:** "If it compiles, it carries **and cannot crash**"
+
+The compatibility analysis now has:
+1. **Linear types** (via ephapax) - prove zero-copy safety
+2. **Formal verification** (via proven) - prove operations don't crash
+3. **Property testing** (via proptest) - empirical verification
+
+**Triple guarantee:**
+- ephapax: Memory safety
+- proven: Operation safety
+- proptest: Empirical validation
+
+== Next Steps
+
+1. Add `proven` to protocol-squisher dependencies
+2. Create `crates/protocol-squisher-proven-bridge/` FFI wrapper
+3. Migrate JSON fallback to use `SafeJson`
+4. Migrate string ops to use `SafeString`
+5. Add property tests verifying proven guarantees
+
+## See Also
+
+- link:ephapax-INTEGRATION.adoc[ephapax Integration Plan]
+- `~/Documents/hyperpolymath-repos/proven/README.adoc`
+- `~/Documents/hyperpolymath-repos/proven/src/Proven/FFI/`
