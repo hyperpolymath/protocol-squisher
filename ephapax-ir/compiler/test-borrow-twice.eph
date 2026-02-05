@@ -1,0 +1,7 @@
+// Test borrowing the same variable twice
+fn main() -> i32 {
+    let x = "test";
+    print(&x);
+    print(&x);
+    0
+}

@@ -1,0 +1,32 @@
+// Comprehensive HashMap test
+fn main() -> i32 {
+    // Create HashMap and add entries
+    let m1 = hashmap_new();
+    let m2 = hashmap_insert(m1, "name", "Alice");
+    let m3 = hashmap_insert(m2, "role", "Engineer");
+    let m4 = hashmap_insert(m3, "level", "Senior");
+
+    // Test contains_key
+    let has_name = hashmap_contains_key(&m4, "name");
+    let has_invalid = hashmap_contains_key(&m4, "invalid");
+
+    // Test get with pattern matching
+    let get_result = match hashmap_get(&m4, "role") {
+        Some(val) => {
+            print(val);
+            1
+        }
+        None => 0
+    };
+
+    // Test remove
+    let m5 = hashmap_remove(m4, "level");
+    let still_has_level = hashmap_contains_key(&m5, "level");
+
+    // All conditions should be true for success
+    if has_name && !has_invalid && (get_result == 1) && !still_has_level {
+        0
+    } else {
+        1
+    }
+}

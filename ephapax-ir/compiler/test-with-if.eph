@@ -1,0 +1,8 @@
+fn main() -> i32 {
+    let has_name = true;
+    if has_name {
+        0
+    } else {
+        1
+    }
+}

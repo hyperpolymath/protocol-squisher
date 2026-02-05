@@ -1,0 +1,14 @@
+// Debugging HashMap usage with remove
+fn main() -> i32 {
+    let map = hashmap_new();
+    let map = hashmap_insert(map, "name", "Alice");
+    let map = hashmap_insert(map, "level", "Senior");
+    let has_name = hashmap_contains_key(&map, "name");
+    let map = hashmap_remove(map, "level");
+    let has_level = hashmap_contains_key(&map, "level");
+    if has_name {
+        0
+    } else {
+        1
+    }
+}

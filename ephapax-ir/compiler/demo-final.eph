@@ -1,0 +1,52 @@
+// Comprehensive Ephapax Demo
+// Features: Vec, HashMap, String ops, Math ops, Pattern matching, Linear types
+
+fn main() -> i32 {
+    // HashMap with string operations
+    let config = {"name": "Ephapax", "version": "1.0"};
+
+    {
+        match hashmap_get(&config, "name") {
+            Some(name) => {
+                print(string_to_upper(&name));  // EPHAPAX
+                print(string_length(&name));     // 7
+                0
+            }
+            None => 1
+        };
+
+        // Math operations
+        print(pow(2, 8));          // 256
+        print(abs(0 - 42));        // 42
+        print(max(100, 200));      // 200
+
+        // Unary operators
+        let flag = !true;          // false
+        if flag {
+            print(999)
+        } else {
+            print(1)               // 1
+        };
+
+        // Vec operations
+        let v = vec_new();
+        let v = vec_push(v, 10);
+        let v = vec_push(v, 20);
+        let v = vec_push(v, 30);
+
+        print(vec_length(&v));     // 3
+
+        match vec_get(&v, 1) {
+            Some(val) => print(val),   // 20
+            None => print(999)
+        };
+
+        match vec_pop(v) {
+            Some(last) => {
+                print(last);           // 30
+                0
+            }
+            None => 1
+        }
+    }
+}

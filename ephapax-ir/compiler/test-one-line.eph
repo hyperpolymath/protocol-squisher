@@ -1,0 +1,4 @@
+fn main() -> i32 {
+    let map = hashmap_new();
+    0
+}

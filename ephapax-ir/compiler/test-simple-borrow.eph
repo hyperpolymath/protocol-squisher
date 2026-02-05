@@ -1,0 +1,7 @@
+// Simplest borrow test
+fn main() -> i32 {
+    let name = "alice";
+    print(string_length(&name));
+    print(string_length(&name));
+    0
+}

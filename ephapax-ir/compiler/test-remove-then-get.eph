@@ -1,0 +1,16 @@
+// Test hashmap_remove followed by hashmap_get
+fn main() -> i32 {
+    let map = hashmap_new();
+    let map = hashmap_insert(map, "level", "Senior");
+    let map = hashmap_remove(map, "level");
+
+    let result = match hashmap_get(&map, "name") {
+        Some(val) => {
+            print(val);
+            0
+        }
+        None => 1
+    };
+
+    result
+}

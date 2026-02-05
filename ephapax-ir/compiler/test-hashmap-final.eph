@@ -1,0 +1,16 @@
+// Test HashMap built-in functions (simplified)
+fn main() -> i32 {
+    // Create and populate HashMap
+    let m1 = hashmap_new();
+    let m2 = hashmap_insert(m1, "name", "Alice");
+    let m3 = hashmap_insert(m2, "role", "Engineer");
+
+    // Test get operation
+    match hashmap_get(&m3, "name") {
+        Some(val) => {
+            print(val);
+            0
+        }
+        None => 1
+    }
+}

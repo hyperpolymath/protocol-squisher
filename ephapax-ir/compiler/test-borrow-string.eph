@@ -1,0 +1,12 @@
+// Test borrowing string twice
+fn main() -> i32 {
+    let name = "alice";
+    let len1 = string_length(&name);
+    let len2 = string_length(&name);
+
+    if len1 == len2 {
+        0
+    } else {
+        1
+    }
+}
