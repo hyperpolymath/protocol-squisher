@@ -13,6 +13,7 @@ use protocol_squisher_transport_primitives::TransportClass;
 use protocol_squisher_ir::IrSchema;
 use protocol_squisher_optimizer::EphapaxOptimizer;
 use protocol_squisher_rust_analyzer::RustAnalyzer;
+use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 
@@ -133,6 +134,17 @@ enum Commands {
         detailed: bool,
     },
 
+    /// Analyze a schema file for corpus collection (JSON output for squisher-corpus)
+    CorpusAnalyze {
+        /// Path to the schema file
+        #[arg(short, long)]
+        input: PathBuf,
+
+        /// Protocol format hint (protobuf, avro, thrift, jsonschema, rust, python, etc.)
+        #[arg(short = 'f', long)]
+        format: String,
+    },
+
     /// Cross-compile to multiple target formats
     CrossCompile {
         /// Input schema file
@@ -188,11 +200,210 @@ fn main() -> Result<()> {
             detailed,
         } => analyze_schema(protocol, input, detailed),
 
+        Commands::CorpusAnalyze { input, format } => corpus_analyze(input, format),
+
         Commands::CrossCompile {
             input,
             targets,
             output,
         } => cross_compile(input, targets, output),
+    }
+}
+
+/// Corpus analysis: parse a schema file and emit structured JSON for squisher-corpus ingestion.
+///
+/// Output JSON schema:
+/// ```json
+/// {
+///   "schema": <IrSchema>,
+///   "squishability": <SquishabilityReport>,
+///   "transport_classes": ["Concorde", "Business", ...]
+/// }
+/// ```
+fn corpus_analyze(input: PathBuf, format_hint: String) -> Result<()> {
+    use crate::formats::ProtocolFormat;
+    use protocol_squisher_meta_analysis::{
+        Blocker, Pattern, SquishabilityReport, TransportClass as MetaTransportClass,
+    };
+    use serde::Serialize;
+    use std::collections::HashMap;
+
+    #[derive(Serialize)]
+    struct CorpusOutput {
+        schema: IrSchema,
+        squishability: SquishabilityReport,
+        transport_classes: Vec<String>,
+    }
+
+    let protocol = ProtocolFormat::from_str(&format_hint)?;
+    let schema = protocol
+        .analyze_file(&input)
+        .with_context(|| format!("Failed to analyze {} as {}", input.display(), protocol.name()))?;
+
+    // Build squishability report from the parsed IR schema
+    let mut field_transport_classes: HashMap<String, MetaTransportClass> = HashMap::new();
+    let mut patterns: Vec<Pattern> = Vec::new();
+    let mut blockers: Vec<Blocker> = Vec::new();
+
+    for (_type_id, type_def) in &schema.types {
+        if let protocol_squisher_ir::TypeDef::Struct(s) = type_def {
+            for field in &s.fields {
+                let class = classify_field_transport(&field.ty, field.optional);
+                let key = format!("{}.{}", s.name, field.name);
+                field_transport_classes.insert(key.clone(), class);
+
+                // Detect patterns
+                match &field.ty {
+                    protocol_squisher_ir::IrType::Primitive(
+                        protocol_squisher_ir::PrimitiveType::I32
+                        | protocol_squisher_ir::PrimitiveType::I64,
+                    ) if !field.optional => {
+                        patterns.push(Pattern::ZeroCopyCandidate {
+                            field: key.clone(),
+                            protocol_native: true,
+                        });
+                    }
+                    protocol_squisher_ir::IrType::Primitive(
+                        protocol_squisher_ir::PrimitiveType::String,
+                    ) => {
+                        patterns.push(Pattern::StringThatCouldBeEnum {
+                            field: key.clone(),
+                            possible_values: vec![],
+                            blocker_to: MetaTransportClass::Business,
+                        });
+                    }
+                    protocol_squisher_ir::IrType::Container(
+                        protocol_squisher_ir::ContainerType::Option(_),
+                    ) => {
+                        blockers.push(Blocker::OptionalField {
+                            field: key.clone(),
+                            prevents: MetaTransportClass::Concorde,
+                        });
+                    }
+                    _ => {}
+                }
+
+                if field.optional {
+                    patterns.push(Pattern::UnnecessaryOption {
+                        field: key,
+                        reason: "Detected optional in corpus".to_string(),
+                        blocker_to: MetaTransportClass::Business,
+                    });
+                }
+            }
+        }
+    }
+
+    let best_achievable_class = determine_best_class(&field_transport_classes);
+    let report = SquishabilityReport {
+        protocol: protocol.name().to_string(),
+        schema: input
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_default(),
+        message: schema.name.clone(),
+        patterns,
+        field_transport_classes: field_transport_classes.clone(),
+        best_achievable_class,
+        predicted_speedup: calculate_predicted_speedup(&best_achievable_class),
+        blockers,
+        confidence: 0.8,
+    };
+
+    // Collect unique transport classes present
+    let mut unique_classes: Vec<String> = field_transport_classes
+        .values()
+        .map(|c| format!("{:?}", c))
+        .collect::<std::collections::HashSet<_>>()
+        .into_iter()
+        .collect();
+    unique_classes.sort();
+
+    let output = CorpusOutput {
+        schema,
+        squishability: report,
+        transport_classes: unique_classes,
+    };
+
+    let json = serde_json::to_string_pretty(&output)
+        .context("Failed to serialize corpus analysis output")?;
+    println!("{}", json);
+
+    Ok(())
+}
+
+/// Classify a field's transport class based on its IR type
+fn classify_field_transport(
+    ty: &protocol_squisher_ir::IrType,
+    optional: bool,
+) -> protocol_squisher_meta_analysis::TransportClass {
+    use protocol_squisher_ir::*;
+    use protocol_squisher_meta_analysis::TransportClass as MTC;
+
+    if optional {
+        return MTC::Economy;
+    }
+
+    match ty {
+        IrType::Primitive(p) => match p {
+            PrimitiveType::Bool
+            | PrimitiveType::I8
+            | PrimitiveType::I16
+            | PrimitiveType::I32
+            | PrimitiveType::I64
+            | PrimitiveType::U8
+            | PrimitiveType::U16
+            | PrimitiveType::U32
+            | PrimitiveType::U64
+            | PrimitiveType::F32
+            | PrimitiveType::F64 => MTC::Concorde,
+            PrimitiveType::String | PrimitiveType::Bytes => MTC::Business,
+            _ => MTC::Economy,
+        },
+        IrType::Container(c) => match c {
+            ContainerType::Option(_) => MTC::Economy,
+            ContainerType::Vec(_) | ContainerType::Array(_, _) => MTC::Business,
+            ContainerType::Map(_, _) => MTC::Economy,
+            _ => MTC::Wheelbarrow,
+        },
+        IrType::Reference(_) => MTC::Business,
+        IrType::Special(_) => MTC::Wheelbarrow,
+    }
+}
+
+/// Determine best achievable transport class from field distribution
+fn determine_best_class(
+    classes: &HashMap<String, protocol_squisher_meta_analysis::TransportClass>,
+) -> protocol_squisher_meta_analysis::TransportClass {
+    use protocol_squisher_meta_analysis::TransportClass as MTC;
+
+    if classes.is_empty() {
+        return MTC::Wheelbarrow;
+    }
+
+    // Best class is the worst class in the set (weakest link)
+    let mut worst = MTC::Concorde;
+    for class in classes.values() {
+        worst = match (worst, class) {
+            (MTC::Wheelbarrow, _) | (_, MTC::Wheelbarrow) => MTC::Wheelbarrow,
+            (MTC::Economy, _) | (_, MTC::Economy) => MTC::Economy,
+            (MTC::Business, _) | (_, MTC::Business) => MTC::Business,
+            _ => MTC::Concorde,
+        };
+    }
+    worst
+}
+
+/// Calculate predicted speedup over JSON baseline
+fn calculate_predicted_speedup(
+    class: &protocol_squisher_meta_analysis::TransportClass,
+) -> f64 {
+    use protocol_squisher_meta_analysis::TransportClass as MTC;
+    match class {
+        MTC::Concorde => 50.0,
+        MTC::Business => 10.0,
+        MTC::Economy => 3.0,
+        MTC::Wheelbarrow => 1.0,
     }
 }
 
