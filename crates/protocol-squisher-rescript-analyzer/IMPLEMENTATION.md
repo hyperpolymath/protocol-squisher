@@ -259,7 +259,7 @@ These are not currently required for the ecosystem and can be added if needed.
 ```toml
 [dependencies]
 protocol-squisher-ir = { path = "../protocol-squisher-ir" }
-protocol-squisher-ephapax-ir = { path = "../../ephapax-ir" }
+protocol-squisher-transport-primitives = { path = "../../ephapax-ir" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 regex = "1.10"

@@ -9,7 +9,7 @@ use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use colored::Colorize;
 use protocol_squisher_compat::EphapaxCompatibilityEngine;
-use protocol_squisher_ephapax_ir::TransportClass;
+use protocol_squisher_transport_primitives::TransportClass;
 use protocol_squisher_ir::IrSchema;
 use protocol_squisher_optimizer::EphapaxOptimizer;
 use protocol_squisher_rust_analyzer::RustAnalyzer;

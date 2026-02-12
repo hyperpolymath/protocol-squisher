@@ -99,8 +99,8 @@ pub fn run(
     Ok(())
 }
 
-fn format_transport_class(class: &protocol_squisher_ephapax_ir::TransportClass) -> String {
-    use protocol_squisher_ephapax_ir::TransportClass;
+fn format_transport_class(class: &protocol_squisher_transport_primitives::TransportClass) -> String {
+    use protocol_squisher_transport_primitives::TransportClass;
 
     match class {
         TransportClass::Concorde => "Concorde".green().to_string(),

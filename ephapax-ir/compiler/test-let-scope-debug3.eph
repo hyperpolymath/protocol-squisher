@@ -1,8 +1,0 @@
-// Test let scoping - no reuse after print
-fn main() -> i32 {
-    let x = 10;
-    print(x);
-    let y = 20;
-    print(y);
-    30
-}

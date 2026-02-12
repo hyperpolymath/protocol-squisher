@@ -221,12 +221,67 @@ pub struct ComparativeAnalysis {
 impl ComparativeAnalysis {
     /// Create from multiple reports
     pub fn from_reports(reports: Vec<SquishabilityReport>) -> Self {
-        let mut common_patterns = Vec::new();
-        let mut unique_patterns: HashMap<String, Vec<String>> = HashMap::new();
+        // Collect unique protocols
+        let protocols: Vec<String> = reports
+            .iter()
+            .map(|r| r.protocol.clone())
+            .collect::<std::collections::HashSet<_>>()
+            .into_iter()
+            .collect();
+        let protocol_count = protocols.len();
 
-        // Find common patterns (appear in >50% of protocols)
-        let _pattern_counts: HashMap<String, usize> = HashMap::new();
-        // TODO: Implement pattern commonality detection
+        // Count pattern types per protocol
+        let pattern_types = [
+            "safe_widening",
+            "unnecessary_option",
+            "overprecision_float",
+            "string_enum",
+            "repeated_copyable",
+            "unnecessary_nesting",
+            "deprecated",
+            "zero_copy",
+        ];
+
+        let mut pattern_by_protocol: HashMap<String, HashMap<String, usize>> = HashMap::new();
+        for report in &reports {
+            let proto_entry = pattern_by_protocol
+                .entry(report.protocol.clone())
+                .or_default();
+            for pt in &pattern_types {
+                let count = report.count_pattern(pt);
+                if count > 0 {
+                    *proto_entry.entry(pt.to_string()).or_insert(0) += count;
+                }
+            }
+        }
+
+        // A pattern type is "common" if it appears in >50% of protocols
+        let mut pattern_presence: HashMap<String, usize> = HashMap::new();
+        for proto_patterns in pattern_by_protocol.values() {
+            for pt in proto_patterns.keys() {
+                *pattern_presence.entry(pt.clone()).or_insert(0) += 1;
+            }
+        }
+
+        let threshold = (protocol_count as f64 * 0.5).ceil() as usize;
+        let common_patterns: Vec<String> = pattern_presence
+            .iter()
+            .filter(|(_, count)| **count >= threshold)
+            .map(|(name, _)| name.clone())
+            .collect();
+
+        // Unique patterns: appear in only one protocol
+        let mut unique_patterns: HashMap<String, Vec<String>> = HashMap::new();
+        for (proto, proto_patterns) in &pattern_by_protocol {
+            for pt in proto_patterns.keys() {
+                if pattern_presence.get(pt).copied().unwrap_or(0) == 1 {
+                    unique_patterns
+                        .entry(proto.clone())
+                        .or_default()
+                        .push(pt.clone());
+                }
+            }
+        }
 
         // Rank by squishability score
         let mut ranking: Vec<(String, f64)> = reports

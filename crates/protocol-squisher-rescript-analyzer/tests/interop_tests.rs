@@ -3,7 +3,7 @@
 
 //! Comprehensive interop tests for ReScript analyzer
 
-use protocol_squisher_ephapax_ir::IRContext;
+use protocol_squisher_transport_primitives::IRContext;
 use protocol_squisher_rescript_analyzer::{analyze_transport_compatibility, ReScriptAnalyzer, TransportAnalysis};
 use protocol_squisher_ir::{IrType, PrimitiveType, ContainerType};
 use std::path::Path;
@@ -43,14 +43,14 @@ fn test_rescript_to_rust_interop() {
     let rust_i64 = IrType::Primitive(PrimitiveType::I64);
 
     let class = analyze_transport_compatibility(&ctx, &rescript_int, &rust_i64).unwrap();
-    assert_eq!(class, protocol_squisher_ephapax_ir::TransportClass::Concorde);
+    assert_eq!(class, protocol_squisher_transport_primitives::TransportClass::Concorde);
 
     // ReScript string -> Rust String (Concorde)
     let rescript_string = IrType::Primitive(PrimitiveType::String);
     let rust_string = IrType::Primitive(PrimitiveType::String);
 
     let class = analyze_transport_compatibility(&ctx, &rescript_string, &rust_string).unwrap();
-    assert_eq!(class, protocol_squisher_ephapax_ir::TransportClass::Concorde);
+    assert_eq!(class, protocol_squisher_transport_primitives::TransportClass::Concorde);
 
     // ReScript array<T> -> Rust Vec<T> (Concorde)
     let rescript_array = IrType::Container(ContainerType::Vec(Box::new(
@@ -61,7 +61,7 @@ fn test_rescript_to_rust_interop() {
     )));
 
     let class = analyze_transport_compatibility(&ctx, &rescript_array, &rust_vec).unwrap();
-    assert_eq!(class, protocol_squisher_ephapax_ir::TransportClass::Concorde);
+    assert_eq!(class, protocol_squisher_transport_primitives::TransportClass::Concorde);
 }
 
 #[test]

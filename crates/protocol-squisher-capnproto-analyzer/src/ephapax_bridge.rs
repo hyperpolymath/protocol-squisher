@@ -17,7 +17,7 @@
 //! Key insight: Cap'n Proto primitives are zero-copy, but Text/Data/List have pointer overhead.
 
 use crate::AnalyzerError;
-use protocol_squisher_ephapax_ir::{IRContext, PrimitiveType, TransportClass};
+use protocol_squisher_transport_primitives::{IRContext, PrimitiveType, TransportClass};
 use protocol_squisher_ir::IrType;
 
 /// Convert protocol-squisher IR type to ephapax primitive type

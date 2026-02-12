@@ -10,7 +10,7 @@ Add to your `Cargo.toml`:
 [dependencies]
 protocol-squisher-protobuf-analyzer = { path = "../protocol-squisher-protobuf-analyzer" }
 protocol-squisher-ir = { path = "../protocol-squisher-ir" }
-protocol-squisher-ephapax-ir = { path = "../../ephapax-ir" }
+protocol-squisher-transport-primitives = { path = "../../ephapax-ir" }
 ```
 
 ## Basic Usage
@@ -88,7 +88,7 @@ if let Some(TypeDef::Enum(status_enum)) = schema.types.get("Status") {
 
 ```rust
 use protocol_squisher_protobuf_analyzer::TransportAnalysis;
-use protocol_squisher_ephapax_ir::IRContext;
+use protocol_squisher_transport_primitives::IRContext;
 
 let ctx = IRContext::new();
 

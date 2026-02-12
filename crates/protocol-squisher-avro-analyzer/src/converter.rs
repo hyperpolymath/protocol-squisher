@@ -15,6 +15,7 @@ use std::collections::BTreeMap;
 #[derive(Debug, Default)]
 pub struct AvroConverter {}
 
+#[allow(dead_code)]
 impl AvroConverter {
     /// Create a new converter
     pub fn new() -> Self {

@@ -20,7 +20,7 @@
 #[cfg(test)]
 use protocol_squisher_compat::EphapaxCompatibilityEngine;
 #[cfg(test)]
-use protocol_squisher_ephapax_ir::TransportClass;
+use protocol_squisher_transport_primitives::TransportClass;
 #[cfg(test)]
 use protocol_squisher_ir::{
     FieldDef, FieldMetadata, IrSchema, IrType, PrimitiveType, StructDef, TypeDef, TypeMetadata,

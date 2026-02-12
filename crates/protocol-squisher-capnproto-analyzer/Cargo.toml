@@ -11,6 +11,6 @@ regex = "1.10"
 thiserror = "2.0"
 serde_json = "1.0"
 protocol-squisher-ir = { path = "../protocol-squisher-ir" }
-protocol-squisher-ephapax-ir = { path = "../../ephapax-ir" }
+protocol-squisher-transport-primitives = { path = "../../ephapax-ir" }
 
 [dev-dependencies]

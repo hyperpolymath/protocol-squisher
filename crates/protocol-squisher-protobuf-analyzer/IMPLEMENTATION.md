@@ -180,7 +180,7 @@ oneof → Enum with payloads
 ```toml
 [dependencies]
 protocol-squisher-ir = { path = "../protocol-squisher-ir" }
-protocol-squisher-ephapax-ir = { path = "../../ephapax-ir" }
+protocol-squisher-transport-primitives = { path = "../../ephapax-ir" }
 thiserror = "1.0"
 regex = "1.10"
 

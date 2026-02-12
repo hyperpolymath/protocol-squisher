@@ -47,7 +47,7 @@
 //!
 //! ```rust,no_run
 //! use protocol_squisher_protobuf_analyzer::{ProtobufAnalyzer, TransportAnalysis};
-//! use protocol_squisher_ephapax_ir::IRContext;
+//! use protocol_squisher_transport_primitives::IRContext;
 //! use protocol_squisher_ir::{IrType, PrimitiveType};
 //!
 //! let ctx = IRContext::new();
@@ -550,7 +550,7 @@ mod tests {
     #[test]
     fn test_transport_analysis_integration() {
         use crate::ephapax_bridge::TransportAnalysis;
-        use protocol_squisher_ephapax_ir::IRContext;
+        use protocol_squisher_transport_primitives::IRContext;
         use protocol_squisher_ir::{IrType, PrimitiveType};
 
         let proto = r#"

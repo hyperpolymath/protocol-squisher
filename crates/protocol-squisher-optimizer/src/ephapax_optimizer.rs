@@ -10,7 +10,7 @@ use protocol_squisher_compat::{
     EphapaxCompatibilityEngine, FieldCompatibility,
     SchemaCompatibilityResult,
 };
-use protocol_squisher_ephapax_ir::TransportClass;
+use protocol_squisher_transport_primitives::TransportClass;
 use protocol_squisher_ir::{FieldDef, IrSchema, IrType, PrimitiveType, TypeDef};
 use std::collections::HashMap;
 

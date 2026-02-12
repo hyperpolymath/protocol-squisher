@@ -130,7 +130,7 @@ impl MyStruct {
 
 [source,rust]
 ----
-use protocol_squisher_ephapax_ir::{IRContext, PrimitiveType, TransportClass};
+use protocol_squisher_transport_primitives::{IRContext, PrimitiveType, TransportClass};
 
 let ctx = IRContext::new();
 let class = ctx.analyze_compatibility(

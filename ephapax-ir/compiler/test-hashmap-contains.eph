@@ -1,6 +1,0 @@
-// Test hashmap_contains_key specifically
-fn main() -> i32 {
-    let map = hashmap_new();
-    let result = hashmap_contains_key(&map, "test");
-    0
-}

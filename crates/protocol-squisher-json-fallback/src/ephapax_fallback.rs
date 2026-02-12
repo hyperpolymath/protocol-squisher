@@ -21,7 +21,7 @@
 use protocol_squisher_compat::{
     EphapaxCompatibilityEngine, SchemaCompatibilityResult,
 };
-use protocol_squisher_ephapax_ir::TransportClass;
+use protocol_squisher_transport_primitives::TransportClass;
 use protocol_squisher_ir::IrSchema;
 
 /// Configuration for ephapax-aware JSON fallback

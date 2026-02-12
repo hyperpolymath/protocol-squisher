@@ -1,12 +1,12 @@
 # SPDX-License-Identifier: PMPL-1.0-or-later
 
 [package]
-name = "protocol-squisher-ephapax-ir"
+name = "protocol-squisher-transport-primitives"
 version = "0.1.0"
 edition = "2021"
 authors = ["Jonathan D.A. Jewell <jonathan.jewell@open.ac.uk>"]
 license = "PMPL-1.0-or-later"
-description = "ephapax-based canonical IR for protocol-squisher with linear type guarantees"
+description = "Primitive type transport class analysis for protocol-squisher"
 repository = "https://github.com/hyperpolymath/protocol-squisher"
 
 [dependencies]

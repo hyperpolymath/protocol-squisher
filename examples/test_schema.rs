@@ -19,3 +19,22 @@ pub struct Product {
     pub price: f64,
     pub quantity: i32,
 }
+
+fn main() {
+    let user = User {
+        id: 1,
+        name: "Alice".to_string(),
+        email: "alice@example.com".to_string(),
+        age: 30,
+        balance: 1000.50,
+    };
+    let product = Product {
+        product_id: 42,
+        title: "Widget".to_string(),
+        price: 9.99,
+        quantity: 100,
+    };
+    println!("User: {:?}", user);
+    println!("Product: {:?}", product);
+    println!("Schema types available for CLI analysis.");
+}

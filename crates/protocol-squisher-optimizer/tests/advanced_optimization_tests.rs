@@ -4,7 +4,7 @@
 //! Advanced optimization tests covering complex scenarios
 
 use protocol_squisher_compat::EphapaxCompatibilityEngine;
-use protocol_squisher_ephapax_ir::TransportClass;
+use protocol_squisher_transport_primitives::TransportClass;
 use protocol_squisher_ir::*;
 use protocol_squisher_optimizer::*;
 use std::collections::BTreeMap;

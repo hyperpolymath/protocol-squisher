@@ -5,7 +5,7 @@
 //! This module uses the ephapax IR's proven-correct transport class analysis
 //! to determine the best conversion strategy between Rust and Python types.
 
-use protocol_squisher_ephapax_ir::{IRContext, TransportClass as EphapaxTransportClass};
+use protocol_squisher_transport_primitives::{IRContext, TransportClass as EphapaxTransportClass};
 use protocol_squisher_ir::IrSchema;
 use protocol_squisher_rust_analyzer::RustAnalyzer;
 use protocol_squisher_python_analyzer::PythonAnalyzer;
@@ -291,8 +291,8 @@ mod tests {
     fn test_engine_creation() {
         let engine = EphapaxCompatibilityEngine::new();
         assert!(engine.ir_context().analyze_compatibility(
-            protocol_squisher_ephapax_ir::PrimitiveType::I32,
-            protocol_squisher_ephapax_ir::PrimitiveType::I32
+            protocol_squisher_transport_primitives::PrimitiveType::I32,
+            protocol_squisher_transport_primitives::PrimitiveType::I32
         ) == EphapaxTransportClass::Concorde);
     }
 

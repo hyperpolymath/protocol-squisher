@@ -11,7 +11,7 @@
 
 use anyhow::{Context, Result};
 use colored::Colorize;
-use protocol_squisher_ephapax_ir::{IRContext, TransportClass};
+use protocol_squisher_transport_primitives::{IRContext, TransportClass};
 use protocol_squisher_ir::IrSchema;
 use std::path::Path;
 

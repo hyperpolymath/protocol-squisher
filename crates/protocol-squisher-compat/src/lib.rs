@@ -43,6 +43,7 @@ pub mod transport;
 pub mod compare;
 pub mod schema;
 pub mod ephapax_engine;
+pub mod bidirectional;
 
 pub use transport::{TransportClass, ConversionLoss, LossKind, LossSeverity};
 pub use compare::{compare_types, TypeComparison};
@@ -50,6 +51,9 @@ pub use schema::{compare_schemas, SchemaComparison, TypeDefComparison, Compariso
 pub use ephapax_engine::{
     EphapaxCompatibilityEngine, SchemaCompatibilityResult, TypeCompatibilityAnalysis,
     FieldCompatibility, ConversionSummary,
+};
+pub use bidirectional::{
+    bidirectional_compare, BidirectionalResult, TypeAsymmetry, Direction,
 };
 
 /// Compatibility analyzer for IR schemas

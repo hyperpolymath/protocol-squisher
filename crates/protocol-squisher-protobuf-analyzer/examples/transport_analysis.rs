@@ -5,7 +5,7 @@
 //! Run with: cargo run --example transport_analysis
 
 use protocol_squisher_protobuf_analyzer::{ProtobufAnalyzer, TransportAnalysis};
-use protocol_squisher_ephapax_ir::{IRContext, TransportClass};
+use protocol_squisher_transport_primitives::{IRContext, TransportClass};
 
 fn main() {
     let source_proto = r#"

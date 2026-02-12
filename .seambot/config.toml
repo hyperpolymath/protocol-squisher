@@ -12,7 +12,7 @@ test_crate = "protocol-squisher-integration-tests"
 
 # Required components for integration
 required_components = [
-    "protocol-squisher-ephapax-ir",
+    "protocol-squisher-transport-primitives",
     "protocol-squisher-compat",
     "protocol-squisher-pyo3-codegen",
     "protocol-squisher-json-fallback",

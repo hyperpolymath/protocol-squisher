@@ -50,7 +50,7 @@ jobs:
 
       - name: Run all component tests
         run: |
-          cargo test -p protocol-squisher-ephapax-ir --verbose
+          cargo test -p protocol-squisher-transport-primitives --verbose
           cargo test -p protocol-squisher-compat --verbose
           cargo test -p protocol-squisher-pyo3-codegen --verbose
           cargo test -p protocol-squisher-json-fallback --verbose

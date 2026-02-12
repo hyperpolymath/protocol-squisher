@@ -12,7 +12,7 @@ repository = "https://github.com/hyperpolymath/protocol-squisher"
 [dependencies]
 protocol-squisher-ir = { path = "../protocol-squisher-ir" }
 protocol-squisher-compat = { path = "../protocol-squisher-compat" }
-protocol-squisher-ephapax-ir = { path = "../../ephapax-ir" }
+protocol-squisher-transport-primitives = { path = "../../ephapax-ir" }
 proptest = "1.4"
 proptest-derive = "0.5"
 

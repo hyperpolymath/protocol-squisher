@@ -1,6 +1,0 @@
-fn main() -> i32 {
-    let map = hashmap_new();
-    let map = hashmap_insert(map, "name", "Alice");
-    let has_name = hashmap_contains_key(&map, "name");
-    0
-}

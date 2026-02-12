@@ -66,7 +66,7 @@ Use the ephapax bridge to analyze transport compatibility between protobuf types
 
 ```rust
 use protocol_squisher_protobuf_analyzer::{ProtobufAnalyzer, TransportAnalysis};
-use protocol_squisher_ephapax_ir::IRContext;
+use protocol_squisher_transport_primitives::IRContext;
 
 let analyzer = ProtobufAnalyzer::new();
 let schema = analyzer.analyze_str(proto_content, "schema")?;
@@ -205,6 +205,6 @@ PMPL-1.0-or-later
 ## See Also
 
 - [protocol-squisher-ir](../protocol-squisher-ir) - Canonical IR format
-- [protocol-squisher-ephapax-ir](../../ephapax-ir) - Proven transport class analysis
+- [protocol-squisher-transport-primitives](../../ephapax-ir) - Proven transport class analysis
 - [protocol-squisher-rust-analyzer](../protocol-squisher-rust-analyzer) - Rust/serde analyzer
 - [protocol-squisher-python-analyzer](../protocol-squisher-python-analyzer) - Python/Pydantic analyzer

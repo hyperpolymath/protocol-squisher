@@ -4,7 +4,7 @@
 //! Basic usage example for ReScript analyzer
 
 use protocol_squisher_rescript_analyzer::ReScriptAnalyzer;
-use protocol_squisher_ephapax_ir::IRContext;
+use protocol_squisher_transport_primitives::IRContext;
 use protocol_squisher_rescript_analyzer::TransportAnalysis;
 use protocol_squisher_ir::{IrType, PrimitiveType, ContainerType};
 

@@ -67,7 +67,7 @@ Complete Protobuf analyzer implementation with ephapax transport class analysis.
 
 **Dependencies:**
 - protocol-squisher-ir - Canonical IR format
-- protocol-squisher-ephapax-ir - Proven transport analysis
+- protocol-squisher-transport-primitives - Proven transport analysis
 - thiserror - Error handling
 - regex - Pattern matching
 - pretty_assertions (dev) - Better test output

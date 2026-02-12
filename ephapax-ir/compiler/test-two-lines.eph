@@ -1,5 +1,0 @@
-fn main() -> i32 {
-    let map = hashmap_new();
-    let map = hashmap_insert(map, "name", "Alice");
-    0
-}

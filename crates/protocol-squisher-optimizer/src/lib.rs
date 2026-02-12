@@ -25,10 +25,12 @@ use std::collections::HashMap;
 
 mod analysis;
 mod codegen;
+pub mod entropy;
 mod ephapax_optimizer;
 
 pub use analysis::*;
 pub use codegen::*;
+pub use entropy::analyze_schema_entropy;
 pub use ephapax_optimizer::*;
 
 /// Optimization level for a type conversion

@@ -13,7 +13,7 @@ publish = false
 [dependencies]
 protocol-squisher-ir = { path = "../protocol-squisher-ir" }
 protocol-squisher-compat = { path = "../protocol-squisher-compat" }
-protocol-squisher-ephapax-ir = { path = "../../ephapax-ir" }
+protocol-squisher-transport-primitives = { path = "../../ephapax-ir" }
 protocol-squisher-rust-analyzer = { path = "../protocol-squisher-rust-analyzer" }
 protocol-squisher-python-analyzer = { path = "../protocol-squisher-python-analyzer" }
 protocol-squisher-pyo3-codegen = { path = "../protocol-squisher-pyo3-codegen" }

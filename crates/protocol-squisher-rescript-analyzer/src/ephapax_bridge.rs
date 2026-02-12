@@ -7,7 +7,7 @@
 //! for transport class analysis.
 
 use crate::AnalyzerError;
-use protocol_squisher_ephapax_ir::{IRContext, PrimitiveType, TransportClass};
+use protocol_squisher_transport_primitives::{IRContext, PrimitiveType, TransportClass};
 use protocol_squisher_ir::IrType;
 
 /// Convert protocol-squisher IR type to ephapax primitive type

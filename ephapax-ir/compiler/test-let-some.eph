@@ -1,5 +1,0 @@
-// Test let binding with Some
-fn main() -> i32 {
-    let x = Some(42);
-    0
-}

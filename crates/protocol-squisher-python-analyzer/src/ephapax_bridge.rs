@@ -5,7 +5,7 @@
 //! This module converts Pydantic model types into ephapax IR types
 //! for transport class analysis.
 
-use protocol_squisher_ephapax_ir::{IRContext, PrimitiveType, TransportClass};
+use protocol_squisher_transport_primitives::{IRContext, PrimitiveType, TransportClass};
 use protocol_squisher_ir::IrType;
 use crate::AnalyzerError;
 

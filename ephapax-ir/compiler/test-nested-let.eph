@@ -1,9 +1,0 @@
-// Test nested let with multiple borrows
-fn main() -> i32 {
-    let name = "alice";
-    let len1 = string_length(&name);
-    print(len1);
-    let len2 = string_length(&name);
-    print(len2);
-    0
-}

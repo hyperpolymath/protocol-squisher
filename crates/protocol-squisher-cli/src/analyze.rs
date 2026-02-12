@@ -6,7 +6,7 @@
 use anyhow::{Context, Result};
 use colored::Colorize;
 use protocol_squisher_compat::EphapaxCompatibilityEngine;
-use protocol_squisher_ephapax_ir::TransportClass;
+use protocol_squisher_transport_primitives::TransportClass;
 use protocol_squisher_rust_analyzer::RustAnalyzer;
 use std::fs;
 use std::path::PathBuf;

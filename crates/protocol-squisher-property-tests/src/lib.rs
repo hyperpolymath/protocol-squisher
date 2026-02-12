@@ -12,7 +12,7 @@ pub mod container_combinations;
 pub mod edge_cases;
 
 use protocol_squisher_compat::EphapaxCompatibilityEngine;
-use protocol_squisher_ephapax_ir::TransportClass;
+use protocol_squisher_transport_primitives::TransportClass;
 use protocol_squisher_ir::*;
 use std::collections::BTreeMap;
 
