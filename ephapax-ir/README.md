@@ -1,73 +1,41 @@
-# ephapax-ir - Protocol Squisher Canonical IR
+# protocol-squisher-transport-primitives
 
-Canonical intermediate representation for protocol-squisher with linear type guarantees.
+Primitive type transport class analysis for protocol-squisher.
 
-## Status
+## Purpose
 
-**Working Implementations**:
-- Idris2 backend ✅ (proven correctness via dependent types)
-- Ephapax compiler ✅ (lexer, parser, interpreter, type checker)
-- Linear type checker ✅ (resource safety verification)
-- Copy types ✅ (primitives can be used multiple times)
-- Pattern matching ✅ (match expressions with exhaustiveness checking)
+This crate classifies conversions between primitive types into transport classes,
+providing the foundation for protocol-squisher's compatibility analysis. The
+classification is based on ephapax's linear type theory and will eventually be
+backed by Idris2 dependent type proofs via FFI.
 
-## Quick Start
+## Transport Classes
 
-```bash
-# Build and run tests
-cd idris2
-idris2 --build ephapax-ir.ipkg
-./build/exec/ephapax-ir-test
-```
+| Class | Overhead | Fidelity | Use Case |
+|-------|----------|----------|----------|
+| Concorde | 0% | 100% | Exact type match, zero-copy |
+| Business | ~5% | 98% | Safe widening (i32->i64) |
+| Economy | ~25% | 80% | Container conversion |
+| Wheelbarrow | ~80% | 50% | JSON fallback |
 
-## Architecture
+## Key Types
 
-### Idris2 Implementation (WORKING)
+- `PrimitiveType` - All primitive IR types (I8-U128, F32, F64, Bool, Char, String, Unit)
+- `ContainerType` - Container shapes (Array, Vec, Map, Set, Optional)
+- `CompositeType` - Composite shapes (Struct, Enum, Tuple)
+- `TransportClass` - The four-tier classification
+- `IRContext` - Entry point for compatibility analysis
 
-Located in `idris2/`:
+## Usage
 
-- **Types.idr**: Type system with dependent types
-  - Primitive types (i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, bool, char, string, unit)
-  - Container types (array, vec, map, set, optional)
-  - Composite types (struct, enum, tuple)
+```rust
+use protocol_squisher_transport_primitives::{IRContext, PrimitiveType, TransportClass};
 
-- **Compat.idr**: Transport class analysis
-  - Concorde: Zero-copy, 100% fidelity
-  - Business: Minor overhead, 98% fidelity
-  - Economy: Moderate overhead, 80% fidelity
-  - Wheelbarrow: JSON fallback, 50% fidelity
-
-- **TestSimple.idr**: Test suite validating transport class selection
-
-### Ephapax Compiler (WORKING)
-
-Located in `compiler/`:
-
-The ephapax compiler provides a complete implementation of the ephapax language:
-
-- **Lexer** (`tokens.rs`): Tokenizes `.eph` source files
-- **Parser** (`parser.rs`): Builds AST from tokens
-- **Interpreter** (`interpreter.rs`): Executes ephapax programs
-- **CLI** (`main.rs`): Command-line interface
-
-```bash
-# Build compiler
-cargo build --release
-
-# Run .eph files
-./target/release/ephapax ephapax-ir/test-simple.eph  # => 42
-./target/release/ephapax -e 'fn main() { 10 + 20 }'  # => 30
-```
-
-**Ephapax Source Files** in `src/`:
-
-- **types.eph**: Type system implemented in pure ephapax
-- **compat.eph**: Compatibility analysis implemented in pure ephapax
-
-These files can now be executed by the ephapax compiler. Example:
-
-```bash
-./target/release/ephapax ephapax-ir/test-advanced.eph  # => 100
+let ctx = IRContext::new();
+let class = ctx.analyze_compatibility(PrimitiveType::I32, PrimitiveType::I64);
+assert_eq!(class, TransportClass::Business);
+assert_eq!(class.fidelity(), 98);
+assert_eq!(class.overhead(), 5);
 ```
 
 ## The Invariant
@@ -79,45 +47,20 @@ Proven by:
 2. Dependent types (types encode proofs)
 3. Linear types (resource safety)
 
-## Transport Classes
+## Idris2 Backend
 
-| Class | Overhead | Fidelity | Use Case |
-|-------|----------|----------|----------|
-| Concorde | 0% | 100% | Exact type match, zero-copy |
-| Business | ~5% | 98% | Safe widening (i32→i64) |
-| Economy | ~25% | 80% | Container conversion |
-| Wheelbarrow | ~80% | 50% | JSON fallback |
+The `idris2/` directory contains the Idris2 implementation with dependent type
+proofs. Currently the Rust crate uses pure Rust stubs matching the Idris2
+semantics. Once the Idris2 refc-generated C library is available, `src/ffi.rs`
+will link to it directly.
 
-## Integration
+## Relationship to ephapax
 
-This crate provides the IR type system for protocol-squisher. The Rust wrapper at `src/lib.rs` will use the Idris2 backend via FFI for proven-correct operations.
-
-## Examples
-
-```idris
--- Exact match: Concorde class (zero-copy)
-analyzeCompatibility (Prim I32) (Prim I32)
--- => Concorde
-
--- Safe widening: Business class
-analyzeCompatibility (Prim I32) (Prim I64)
--- => Business
-
--- Type mismatch: Wheelbarrow class (JSON)
-analyzeCompatibility (Prim I32) (Prim Str)
--- => Wheelbarrow
-```
-
-## Triple Safety Guarantee
-
-1. **Ephapax (Linear Types)**: Values used exactly once, no aliasing
-2. **Idris2 (Dependent Types)**: Correctness proven at compile-time
-3. **Property Testing**: Empirical validation with proptest
-
-Result: Code that literally cannot crash.
+The ephapax language and compiler live in their own repository. This crate
+consumes ephapax's type-theoretic guarantees for protocol conversion safety.
+The ephapax compiler is **not** embedded here — it is an external dependency.
 
 ## See Also
 
-- [IDRIS2-SUCCESS.md](IDRIS2-SUCCESS.md) - Detailed achievement report
-- [EPHAPAX-INTEGRATION.adoc](../EPHAPAX-INTEGRATION.adoc) - Full integration architecture
-- [PROVEN-INTEGRATION.adoc](../PROVEN-INTEGRATION.adoc) - Proven library integration
+- [ephapax repo](https://github.com/hyperpolymath/ephapax) - The ephapax language
+- [EPHAPAX-INTEGRATION.adoc](../EPHAPAX-INTEGRATION.adoc) - Integration architecture

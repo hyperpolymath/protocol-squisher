@@ -1,7 +1,0 @@
-// Test file reading
-
-fn main() {
-    let content = read_file("/tmp/ephapax-test.txt");
-    print(content);
-    42  // Return value
-}

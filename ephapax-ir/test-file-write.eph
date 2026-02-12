@@ -1,6 +1,0 @@
-// Test file writing
-
-fn main() {
-    let result = write_file("/tmp/ephapax-test.txt", "Hello from ephapax!");
-    result  // Should return 0 on success
-}

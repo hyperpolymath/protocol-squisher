@@ -1,9 +1,0 @@
-// Debug: test if 'for' and 'in' are recognized as keywords
-
-fn test() -> i32 {
-    42
-}
-
-fn main() {
-    test()
-}

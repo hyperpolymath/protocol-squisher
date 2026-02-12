@@ -1,8 +1,0 @@
-// Minimal for loop test
-
-fn main() {
-    let v = [1, 2, 3];
-    for x in v {
-        x
-    }
-}
