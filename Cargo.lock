@@ -1290,6 +1290,7 @@ dependencies = [
  "protocol-squisher-json-fallback",
  "protocol-squisher-json-schema-analyzer",
  "protocol-squisher-messagepack-analyzer",
+ "protocol-squisher-meta-analysis",
  "protocol-squisher-optimizer",
  "protocol-squisher-protobuf-analyzer",
  "protocol-squisher-pyo3-codegen",
@@ -1298,6 +1299,7 @@ dependencies = [
  "protocol-squisher-rust-analyzer",
  "protocol-squisher-thrift-analyzer",
  "protocol-squisher-transport-primitives",
+ "serde",
  "serde_json",
  "strsim",
 ]
