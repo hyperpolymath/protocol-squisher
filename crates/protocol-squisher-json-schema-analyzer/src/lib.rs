@@ -125,7 +125,7 @@ impl JsonSchemaAnalyzer {
         let name = path
             .file_stem()
             .and_then(|s| s.to_str())
-            .unwrap_or("schema");
+            .unwrap_or("schema"); // SAFETY: fallback to "schema" when file has no stem
         self.analyze_str(&content, name)
     }
 

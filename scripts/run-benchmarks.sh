@@ -236,7 +236,7 @@ if [[ "$GENERATE_SUMMARY" == true ]]; then
 
             echo "Available Reports:"
             find "$CRITERION_DIR" -name "index.html" -type f | while read -r report; do
-                rel_path="${report#$CRITERION_DIR/}"
+                rel_path="${report#"${CRITERION_DIR}"/}"
                 echo "  - $rel_path"
             done
             echo ""

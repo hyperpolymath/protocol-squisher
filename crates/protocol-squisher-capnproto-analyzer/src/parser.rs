@@ -145,6 +145,7 @@ fn remove_comments(content: &str) -> String {
 
 /// Parse all enums in the content
 fn parse_enums(content: &str) -> Result<Vec<CapnProtoEnum>, AnalyzerError> {
+    // SAFETY: constant regex pattern, compile-time verified
     let enum_regex = Regex::new(r"enum\s+(\w+)\s*\{([^}]+)\}").unwrap();
     let mut enums = Vec::new();
 
@@ -166,6 +167,7 @@ fn parse_enums(content: &str) -> Result<Vec<CapnProtoEnum>, AnalyzerError> {
 
 /// Parse enum values from the enum body
 fn parse_enum_values(body: &str) -> Result<Vec<CapnProtoEnumValue>, AnalyzerError> {
+    // SAFETY: constant regex pattern, compile-time verified
     let value_regex = Regex::new(r"(\w+)\s+@(\d+)").unwrap();
     let mut values = Vec::new();
 
@@ -262,6 +264,7 @@ fn parse_structs(content: &str) -> Result<Vec<CapnProtoStruct>, AnalyzerError> {
 
 /// Parse inline union from struct body
 fn parse_inline_union(body: &str) -> Result<Option<CapnProtoUnion>, AnalyzerError> {
+    // SAFETY: constant regex pattern, compile-time verified
     let union_regex = Regex::new(r"union\s*\{([^}]+)\}").unwrap();
 
     if let Some(cap) = union_regex.captures(body) {
@@ -283,6 +286,7 @@ fn parse_struct_fields(body: &str, has_inline_union: bool) -> Result<Vec<CapnPro
 
     // Remove inline union from body if present
     let body = if has_inline_union {
+        // SAFETY: constant regex pattern, compile-time verified
         let union_regex = Regex::new(r"union\s*\{[^}]+\}").unwrap();
         union_regex.replace(body, "").to_string()
     } else {
@@ -317,6 +321,7 @@ fn parse_field(line: &str) -> Result<Option<CapnProtoField>, AnalyzerError> {
 
     // Field format: name @N :Type
     // or: name @N :Type = defaultValue
+    // SAFETY: constant regex pattern, compile-time verified
     let field_regex = Regex::new(r"(\w+)\s+@(\d+)\s*:\s*([^=;]+)(?:\s*=\s*(.+))?").unwrap();
 
     if let Some(cap) = field_regex.captures(line) {
@@ -341,6 +346,7 @@ fn parse_field(line: &str) -> Result<Option<CapnProtoField>, AnalyzerError> {
 /// Parse standalone unions
 fn parse_unions(content: &str) -> Result<Vec<CapnProtoUnion>, AnalyzerError> {
     // Standalone unions have format: union UnionName { ... }
+    // SAFETY: constant regex pattern, compile-time verified
     let union_regex = Regex::new(r"union\s+(\w+)\s*\{([^}]+)\}").unwrap();
     let mut unions = Vec::new();
 

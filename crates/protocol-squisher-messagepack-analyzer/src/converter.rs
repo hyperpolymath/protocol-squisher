@@ -95,6 +95,7 @@ impl MessagePackConverter {
             return Ok(IrType::Special(SpecialType::Any));
         }
 
+        // SAFETY: schema_type.is_none() checked above, so unwrap is guaranteed to succeed
         match schema.schema_type.unwrap() {
             SchemaType::Null => Ok(IrType::Special(SpecialType::Unit)),
             SchemaType::Boolean => Ok(IrType::Primitive(PrimitiveType::Bool)),

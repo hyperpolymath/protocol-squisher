@@ -173,6 +173,7 @@ fn remove_comments(content: &str) -> String {
 
 /// Parse all enums in the content
 fn parse_enums(content: &str) -> Result<Vec<FbsEnum>, AnalyzerError> {
+    // SAFETY: constant regex pattern, compile-time verified
     let enum_regex = Regex::new(r"enum\s+(\w+)\s*:\s*(\w+)\s*\{([^}]+)\}").unwrap();
     let mut enums = Vec::new();
 
@@ -195,6 +196,7 @@ fn parse_enums(content: &str) -> Result<Vec<FbsEnum>, AnalyzerError> {
 
 /// Parse enum values from the enum body
 fn parse_enum_values(body: &str) -> Result<Vec<FbsEnumValue>, AnalyzerError> {
+    // SAFETY: constant regex pattern, compile-time verified
     let value_regex = Regex::new(r"(\w+)\s*=\s*(-?\d+)").unwrap();
     let mut values = Vec::new();
 
@@ -212,6 +214,7 @@ fn parse_enum_values(body: &str) -> Result<Vec<FbsEnumValue>, AnalyzerError> {
 
 /// Parse all unions in the content
 fn parse_unions(content: &str) -> Result<Vec<FbsUnion>, AnalyzerError> {
+    // SAFETY: constant regex pattern, compile-time verified
     let union_regex = Regex::new(r"union\s+(\w+)\s*\{([^}]+)\}").unwrap();
     let mut unions = Vec::new();
 
@@ -233,6 +236,7 @@ fn parse_unions(content: &str) -> Result<Vec<FbsUnion>, AnalyzerError> {
 
 /// Parse all structs in the content
 fn parse_structs(content: &str) -> Result<Vec<FbsStruct>, AnalyzerError> {
+    // SAFETY: constant regex pattern, compile-time verified
     let struct_regex = Regex::new(r"struct\s+(\w+)\s*\{([^}]+)\}").unwrap();
     let mut structs = Vec::new();
 
@@ -250,6 +254,7 @@ fn parse_structs(content: &str) -> Result<Vec<FbsStruct>, AnalyzerError> {
 
 /// Parse all tables in the content
 fn parse_tables(content: &str) -> Result<Vec<FbsTable>, AnalyzerError> {
+    // SAFETY: constant regex pattern, compile-time verified
     let table_regex = Regex::new(r"table\s+(\w+)\s*\{([^}]+)\}").unwrap();
     let mut tables = Vec::new();
 
@@ -296,6 +301,7 @@ fn parse_field(line: &str) -> Result<Option<FbsField>, AnalyzerError> {
     let line = line.trim_end_matches(';').trim();
 
     // Parse field: name: type (attributes)
+    // SAFETY: constant regex pattern, compile-time verified
     let field_regex = Regex::new(r"(\w+)\s*:\s*(\[?\w+\]?)\s*(\([^)]*\))?").unwrap();
 
     if let Some(cap) = field_regex.captures(line) {
@@ -334,6 +340,7 @@ fn parse_field(line: &str) -> Result<Option<FbsField>, AnalyzerError> {
 
 /// Parse default value from attributes
 fn parse_default_value(attributes: &str) -> Option<String> {
+    // SAFETY: constant regex pattern, compile-time verified
     let default_regex = Regex::new(r"default\s*:\s*([^,\)]+)").unwrap();
     default_regex
         .captures(attributes)
@@ -342,6 +349,7 @@ fn parse_default_value(attributes: &str) -> Option<String> {
 
 /// Parse root_type declaration
 fn parse_root_type(content: &str) -> Option<String> {
+    // SAFETY: constant regex pattern, compile-time verified
     let root_regex = Regex::new(r"root_type\s+(\w+)\s*;").unwrap();
     root_regex
         .captures(content)

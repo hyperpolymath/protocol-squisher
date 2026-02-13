@@ -199,6 +199,7 @@ fn remove_comments(content: &str) -> String {
 
 /// Parse all constants in the content
 fn parse_constants(content: &str) -> Result<Vec<ThriftConst>, AnalyzerError> {
+    // SAFETY: constant regex pattern, compile-time verified
     let const_regex = Regex::new(r"const\s+(\w+)\s+(\w+)\s*=\s*([^;\n]+)").unwrap();
     let mut constants = Vec::new();
 
@@ -219,6 +220,7 @@ fn parse_constants(content: &str) -> Result<Vec<ThriftConst>, AnalyzerError> {
 
 /// Parse all typedefs in the content
 fn parse_typedefs(content: &str) -> Result<Vec<ThriftTypedef>, AnalyzerError> {
+    // SAFETY: constant regex pattern, compile-time verified
     let typedef_regex = Regex::new(r"typedef\s+([^\s]+)\s+(\w+)").unwrap();
     let mut typedefs = Vec::new();
 
@@ -237,6 +239,7 @@ fn parse_typedefs(content: &str) -> Result<Vec<ThriftTypedef>, AnalyzerError> {
 
 /// Parse all enums in the content
 fn parse_enums(content: &str) -> Result<Vec<ThriftEnum>, AnalyzerError> {
+    // SAFETY: constant regex pattern, compile-time verified
     let enum_regex = Regex::new(r"enum\s+(\w+)\s*\{([^}]+)\}").unwrap();
     let mut enums = Vec::new();
 
@@ -254,6 +257,7 @@ fn parse_enums(content: &str) -> Result<Vec<ThriftEnum>, AnalyzerError> {
 
 /// Parse enum values from the enum body
 fn parse_enum_values(body: &str) -> Result<Vec<ThriftEnumValue>, AnalyzerError> {
+    // SAFETY: constant regex pattern, compile-time verified
     let value_regex = Regex::new(r"(\w+)\s*=\s*(\d+)").unwrap();
     let mut values = Vec::new();
 
@@ -270,6 +274,7 @@ fn parse_enum_values(body: &str) -> Result<Vec<ThriftEnumValue>, AnalyzerError> 
 
 /// Parse all structs in the content
 fn parse_structs(content: &str) -> Result<Vec<ThriftStruct>, AnalyzerError> {
+    // SAFETY: constant regex pattern, compile-time verified
     let struct_regex = Regex::new(r"struct\s+(\w+)\s*\{([^}]+)\}").unwrap();
     let mut structs = Vec::new();
 
@@ -287,6 +292,7 @@ fn parse_structs(content: &str) -> Result<Vec<ThriftStruct>, AnalyzerError> {
 
 /// Parse all exceptions in the content
 fn parse_exceptions(content: &str) -> Result<Vec<ThriftException>, AnalyzerError> {
+    // SAFETY: constant regex pattern, compile-time verified
     let exception_regex = Regex::new(r"exception\s+(\w+)\s*\{([^}]+)\}").unwrap();
     let mut exceptions = Vec::new();
 
