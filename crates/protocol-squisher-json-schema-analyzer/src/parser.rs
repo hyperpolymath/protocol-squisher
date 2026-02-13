@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: PMPL-1.0
-// SPDX-FileCopyrightText: 2025 hyperpolymath
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-FileCopyrightText: Copyright (c) 2025 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
 
 //! JSON Schema parser
 
@@ -97,7 +97,7 @@ mod tests {
     fn test_parse_draft07() {
         let parser = JsonSchemaParser::new();
         let json = r#"{
-            "$schema": "http://json-schema.org/draft-07/schema#",
+            "$schema": "https://json-schema.org/draft-07/schema#",
             "type": "object"
         }"#;
         let schema = parser.parse_str(json).unwrap();

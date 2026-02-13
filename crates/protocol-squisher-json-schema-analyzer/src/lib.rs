@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: PMPL-1.0
-// SPDX-FileCopyrightText: 2025 hyperpolymath
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-FileCopyrightText: Copyright (c) 2025 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
 
 //! JSON Schema analyzer for protocol-squisher
 //!
@@ -147,11 +147,11 @@ mod tests {
     #[test]
     fn test_schema_version_detection() {
         assert_eq!(
-            SchemaVersion::from_schema_uri("http://json-schema.org/draft-04/schema#"),
+            SchemaVersion::from_schema_uri("https://json-schema.org/draft-04/schema#"),
             SchemaVersion::Draft04
         );
         assert_eq!(
-            SchemaVersion::from_schema_uri("http://json-schema.org/draft-07/schema#"),
+            SchemaVersion::from_schema_uri("https://json-schema.org/draft-07/schema#"),
             SchemaVersion::Draft07
         );
         assert_eq!(
