@@ -210,3 +210,8 @@ PMPL-1.0-or-later. See link:LICENSE[LICENSE].
 == Acknowledgments
 
 Inspired by the frustration of every polyglot developer who has ever had to bridge two serialization formats manually.
+
+
+== Architecture
+
+See link:TOPOLOGY.md[TOPOLOGY.md] for a visual architecture map and completion dashboard.
