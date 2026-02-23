@@ -129,6 +129,14 @@ maint-corrective:
     ./scripts/podman-dev.sh backend-verified-real
     ./scripts/podman-dev.sh compile-smoke-verified-real
 
+# Capture maintenance metrics snapshot (JSON in /tmp by default)
+maint-metrics:
+    ./scripts/ci/capture-maintenance-metrics.sh
+
+# Capture maintenance metrics including timed podman checks
+maint-metrics-podman:
+    ./scripts/ci/capture-maintenance-metrics.sh --with-podman
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONTAINER (PODMAN)
 # ═══════════════════════════════════════════════════════════════════════════════
