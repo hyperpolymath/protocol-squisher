@@ -7,11 +7,22 @@
 
 use crate::{ConversionPath, ConversionStrategy, FieldMapping};
 
+/// Behavior for checked numeric casts.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CheckedCastBehavior {
+    /// Preserve fail-fast behavior by aborting on overflow.
+    Panic,
+    /// Return `Result` and propagate conversion errors.
+    Result,
+}
+
 /// Configuration for code generation
 #[derive(Debug, Clone)]
 pub struct CodegenConfig {
-    /// Generate checked numeric casts (panic on overflow)
+    /// Generate checked numeric casts (behavior controlled by `checked_cast_behavior`)
     pub checked_casts: bool,
+    /// Behavior used when checked casts are enabled.
+    pub checked_cast_behavior: CheckedCastBehavior,
     /// Include debug assertions
     pub debug_assertions: bool,
     /// Generate inline functions
@@ -22,6 +33,7 @@ impl Default for CodegenConfig {
     fn default() -> Self {
         Self {
             checked_casts: true,
+            checked_cast_behavior: CheckedCastBehavior::Panic,
             debug_assertions: cfg!(debug_assertions),
             inline_functions: true,
         }
@@ -60,18 +72,16 @@ impl CodeGenerator {
     pub fn generate(&self, path: &ConversionPath) -> GeneratedCode {
         match &path.strategy {
             ConversionStrategy::Identity => self.generate_identity(),
-            ConversionStrategy::NumericCast { checked } => {
-                self.generate_numeric_cast(*checked)
-            }
+            ConversionStrategy::NumericCast { checked } => self.generate_numeric_cast(*checked),
             ConversionStrategy::StringConvert => self.generate_string_convert(),
             ConversionStrategy::OptionWrap => self.generate_option_wrap(),
             ConversionStrategy::ContainerMap => self.generate_container_map(path),
             ConversionStrategy::StructConvert { field_mappings } => {
                 self.generate_struct_convert(field_mappings)
-            }
+            },
             ConversionStrategy::EnumConvert { variant_mappings } => {
                 self.generate_enum_convert(variant_mappings)
-            }
+            },
             ConversionStrategy::JsonFallback => self.generate_json_fallback(),
         }
     }
@@ -92,15 +102,27 @@ impl CodeGenerator {
 
     fn generate_numeric_cast(&self, checked: bool) -> GeneratedCode {
         let code = if checked && self.config.checked_casts {
-            r#"#[inline]
+            match self.config.checked_cast_behavior {
+                CheckedCastBehavior::Panic => r#"#[inline]
 pub fn convert<S, T>(value: S) -> T
 where
     S: TryInto<T>,
-    S::Error: std::fmt::Debug,
 {
-    value.try_into().expect("numeric conversion overflow")
+    match value.try_into() {
+        Ok(converted) => converted,
+        Err(_) => std::process::abort(),
+    }
 }"#
-            .to_string()
+                .to_string(),
+                CheckedCastBehavior::Result => r#"#[inline]
+pub fn convert<S, T>(value: S) -> Result<T, S::Error>
+where
+    S: TryInto<T>,
+{
+    value.try_into()
+}"#
+                .to_string(),
+            }
         } else {
             r#"#[inline]
 pub fn convert<S, T>(value: S) -> T
@@ -177,11 +199,6 @@ pub fn convert<T>(container: Vec<T>) -> Vec<T> {
             if mapping.source_name.is_empty() {
                 // Optional field with no source
                 field_lines.push(format!("    {}: None,", mapping.target_name));
-            } else if mapping.source_name == mapping.target_name {
-                field_lines.push(format!(
-                    "    {}: convert_field(source.{}),",
-                    mapping.target_name, mapping.source_name
-                ));
             } else {
                 field_lines.push(format!(
                     "    {}: convert_field(source.{}),",
@@ -257,10 +274,7 @@ where
     serde_json::from_str(&json)
 }"#
             .to_string(),
-            imports: vec![
-                "use serde;".to_string(),
-                "use serde_json;".to_string(),
-            ],
+            imports: vec!["use serde;".to_string(), "use serde_json;".to_string()],
             uses_unsafe: false,
         }
     }
@@ -287,11 +301,7 @@ pub fn generate_adapter_module(
 
 {}{}
 "#,
-        source_name,
-        target_name,
-        path.level,
-        imports,
-        generated.code
+        source_name, target_name, path.level, imports, generated.code
     )
 }
 
@@ -299,7 +309,6 @@ pub fn generate_adapter_module(
 mod tests {
     use super::*;
     use crate::*;
-    use protocol_squisher_ir::*;
 
     #[test]
     fn test_identity_codegen() {
@@ -345,6 +354,27 @@ mod tests {
 
         let result = generator.generate(&path);
         assert!(result.code.contains("try_into"));
+        assert!(result.code.contains("std::process::abort()"));
+    }
+
+    #[test]
+    fn test_checked_cast_codegen_result_mode() {
+        let generator = CodeGenerator::with_config(CodegenConfig {
+            checked_cast_behavior: CheckedCastBehavior::Result,
+            ..CodegenConfig::default()
+        });
+        let path = ConversionPath {
+            source: IrType::Primitive(PrimitiveType::I64),
+            target: IrType::Primitive(PrimitiveType::I32),
+            level: OptimizationLevel::DirectCast,
+            strategy: ConversionStrategy::NumericCast { checked: true },
+            nested: vec![],
+        };
+
+        let result = generator.generate(&path);
+        assert!(result.code.contains("Result<T, S::Error>"));
+        assert!(result.code.contains("value.try_into()"));
+        assert!(!result.code.contains("std::process::abort()"));
     }
 
     #[test]

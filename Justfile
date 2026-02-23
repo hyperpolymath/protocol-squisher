@@ -30,10 +30,16 @@ info:
 # Build ephapax IR (compile .eph to WASM)
 build-ephapax-ir:
     @echo "Building ephapax IR..."
-    @echo "Note: ephapax compiler not yet available, using Rust stubs"
-    @# TODO: Uncomment when ephapax-cli is ready
-    @# ephapax-cli compile ephapax-ir/src/types.eph -o ephapax-ir/target/types.wasm
-    @# ephapax-cli compile ephapax-ir/src/compat.eph -o ephapax-ir/target/compat.wasm
+    @cli="${EPHAPAX_CLI:-ephapax-cli}"; \
+    if command -v "${cli}" >/dev/null 2>&1 || [ -x "${cli}" ]; then \
+        mkdir -p ephapax-ir/target; \
+        "${cli}" compile ephapax-ir/src/types.eph -o ephapax-ir/target/types.wasm; \
+        "${cli}" compile ephapax-ir/src/compat.eph -o ephapax-ir/target/compat.wasm; \
+        echo "Compiled ephapax IR via ${cli}"; \
+    else \
+        echo "ephapax-cli not found; build scripts will use stub fallback"; \
+        echo "Tip: ./scripts/podman-dev.sh install-ephapax-cli"; \
+    fi
 
 # Build the project (ephapax IR + Rust crates)
 build: build-ephapax-ir
@@ -114,3 +120,47 @@ state-touch:
 # Run full CI pipeline locally
 ci: quality validate-rsr
     @echo "CI pipeline passed!"
+
+# Run corrective-maintenance gates (ABI/FFI policy + panic-assail + real verified backend)
+maint-corrective:
+    ./scripts/ci/check-abi-policy.sh
+    @panic_bin="${PANIC_ATTACK_BIN:-}"; [ -n "${panic_bin}" ] || [ ! -x /var/mnt/eclipse/repos/panic-attacker/target/release/panic-attack ] || panic_bin=/var/mnt/eclipse/repos/panic-attacker/target/release/panic-attack; PANIC_ATTACK_BIN="${panic_bin}" ./scripts/ci/panic-assail-regression.sh
+    ./scripts/podman-dev.sh install-ephapax-cli
+    ./scripts/podman-dev.sh backend-verified-real
+    ./scripts/podman-dev.sh compile-smoke-verified-real
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONTAINER (PODMAN)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Build Podman dev image
+container-build:
+    ./scripts/podman-dev.sh build
+
+# Start Podman dev service
+container-up:
+    ./scripts/podman-dev.sh up
+
+# Open shell in Podman dev service
+container-shell:
+    ./scripts/podman-dev.sh shell
+
+# Run full tests in Podman dev container
+container-test:
+    ./scripts/podman-dev.sh test
+
+# Run benchmark dry-run in Podman dev container
+container-bench:
+    ./scripts/podman-dev.sh bench
+
+# Install pinned real ephapax-cli in Podman dev container
+container-install-ephapax-cli:
+    ./scripts/podman-dev.sh install-ephapax-cli
+
+# Verify real verified backend mode in Podman dev container
+container-backend-verified-real:
+    ./scripts/podman-dev.sh backend-verified-real
+
+# Stop Podman dev service
+container-down:
+    ./scripts/podman-dev.sh down

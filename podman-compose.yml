@@ -1,0 +1,29 @@
+version: "3.9"
+
+services:
+  dev:
+    image: protocol-squisher-dev:latest
+    build:
+      context: .
+      dockerfile: Containerfile
+    working_dir: /workspace
+    command: ["bash", "-lc", "sleep infinity"]
+    stdin_open: true
+    tty: true
+    environment:
+      CARGO_HOME: /usr/local/cargo
+      RUSTUP_HOME: /usr/local/rustup
+      CARGO_TERM_COLOR: always
+      PATH: /opt/venv/bin:/usr/local/cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    volumes:
+      - ./:/workspace:Z
+      - cargo-registry:/usr/local/cargo/registry:Z
+      - cargo-git:/usr/local/cargo/git:Z
+      - rustup-home:/usr/local/rustup:Z
+      - target-cache:/workspace/target:Z
+
+volumes:
+  cargo-registry:
+  cargo-git:
+  rustup-home:
+  target-cache:

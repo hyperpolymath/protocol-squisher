@@ -1,0 +1,10 @@
+{
+  "tool": "panic-attack",
+  "generated_on": "2026-02-23",
+  "scope": "production-source-only (src + crate src + ephapax-ir + ffi/zig + scripts/ci; excludes tests/examples/benches and test-only crates)",
+  "metrics": {
+    "weak_points": 0,
+    "unwrap_calls": 0,
+    "panic_sites": 0
+  }
+}

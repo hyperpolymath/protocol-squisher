@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+name: Nightly Real Verified Backend
+
+on:
+  schedule:
+    - cron: "23 3 * * *"
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  real-verified-container:
+    name: Real Verified Backend (Podman)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - name: Install Podman + compose wrapper
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y podman podman-compose
+
+      - name: Build container image
+        run: ./scripts/podman-dev.sh build
+
+      - name: Install pinned ephapax-cli inside container workspace
+        run: ./scripts/podman-dev.sh install-ephapax-cli
+
+      - name: Verify real backend mode
+        run: ./scripts/podman-dev.sh backend-verified-real
+
+      - name: Compile smoke test in real verified mode
+        run: ./scripts/podman-dev.sh compile-smoke-verified-real
