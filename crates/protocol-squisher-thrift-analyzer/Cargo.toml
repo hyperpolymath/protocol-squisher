@@ -14,4 +14,4 @@ protocol-squisher-ir = { path = "../protocol-squisher-ir" }
 protocol-squisher-transport-primitives = { path = "../../ephapax-ir" }
 
 [dev-dependencies]
-criterion = "0.5"
+criterion = "0.8"
