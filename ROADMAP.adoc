@@ -215,10 +215,10 @@ toc::[]
 - [x] Performance competitive with manual FFI
 
 === Performance Optimization
-- [ ] Zero-copy where possible
-- [ ] SIMD for compatible types
-- [ ] Lazy deserialization
-- [ ] Streaming support
+- [x] Zero-copy where possible
+- [x] SIMD for compatible types
+- [x] Lazy deserialization
+- [x] Streaming support
 
 **Deliverable:** Production-grade system
 

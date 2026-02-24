@@ -82,6 +82,7 @@ members = [
   "crates/protocol-squisher-optimizer",
   "crates/protocol-squisher-minikanren",
   "crates/protocol-squisher-security-bridge",
+  "crates/protocol-squisher-performance",
   "crates/protocol-squisher-cli",
   "crates/protocol-squisher-json-schema-analyzer",
   "crates/protocol-squisher-protobuf-analyzer",

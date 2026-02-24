@@ -178,6 +178,17 @@ enum Commands {
         format: String,
     },
 
+    /// Run performance optimization probes (zero-copy, SIMD, lazy, streaming)
+    Performance {
+        /// Output format (text, json)
+        #[arg(short, long, default_value = "text")]
+        format: String,
+
+        /// Sample size for checksum benchmark payload
+        #[arg(long, default_value = "262144")]
+        sample_size: usize,
+    },
+
     /// Analyze any protocol schema
     AnalyzeSchema {
         /// Protocol format
@@ -279,6 +290,11 @@ fn main() -> Result<()> {
             require,
             format,
         ),
+
+        Commands::Performance {
+            format,
+            sample_size,
+        } => performance_command(format, sample_size),
 
         Commands::AnalyzeSchema {
             protocol,
@@ -690,6 +706,142 @@ fn security_bridge_command(
         other => {
             anyhow::bail!("Unsupported output format: '{other}' (expected 'text' or 'json')")
         },
+    }
+
+    Ok(())
+}
+
+fn performance_command(format: String, sample_size: usize) -> Result<()> {
+    use protocol_squisher_performance::lazy::LazyJson;
+    use protocol_squisher_performance::simd::{xor_checksum, xor_checksum_scalar};
+    use protocol_squisher_performance::streaming::transform_json_lines;
+    use protocol_squisher_performance::zero_copy::{is_layout_compatible, try_cast_slice};
+    use serde::{Deserialize, Serialize};
+    use std::io::Cursor;
+    use std::time::Instant;
+
+    #[derive(Debug, Deserialize)]
+    struct InputRecord {
+        id: u32,
+        value: u32,
+    }
+
+    #[derive(Debug, Serialize)]
+    struct OutputRecord {
+        id: u32,
+        value: u32,
+    }
+
+    #[derive(Debug, Serialize)]
+    struct PerformanceReport {
+        sample_size: usize,
+        zero_copy_possible: bool,
+        simd_checksum: u8,
+        scalar_checksum: u8,
+        simd_ns: u128,
+        scalar_ns: u128,
+        lazy_first_decode_ns: u128,
+        lazy_second_decode_ns: u128,
+        streamed_records: usize,
+        streaming_ns: u128,
+    }
+
+    let sample_size = sample_size.max(1_024);
+    let payload: Vec<u8> = (0..sample_size).map(|i| (i % 251) as u8).collect();
+
+    let simd_start = Instant::now();
+    let simd_checksum = xor_checksum(&payload);
+    let simd_ns = simd_start.elapsed().as_nanos();
+
+    let scalar_start = Instant::now();
+    let scalar_checksum = xor_checksum_scalar(&payload);
+    let scalar_ns = scalar_start.elapsed().as_nanos();
+
+    if simd_checksum != scalar_checksum {
+        anyhow::bail!("SIMD checksum mismatch: simd={simd_checksum} scalar={scalar_checksum}");
+    }
+
+    let words: Vec<u32> = (0..256).collect();
+    let zero_copy_possible =
+        is_layout_compatible::<u32, u32>() && try_cast_slice::<u32, u32>(&words).is_some();
+
+    let lazy = LazyJson::<InputRecord>::new(r#"{"id":7,"value":9}"#);
+    let lazy_first_start = Instant::now();
+    let first = lazy.decode().context("lazy first decode failed")?;
+    let lazy_first_decode_ns = lazy_first_start.elapsed().as_nanos();
+
+    let lazy_second_start = Instant::now();
+    let second = lazy.decode().context("lazy second decode failed")?;
+    let lazy_second_decode_ns = lazy_second_start.elapsed().as_nanos();
+
+    if !std::ptr::eq(first, second) {
+        anyhow::bail!("Lazy decode cache miss detected unexpectedly");
+    }
+
+    let json_lines = (0..512)
+        .map(|i| format!(r#"{{"id":{i},"value":{}}}"#, i * 2))
+        .collect::<Vec<_>>()
+        .join("\n")
+        + "\n";
+    let reader = Cursor::new(json_lines.into_bytes());
+    let mut transformed = Vec::new();
+
+    let streaming_start = Instant::now();
+    let streamed_records = transform_json_lines::<_, _, InputRecord, OutputRecord, _>(
+        reader,
+        &mut transformed,
+        |record| OutputRecord {
+            id: record.id,
+            value: record.value + 1,
+        },
+    )
+    .context("streaming transform failed")?;
+    let streaming_ns = streaming_start.elapsed().as_nanos();
+
+    let report = PerformanceReport {
+        sample_size,
+        zero_copy_possible,
+        simd_checksum,
+        scalar_checksum,
+        simd_ns,
+        scalar_ns,
+        lazy_first_decode_ns,
+        lazy_second_decode_ns,
+        streamed_records,
+        streaming_ns,
+    };
+
+    match format.as_str() {
+        "json" => println!("{}", serde_json::to_string_pretty(&report)?),
+        "text" => {
+            println!("{}", "Performance Optimization Report".bright_green().bold());
+            println!("  Sample size: {}", report.sample_size);
+            println!(
+                "  Zero-copy possible: {}",
+                if report.zero_copy_possible {
+                    "yes".green()
+                } else {
+                    "no".yellow()
+                }
+            );
+            println!(
+                "  SIMD checksum: {} ({} ns)",
+                report.simd_checksum, report.simd_ns
+            );
+            println!(
+                "  Scalar checksum: {} ({} ns)",
+                report.scalar_checksum, report.scalar_ns
+            );
+            println!(
+                "  Lazy decode: first={} ns, cached={} ns",
+                report.lazy_first_decode_ns, report.lazy_second_decode_ns
+            );
+            println!(
+                "  Streaming transform: {} records ({} ns)",
+                report.streamed_records, report.streaming_ns
+            );
+        },
+        other => anyhow::bail!("Unsupported output format: '{other}' (expected 'text' or 'json')"),
     }
 
     Ok(())
