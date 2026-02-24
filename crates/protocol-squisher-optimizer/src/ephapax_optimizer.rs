@@ -7,12 +7,14 @@
 //! Identifies which schema changes would improve transport classes.
 
 use protocol_squisher_compat::{
-    EphapaxCompatibilityEngine, FieldCompatibility,
-    SchemaCompatibilityResult,
+    EphapaxCompatibilityEngine, FieldCompatibility, SchemaCompatibilityResult,
 };
-use protocol_squisher_transport_primitives::TransportClass;
 use protocol_squisher_ir::{FieldDef, IrSchema, IrType, PrimitiveType, TypeDef};
+use protocol_squisher_transport_primitives::TransportClass;
+use serde::Deserialize;
 use std::collections::HashMap;
+use std::fs;
+use std::path::{Path, PathBuf};
 
 /// Suggestion for improving transport class
 #[derive(Debug, Clone)]
@@ -46,6 +48,50 @@ pub enum SuggestionKind {
     RenameField { from: String, to: String },
 }
 
+impl SuggestionKind {
+    fn weight_key(&self) -> &'static str {
+        match self {
+            SuggestionKind::WidenType { .. } => "WidenType",
+            SuggestionKind::MakeOptional => "MakeOptional",
+            SuggestionKind::AddField { .. } => "AddField",
+            SuggestionKind::ChangeContainer { .. } => "ChangeContainer",
+            SuggestionKind::RenameField { .. } => "RenameField",
+        }
+    }
+}
+
+/// Empirical synthesis hints extracted from explorer crawler output.
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct EmpiricalSynthesisHints {
+    #[serde(default)]
+    pub version: u32,
+    #[serde(default)]
+    pub generated_at_utc: Option<String>,
+    #[serde(default)]
+    pub input_summary_path: Option<String>,
+    #[serde(default)]
+    pub suggestion_weights: HashMap<String, f64>,
+    #[serde(default)]
+    pub notes: Vec<String>,
+}
+
+impl EmpiricalSynthesisHints {
+    /// Load synthesis hints from JSON file.
+    pub fn from_path(path: &Path) -> Result<Self, String> {
+        let content = fs::read_to_string(path)
+            .map_err(|err| format!("failed to read {}: {err}", path.display()))?;
+
+        serde_json::from_str::<Self>(&content)
+            .map_err(|err| format!("failed to parse {}: {err}", path.display()))
+    }
+
+    fn weight_for(&self, kind: &SuggestionKind) -> f64 {
+        let key = kind.weight_key();
+        let raw = self.suggestion_weights.get(key).copied().unwrap_or(1.0);
+        raw.clamp(0.5, 2.0)
+    }
+}
+
 /// Result of ephapax-powered optimization analysis
 #[derive(Debug, Clone)]
 pub struct EphapaxOptimizationResult {
@@ -57,17 +103,47 @@ pub struct EphapaxOptimizationResult {
     pub potential_zero_copy_percentage: f64,
     /// Whether schema would be production-ready after optimizations
     pub would_be_production_ready: bool,
+    /// Whether empirical hints were applied to suggestion ranking
+    pub empirical_hints_applied: bool,
+    /// Source path of empirical hints when used
+    pub empirical_hints_source: Option<PathBuf>,
+    /// Human-readable notes attached to empirical hints
+    pub empirical_hints_notes: Vec<String>,
 }
 
 /// Optimizer that uses ephapax transport class analysis
 pub struct EphapaxOptimizer {
     engine: EphapaxCompatibilityEngine,
+    empirical_hints: Option<EmpiricalSynthesisHints>,
+    empirical_hints_source: Option<PathBuf>,
 }
 
 impl EphapaxOptimizer {
     /// Create a new ephapax optimizer
     pub fn new(engine: EphapaxCompatibilityEngine) -> Self {
-        Self { engine }
+        Self {
+            engine,
+            empirical_hints: None,
+            empirical_hints_source: None,
+        }
+    }
+
+    /// Attach already-loaded empirical synthesis hints.
+    pub fn with_empirical_hints(mut self, hints: EmpiricalSynthesisHints) -> Self {
+        self.empirical_hints = Some(hints);
+        self
+    }
+
+    /// Load and attach empirical synthesis hints from file.
+    pub fn with_empirical_hints_from_file(
+        mut self,
+        path: impl AsRef<Path>,
+    ) -> Result<Self, String> {
+        let path = path.as_ref();
+        let hints = EmpiricalSynthesisHints::from_path(path)?;
+        self.empirical_hints = Some(hints);
+        self.empirical_hints_source = Some(path.to_path_buf());
+        Ok(self)
     }
 
     /// Analyze schemas and suggest optimizations
@@ -80,7 +156,12 @@ impl EphapaxOptimizer {
         let current = self.engine.analyze_schemas(source, target);
 
         // Generate suggestions
-        let suggestions = self.generate_suggestions(source, target, &current);
+        let mut suggestions = self.generate_suggestions(source, target, &current);
+
+        // Apply empirical hint weighting when available
+        if let Some(hints) = &self.empirical_hints {
+            self.apply_empirical_hints(&mut suggestions, hints);
+        }
 
         // Calculate potential improvement
         let potential_zero_copy = self.calculate_potential_improvement(&current, &suggestions);
@@ -91,7 +172,32 @@ impl EphapaxOptimizer {
             suggestions,
             potential_zero_copy_percentage: potential_zero_copy,
             would_be_production_ready,
+            empirical_hints_applied: self.empirical_hints.is_some(),
+            empirical_hints_source: self.empirical_hints_source.clone(),
+            empirical_hints_notes: self
+                .empirical_hints
+                .as_ref()
+                .map(|h| h.notes.clone())
+                .unwrap_or_default(),
         }
+    }
+
+    fn apply_empirical_hints(
+        &self,
+        suggestions: &mut [OptimizationSuggestion],
+        hints: &EmpiricalSynthesisHints,
+    ) {
+        for suggestion in suggestions.iter_mut() {
+            let weight = hints.weight_for(&suggestion.kind);
+
+            if (weight - 1.0).abs() > f64::EPSILON {
+                suggestion.impact *= weight;
+                suggestion.reason =
+                    format!("{} [empirical weight x{weight:.2}]", suggestion.reason);
+            }
+        }
+
+        suggestions.sort_by(|a, b| b.impact.total_cmp(&a.impact));
     }
 
     /// Generate optimization suggestions based on current compatibility
@@ -113,9 +219,12 @@ impl EphapaxOptimizer {
                 }
 
                 // Check if widening the target field would help
-                if let Some(suggestion) =
-                    self.suggest_type_widening(field_compat, &type_analysis.type_name, source, target)
-                {
+                if let Some(suggestion) = self.suggest_type_widening(
+                    field_compat,
+                    &type_analysis.type_name,
+                    source,
+                    target,
+                ) {
                     suggestions.push(suggestion);
                 }
 
@@ -129,7 +238,7 @@ impl EphapaxOptimizer {
         }
 
         // Sort by impact (highest first)
-        suggestions.sort_by(|a, b| b.impact.partial_cmp(&a.impact).unwrap());
+        suggestions.sort_by(|a, b| b.impact.total_cmp(&a.impact));
 
         suggestions
     }
@@ -264,7 +373,7 @@ impl EphapaxOptimizer {
                 Some(current) => {
                     // Only update if the new suggestion is better (lower enum value = better)
                     (suggestion.improved_class as u8) < (*current as u8)
-                }
+                },
             };
 
             if should_update {
@@ -281,9 +390,7 @@ impl EphapaxOptimizer {
                 total_fields += 1;
 
                 let field_path = format!("{}.{}", type_analysis.type_name, field_compat.field_name);
-                let final_class = improvements
-                    .get(&field_path)
-                    .unwrap_or(&field_compat.class);
+                let final_class = improvements.get(&field_path).unwrap_or(&field_compat.class);
 
                 if matches!(final_class, TransportClass::Concorde) {
                     zero_copy_fields += 1;
@@ -303,10 +410,8 @@ impl EphapaxOptimizer {
 fn count_total_fields(schema: &IrSchema) -> usize {
     let mut count = 0;
     for root_id in &schema.roots {
-        if let Some(type_def) = schema.types.get(root_id) {
-            if let TypeDef::Struct(s) = type_def {
-                count += s.fields.len();
-            }
+        if let Some(TypeDef::Struct(s)) = schema.types.get(root_id) {
+            count += s.fields.len();
         }
     }
     count.max(1) // Avoid division by zero
@@ -336,6 +441,7 @@ mod tests {
     use super::*;
     use protocol_squisher_ir::{FieldMetadata, StructDef, TypeMetadata};
     use std::collections::BTreeMap;
+    use std::fs;
 
     fn make_test_schemas() -> (IrSchema, IrSchema) {
         let source_struct = StructDef {
@@ -425,14 +531,8 @@ mod tests {
             .find(|s| s.target.contains("id"))
             .expect("Should suggest widening 'id' field");
 
-        assert_eq!(
-            id_suggestion.current_class,
-            TransportClass::Wheelbarrow
-        );
-        assert_eq!(
-            id_suggestion.improved_class,
-            TransportClass::Concorde
-        );
+        assert_eq!(id_suggestion.current_class, TransportClass::Wheelbarrow);
+        assert_eq!(id_suggestion.improved_class, TransportClass::Concorde);
 
         // Check for f32 → f64 suggestion
         let value_suggestion = result
@@ -441,14 +541,8 @@ mod tests {
             .find(|s| s.target.contains("value"))
             .expect("Should suggest widening 'value' field");
 
-        assert_eq!(
-            value_suggestion.current_class,
-            TransportClass::Wheelbarrow
-        );
-        assert_eq!(
-            value_suggestion.improved_class,
-            TransportClass::Concorde
-        );
+        assert_eq!(value_suggestion.current_class, TransportClass::Wheelbarrow);
+        assert_eq!(value_suggestion.improved_class, TransportClass::Concorde);
     }
 
     #[test]
@@ -520,5 +614,71 @@ mod tests {
     fn test_count_total_fields() {
         let (source, _) = make_test_schemas();
         assert_eq!(count_total_fields(&source), 2); // id + value
+    }
+
+    #[test]
+    fn test_empirical_hints_boost_widen_type_impact() {
+        let (source, target) = make_test_schemas();
+        let engine = EphapaxCompatibilityEngine::new();
+
+        let baseline = EphapaxOptimizer::new(engine).analyze_and_suggest(&source, &target);
+        let baseline_impact = baseline
+            .suggestions
+            .iter()
+            .find(|s| s.target.ends_with(".id"))
+            .expect("baseline suggestion should include id")
+            .impact;
+
+        let mut weights = HashMap::new();
+        weights.insert("WidenType".to_string(), 1.5);
+        let hints = EmpiricalSynthesisHints {
+            version: 1,
+            generated_at_utc: None,
+            input_summary_path: None,
+            suggestion_weights: weights,
+            notes: vec!["test hint".to_string()],
+        };
+
+        let boosted = EphapaxOptimizer::new(EphapaxCompatibilityEngine::new())
+            .with_empirical_hints(hints)
+            .analyze_and_suggest(&source, &target);
+
+        let boosted_impact = boosted
+            .suggestions
+            .iter()
+            .find(|s| s.target.ends_with(".id"))
+            .expect("boosted suggestion should include id")
+            .impact;
+
+        assert!(boosted.empirical_hints_applied);
+        assert!(boosted_impact > baseline_impact);
+    }
+
+    #[test]
+    fn test_load_empirical_hints_from_file() {
+        let path = std::env::temp_dir().join(format!(
+            "protocol-squisher-hints-{}.json",
+            std::process::id()
+        ));
+
+        let json = r#"{
+            "version": 1,
+            "suggestion_weights": { "WidenType": 1.2 },
+            "notes": ["from test"]
+        }"#;
+        fs::write(&path, json).expect("write hints file");
+
+        let optimizer = EphapaxOptimizer::new(EphapaxCompatibilityEngine::new())
+            .with_empirical_hints_from_file(&path)
+            .expect("load hints");
+
+        fs::remove_file(&path).ok();
+
+        let (source, target) = make_test_schemas();
+        let result = optimizer.analyze_and_suggest(&source, &target);
+
+        assert!(result.empirical_hints_applied);
+        assert_eq!(result.empirical_hints_notes, vec!["from test".to_string()]);
+        assert!(result.empirical_hints_source.is_some());
     }
 }

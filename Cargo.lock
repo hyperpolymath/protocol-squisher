@@ -1406,6 +1406,7 @@ dependencies = [
  "protocol-squisher-compat",
  "protocol-squisher-ir",
  "protocol-squisher-transport-primitives",
+ "serde",
  "serde_json",
 ]
 

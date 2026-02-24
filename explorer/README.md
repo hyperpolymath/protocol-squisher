@@ -6,7 +6,7 @@ Continuous-learning subsystem for Protocol Squisher.
 
 - `crawler/`: Elixir OTP GitHub schema crawler (`mix crawler.run`)
 - `parser/`: Parallel schema parsing stage and parser-related docs
-- `database/`: Placeholder for empirical compatibility database artifacts
+- `database/`: Empirical database artifacts + synthesis hints for optimizer
 
 ## Quick Start
 
@@ -14,6 +14,7 @@ Continuous-learning subsystem for Protocol Squisher.
 cd explorer/crawler
 mix test
 mix crawler.run --max-pages 1
+mix crawler.pattern.extract --database-path ../../target/explorer/database
 ```
 
 For corpus integration, pass:

@@ -14,7 +14,7 @@ defmodule Mix.Tasks.Crawler.Run do
 
   use Mix.Task
 
-  alias ProtocolSquisher.Explorer.{Config, Crawler}
+  alias ProtocolSquisher.Explorer.{Config, Crawler, PatternExtractor}
 
   @switches [
     token: :string,
@@ -30,6 +30,7 @@ defmodule Mix.Tasks.Crawler.Run do
     sleep_ms: :integer,
     max_bytes: :integer,
     with_corpus: :boolean,
+    with_patterns: :boolean,
     corpus_cli: :string,
     user_agent: :string,
     dry_run: :boolean,
@@ -56,6 +57,7 @@ defmodule Mix.Tasks.Crawler.Run do
         case Crawler.run(config) do
           {:ok, summary} ->
             Mix.shell().info("crawl finished: #{inspect(summary)}")
+            maybe_extract_patterns(summary, opts)
 
           {:error, reason} ->
             Mix.raise("crawler failed: #{inspect(reason)}")
@@ -83,9 +85,25 @@ defmodule Mix.Tasks.Crawler.Run do
       --sleep-ms <n>                Delay between pages in ms (default: 250)
       --max-bytes <n>               Max schema file size in bytes (default: 500000)
       --with-corpus                 Run protocol-squisher corpus-analyze per file
+      --with-patterns               Extract synthesis hints from generated summary.json
       --corpus-cli <path|name>      protocol-squisher executable (default: protocol-squisher)
       --dry-run                     Print resolved config and exit
       --help                        Show this message
     """)
+  end
+
+  defp maybe_extract_patterns(summary, opts) do
+    if opts[:with_patterns] do
+      summary_path = Map.fetch!(summary, :summary_path)
+      output_path = Path.join(Map.fetch!(summary, :database_path), "synthesis-hints.json")
+
+      case PatternExtractor.extract(summary_path, output_path) do
+        {:ok, _hints} ->
+          Mix.shell().info("pattern extraction finished: #{output_path}")
+
+        {:error, reason} ->
+          Mix.shell().error("pattern extraction failed: #{inspect(reason)}")
+      end
+    end
   end
 end

@@ -186,10 +186,10 @@ toc::[]
 - [x] Elixir OTP crawler for GitHub schemas
 - [x] Parallel schema parsing
 - [x] Empirical compatibility database
-- [ ] Pattern extraction
-- [ ] Feed patterns back to synthesis layer
+- [x] Pattern extraction
+- [x] Feed patterns back to synthesis layer
 
-**Deliverable:** Self-improving system (crawler + parallel parser + empirical DB in `explorer/crawler`)
+**Deliverable:** Self-improving system (crawler + parser + empirical DB + synthesis-hint feedback loop)
 
 == Phase 3: Advanced Features (Months 7-12)
 
