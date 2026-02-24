@@ -15,7 +15,7 @@ categories = ["development-tools", "parsing"]
 [dependencies]
 protocol-squisher-ir = { path = "../protocol-squisher-ir" }
 protocol-squisher-transport-primitives = { path = "../../ephapax-ir" }
-thiserror = "1.0"
+thiserror = "2.0"
 regex = "1.10"
 serde_json = "1.0"
 
