@@ -5,7 +5,14 @@ defmodule ProtocolSquisher.Explorer.Crawler do
 
   require Logger
 
-  alias ProtocolSquisher.Explorer.{Config, FormatDetector, GitHubApi, ParallelParser, SchemaSink}
+  alias ProtocolSquisher.Explorer.{
+    Config,
+    EmpiricalDb,
+    FormatDetector,
+    GitHubApi,
+    ParallelParser,
+    SchemaSink
+  }
 
   @type crawl_summary :: %{
           queries: non_neg_integer(),
@@ -13,38 +20,57 @@ defmodule ProtocolSquisher.Explorer.Crawler do
           items_seen: non_neg_integer(),
           written: non_neg_integer(),
           errors: non_neg_integer(),
-          output_path: String.t()
+          output_path: String.t(),
+          database_path: String.t(),
+          observations_path: String.t(),
+          summary_path: String.t()
         }
 
   @spec run(Config.t()) :: {:ok, crawl_summary()} | {:error, term()}
   def run(%Config{} = config) do
     Logger.info("starting GitHub schema crawl for #{length(config.queries)} query sets")
 
-    with {:ok, sink} <- SchemaSink.start_link(output_path: config.output_path) do
+    with {:ok, sink} <- SchemaSink.start_link(output_path: config.output_path),
+         {:ok, db} <- EmpiricalDb.start_link(database_path: config.database_path) do
       summary =
         Enum.reduce(config.queries, empty_summary(), fn query, summary ->
-          crawl_query(query, 1, config, sink, %{summary | queries: summary.queries + 1})
+          crawl_query(query, 1, config, sink, db, %{summary | queries: summary.queries + 1})
         end)
 
       sink_stats = SchemaSink.stats(sink)
+      db_stats = EmpiricalDb.stats(db)
       :ok = SchemaSink.close(sink)
+      :ok = EmpiricalDb.close(db)
 
       {:ok,
        summary
        |> Map.put(:written, sink_stats.count)
-       |> Map.put(:output_path, sink_stats.output_path)}
+       |> Map.put(:output_path, sink_stats.output_path)
+       |> Map.put(:database_path, Path.dirname(db_stats.summary_path))
+       |> Map.put(:observations_path, db_stats.observations_path)
+       |> Map.put(:summary_path, db_stats.summary_path)}
     end
   end
 
   defp empty_summary do
-    %{queries: 0, pages: 0, items_seen: 0, written: 0, errors: 0, output_path: ""}
+    %{
+      queries: 0,
+      pages: 0,
+      items_seen: 0,
+      written: 0,
+      errors: 0,
+      output_path: "",
+      database_path: "",
+      observations_path: "",
+      summary_path: ""
+    }
   end
 
-  defp crawl_query(_query, page, %Config{max_pages: max_pages}, _sink, summary)
+  defp crawl_query(_query, page, %Config{max_pages: max_pages}, _sink, _db, summary)
        when page > max_pages,
        do: summary
 
-  defp crawl_query(query, page, %Config{} = config, sink, summary) do
+  defp crawl_query(query, page, %Config{} = config, sink, db, summary) do
     case GitHubApi.search_code(config, query, page) do
       {:ok, %{"items" => []}} ->
         summary
@@ -54,7 +80,7 @@ defmodule ProtocolSquisher.Explorer.Crawler do
 
         updated_summary =
           items
-          |> process_items(query, config, sink)
+          |> process_items(query, config, sink, db)
           |> merge_counts(%{
             summary
             | pages: summary.pages + 1,
@@ -62,7 +88,7 @@ defmodule ProtocolSquisher.Explorer.Crawler do
           })
 
         Process.sleep(config.sleep_ms)
-        crawl_query(query, page + 1, config, sink, updated_summary)
+        crawl_query(query, page + 1, config, sink, db, updated_summary)
 
       {:error, reason} ->
         Logger.warning("query=#{inspect(query)} page=#{page} failed: #{inspect(reason)}")
@@ -70,7 +96,7 @@ defmodule ProtocolSquisher.Explorer.Crawler do
     end
   end
 
-  defp process_items(items, query, %Config{} = config, sink) do
+  defp process_items(items, query, %Config{} = config, sink, db) do
     fetch_stream_opts = [
       max_concurrency: config.concurrency,
       timeout: config.request_timeout_ms * 2,
@@ -105,9 +131,12 @@ defmodule ProtocolSquisher.Explorer.Crawler do
         %{acc | errors: acc.errors + 1}
 
       record, acc ->
-        case SchemaSink.write(sink, record) do
-          :ok -> %{acc | written: acc.written + 1}
-          {:error, _reason} -> %{acc | errors: acc.errors + 1}
+        with :ok <- SchemaSink.write(sink, record),
+             :ok <- EmpiricalDb.ingest(db, record) do
+          %{acc | written: acc.written + 1}
+        else
+          {:error, _reason} ->
+            %{acc | errors: acc.errors + 1}
         end
     end)
   end

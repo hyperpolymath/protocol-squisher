@@ -6,6 +6,7 @@ defmodule ProtocolSquisher.Explorer.Config do
   @type t :: %__MODULE__{
           github_token: String.t() | nil,
           output_path: String.t(),
+          database_path: String.t(),
           queries: [String.t()],
           max_pages: pos_integer(),
           per_page: pos_integer(),
@@ -34,6 +35,7 @@ defmodule ProtocolSquisher.Explorer.Config do
   defstruct [
     :github_token,
     :output_path,
+    :database_path,
     :queries,
     :max_pages,
     :per_page,
@@ -61,6 +63,9 @@ defmodule ProtocolSquisher.Explorer.Config do
       output_path:
         Keyword.get(opts, :output) ||
           Path.expand("../../target/explorer/schemas.ndjson", File.cwd!()),
+      database_path:
+        Keyword.get(opts, :database_path) ||
+          Path.expand("../../target/explorer/database", File.cwd!()),
       queries: queries,
       max_pages: positive_integer(Keyword.get(opts, :max_pages, 2), 2),
       per_page: positive_integer(Keyword.get(opts, :per_page, 25), 25),

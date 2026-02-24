@@ -11,6 +11,7 @@ normalized NDJSON records for the continuous-learning pipeline.
 - Parses fetched schemas in parallel (heuristic parser stage).
 - Emits one NDJSON record per crawled schema.
 - Optionally invokes `protocol-squisher corpus-analyze` for each file.
+- Persists an empirical compatibility database summary.
 
 ## Run
 
@@ -40,9 +41,21 @@ Default output path:
 Each line is JSON and contains metadata, detected format, fetched content,
 `parse_summary` metadata, and optional `corpus_analysis` payload.
 
+Empirical DB output directory (default):
+
+```text
+../../target/explorer/database/
+```
+
+Generated files:
+- `compatibility-observations.ndjson`
+- `summary.json`
+
 ## Notes
 
 - Provide `GITHUB_TOKEN` to improve API limits.
 - Tune parser parallelism with `--parser-concurrency`.
+- Print database report with:
+  `mix crawler.db.report --database-path ../../target/explorer/database`
 - Supported extension mapping currently includes:
   `rs, py, proto, thrift, avsc, avdl, capnp, fbs, bop, msgpack, res, resi, json`.

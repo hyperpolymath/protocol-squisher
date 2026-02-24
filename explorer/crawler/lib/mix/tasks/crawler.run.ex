@@ -19,6 +19,7 @@ defmodule Mix.Tasks.Crawler.Run do
   @switches [
     token: :string,
     output: :string,
+    database_path: :string,
     query: :keep,
     max_pages: :integer,
     per_page: :integer,
@@ -71,6 +72,7 @@ defmodule Mix.Tasks.Crawler.Run do
     Options:
       --query <query>               Repeatable GitHub code search query
       --output <path>               NDJSON output path
+      --database-path <path>        Empirical DB output directory
       --token <token>               GitHub API token (or use GITHUB_TOKEN)
       --max-pages <n>               Max pages per query (default: 2)
       --per-page <n>                Results per page (default: 25)
