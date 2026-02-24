@@ -36,16 +36,17 @@
 //! ```
 
 use protocol_squisher_ir::IrSchema;
+use std::path::Path;
 
-pub mod types;
 pub mod converter;
-pub mod runner;
 pub mod ephapax_bridge;
+pub mod runner;
+pub mod types;
 
-pub use types::*;
 pub use converter::convert_python_type;
-pub use runner::{PythonRunnerConfig, INTROSPECTION_SCRIPT};
 pub use ephapax_bridge::*;
+pub use runner::{PythonRunnerConfig, INTROSPECTION_SCRIPT};
+pub use types::*;
 
 /// Errors that can occur during Python analysis
 #[derive(Debug, Clone)]
@@ -142,10 +143,41 @@ impl PythonAnalyzer {
         converter::convert_introspection(&result)
     }
 
+    /// Analyze a Python source file by importing it as a module from its directory.
+    ///
+    /// The module name is derived from the file stem (e.g. `models.py` -> `models`).
+    pub fn analyze_file(&self, path: &Path) -> Result<IrSchema, AnalyzerError> {
+        let module_path = path.file_stem().and_then(|s| s.to_str()).ok_or_else(|| {
+            AnalyzerError::ParseError(format!(
+                "Could not derive Python module name from path: {}",
+                path.display()
+            ))
+        })?;
+
+        let parent = path.parent().unwrap_or_else(|| Path::new("."));
+        let parent_str = parent.to_str().ok_or_else(|| {
+            AnalyzerError::ParseError(format!(
+                "Python file path contains non-UTF-8 directory: {}",
+                path.display()
+            ))
+        })?;
+
+        let mut config = self.config.clone();
+        if config.working_dir.is_none() {
+            config.working_dir = Some(parent_str.to_string());
+        }
+        if !config.pythonpath.iter().any(|p| p == parent_str) {
+            config.pythonpath.push(parent_str.to_string());
+        }
+
+        let result = runner::run_introspection(module_path, &[], &config)?;
+        converter::convert_introspection(&result)
+    }
+
     /// Analyze from a JSON string (for testing or when Python output is cached)
     pub fn analyze_json(&self, json: &str) -> Result<IrSchema, AnalyzerError> {
-        let result: IntrospectionResult = serde_json::from_str(json)
-            .map_err(|e| AnalyzerError::ParseError(e.to_string()))?;
+        let result: IntrospectionResult =
+            serde_json::from_str(json).map_err(|e| AnalyzerError::ParseError(e.to_string()))?;
         converter::convert_introspection(&result)
     }
 }
@@ -153,7 +185,7 @@ impl PythonAnalyzer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use protocol_squisher_ir::{IrType, ContainerType, TypeDef};
+    use protocol_squisher_ir::{ContainerType, IrType, TypeDef};
 
     #[test]
     fn test_analyzer_creation() {
@@ -218,15 +250,14 @@ mod tests {
         assert_eq!(schema.source_format, "pydantic");
         assert_eq!(schema.types.len(), 1);
 
-        if let Some(TypeDef::Struct(user)) = schema.types.get("User") {
-            assert_eq!(user.fields.len(), 3);
-            assert_eq!(user.fields[0].name, "id");
-            assert!(!user.fields[0].optional);
-            assert_eq!(user.fields[2].name, "name");
-            assert!(user.fields[2].optional);
-        } else {
-            panic!("Expected User struct");
-        }
+        let Some(TypeDef::Struct(user)) = schema.types.get("User") else {
+            unreachable!("User should convert to struct");
+        };
+        assert_eq!(user.fields.len(), 3);
+        assert_eq!(user.fields[0].name, "id");
+        assert!(!user.fields[0].optional);
+        assert_eq!(user.fields[2].name, "name");
+        assert!(user.fields[2].optional);
     }
 
     #[test]
@@ -291,14 +322,16 @@ mod tests {
         assert!(schema.types.contains_key("Address"));
         assert!(schema.types.contains_key("User"));
 
-        if let Some(TypeDef::Struct(user)) = schema.types.get("User") {
-            // Check address field is a reference
-            assert!(matches!(user.fields[1].ty, IrType::Reference(_)));
-            // Check tags field is a list
-            assert!(matches!(user.fields[2].ty, IrType::Container(ContainerType::Vec(_))));
-        } else {
-            panic!("Expected User struct");
-        }
+        let Some(TypeDef::Struct(user)) = schema.types.get("User") else {
+            unreachable!("User should convert to struct");
+        };
+        // Check address field is a reference
+        assert!(matches!(user.fields[1].ty, IrType::Reference(_)));
+        // Check tags field is a list
+        assert!(matches!(
+            user.fields[2].ty,
+            IrType::Container(ContainerType::Vec(_))
+        ));
     }
 
     #[test]
@@ -340,12 +373,11 @@ mod tests {
 
         assert_eq!(schema.types.len(), 2);
 
-        if let Some(TypeDef::Enum(status)) = schema.types.get("Status") {
-            assert_eq!(status.variants.len(), 3);
-            assert_eq!(status.variants[0].name, "PENDING");
-        } else {
-            panic!("Expected Status enum");
-        }
+        let Some(TypeDef::Enum(status)) = schema.types.get("Status") else {
+            unreachable!("Status should convert to enum");
+        };
+        assert_eq!(status.variants.len(), 3);
+        assert_eq!(status.variants[0].name, "PENDING");
     }
 
     #[test]
@@ -386,15 +418,14 @@ mod tests {
         let analyzer = PythonAnalyzer::new();
         let schema = analyzer.analyze_json(json).unwrap();
 
-        if let Some(TypeDef::Struct(product)) = schema.types.get("Product") {
-            // Check name constraints
-            assert_eq!(product.fields[0].constraints.len(), 2);
-            // Check price constraints
-            assert_eq!(product.fields[1].constraints.len(), 1);
-            // Check quantity constraints
-            assert_eq!(product.fields[2].constraints.len(), 2);
-        } else {
-            panic!("Expected Product struct");
-        }
+        let Some(TypeDef::Struct(product)) = schema.types.get("Product") else {
+            unreachable!("Product should convert to struct");
+        };
+        // Check name constraints
+        assert_eq!(product.fields[0].constraints.len(), 2);
+        // Check price constraints
+        assert_eq!(product.fields[1].constraints.len(), 1);
+        // Check quantity constraints
+        assert_eq!(product.fields[2].constraints.len(), 2);
     }
 }

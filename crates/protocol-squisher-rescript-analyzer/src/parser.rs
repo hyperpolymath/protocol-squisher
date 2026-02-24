@@ -140,6 +140,7 @@ fn remove_comments(content: &str) -> String {
 /// Parse type aliases (e.g., `type userId = int`)
 fn parse_type_aliases(content: &str) -> Result<Vec<ReScriptTypeAlias>, AnalyzerError> {
     // Match: type name<'a, 'b> = targetType
+    // SAFETY: constant regex pattern, compile-time verified
     let alias_regex = Regex::new(r"type\s+(\w+)(?:<([^>]+)>)?\s*=\s*([^{}\n|]+)").unwrap();
     let mut aliases = Vec::new();
 
@@ -168,6 +169,7 @@ fn parse_type_aliases(content: &str) -> Result<Vec<ReScriptTypeAlias>, AnalyzerE
 /// Parse record types
 fn parse_records(content: &str) -> Result<Vec<ReScriptRecord>, AnalyzerError> {
     // Match: type name<'a> = { field1: type1, field2: type2 }
+    // SAFETY: constant regex pattern, compile-time verified
     let record_regex = Regex::new(r"type\s+(\w+)(?:<([^>]+)>)?\s*=\s*\{([^}]+)\}").unwrap();
     let mut records = Vec::new();
 
@@ -234,6 +236,7 @@ fn parse_record_fields(body: &str) -> Result<Vec<ReScriptField>, AnalyzerError> 
 fn parse_variants(content: &str) -> Result<Vec<ReScriptVariant>, AnalyzerError> {
     // Match: type name<'a> = | Constructor1 | Constructor2(payload) | ...
     // Also handles: type name = Constructor1 | Constructor2
+    // SAFETY: constant regex pattern, compile-time verified
     let variant_regex = Regex::new(r"type\s+(\w+)(?:<([^>]+)>)?\s*=\s*\|?\s*([^{}=]+)").unwrap();
     let mut variants = Vec::new();
 
@@ -311,6 +314,7 @@ fn parse_type_params(params: &str) -> Vec<String> {
 
 /// Extract @as("jsName") attribute
 fn extract_js_name(field_str: &str) -> Option<String> {
+    // SAFETY: constant regex pattern, compile-time verified
     let as_regex = Regex::new(r#"@as\("([^"]+)"\)"#).unwrap();
     as_regex.captures(field_str)
         .map(|cap| cap[1].to_string())
@@ -318,6 +322,7 @@ fn extract_js_name(field_str: &str) -> Option<String> {
 
 /// Remove attributes from field string
 fn remove_attributes(field_str: &str) -> String {
+    // SAFETY: constant regex pattern, compile-time verified
     let attr_regex = Regex::new(r"@\w+\([^)]*\)").unwrap();
     attr_regex.replace_all(field_str, "").to_string()
 }

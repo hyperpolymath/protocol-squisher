@@ -408,7 +408,7 @@ Benchmarks from `examples/zero-copy-demo`:
 
 **MVP Complete (100%):**
 
-- ✅ **312 tests passing** - Comprehensive test coverage (IR, analyzers, codegen, optimizer, properties)
+- ✅ **678 tests passing** - Comprehensive test coverage (IR, analyzers, codegen, optimizer, properties)
 - ✅ **Rust ↔ Python working** - All 4 transport classes implemented
 - ✅ **CLI with 4 commands** - `analyze`, `check`, `optimize`, `generate`
 - ✅ **Formal proofs** - 4 theorems in Agda, cross-validated in Lean
@@ -418,15 +418,20 @@ Benchmarks from `examples/zero-copy-demo`:
 **Supported Formats:**
 - Rust (serde)
 - Python (Pydantic)
-- JSON
-
-**Phase 2 (Coming Soon):**
-- Cap'n Proto
-- Protocol Buffers
+- Protobuf
 - Thrift
 - Avro
 - MessagePack
-- Factor
+- FlatBuffers
+- Cap'n Proto
+- Bebop
+- ReScript
+- JSON Schema
+
+**Current Focus (Next):**
+- Larger empirical schema corpus
+- Adapter synthesis quality improvements
+- Advanced FFI hardening and performance tuning
 
 See [ROADMAP.adoc](https://github.com/hyperpolymath/protocol-squisher/blob/main/ROADMAP.adoc) for full expansion plan.
 
@@ -477,7 +482,7 @@ protocol-squisher generate \
 
 2. **Schema analysis only** - No runtime schema inference. You need explicit type definitions.
 
-3. **Limited formats in MVP** - Rust/Python/JSON working. More formats coming in Phase 2.
+3. **Optimization quality is uneven across format pairs** - Some routes still default to Wheelbarrow until synthesis tuning improves.
 
 4. **No circular references yet** - Graph structures with cycles require special handling (planned for Economy class).
 

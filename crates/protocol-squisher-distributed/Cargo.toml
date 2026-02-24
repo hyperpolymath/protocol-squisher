@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+
+[package]
+name = "protocol-squisher-distributed"
+version = "0.1.0"
+edition = "2021"
+license = "PMPL-1.0-or-later"
+description = "Distributed protocol squishing scheduler and executors"
+repository = "https://github.com/hyperpolymath/protocol-squisher"
+keywords = ["distributed", "squishing", "compatibility", "parallel"]
+categories = ["development-tools", "encoding"]
+
+[dependencies]
+protocol-squisher-compat = { path = "../protocol-squisher-compat" }
+protocol-squisher-ir = { path = "../protocol-squisher-ir" }
+rayon = "1.10"
+serde = { version = "1.0", features = ["derive"] }

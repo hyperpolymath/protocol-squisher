@@ -158,6 +158,7 @@ fn remove_comments(content: &str) -> String {
 
 /// Parse all enums in the content
 fn parse_enums(content: &str) -> Result<Vec<BebopEnum>, AnalyzerError> {
+    // SAFETY: constant regex pattern, compile-time verified
     let enum_regex = Regex::new(r"enum\s+(\w+)\s*\{([^}]+)\}").unwrap();
     let mut enums = Vec::new();
 
@@ -175,6 +176,7 @@ fn parse_enums(content: &str) -> Result<Vec<BebopEnum>, AnalyzerError> {
 
 /// Parse enum values from the enum body
 fn parse_enum_values(body: &str) -> Result<Vec<BebopEnumValue>, AnalyzerError> {
+    // SAFETY: constant regex pattern, compile-time verified
     let value_regex = Regex::new(r"(\w+)\s*=\s*(\d+)").unwrap();
     let mut values = Vec::new();
 
@@ -191,6 +193,7 @@ fn parse_enum_values(body: &str) -> Result<Vec<BebopEnumValue>, AnalyzerError> {
 
 /// Parse all structs in the content
 fn parse_structs(content: &str) -> Result<Vec<BebopStruct>, AnalyzerError> {
+    // SAFETY: constant regex pattern, compile-time verified
     let struct_regex = Regex::new(r"(readonly\s+)?struct\s+(\w+)\s*\{([^}]+)\}").unwrap();
     let mut structs = Vec::new();
 
@@ -232,6 +235,7 @@ fn parse_struct_fields(body: &str) -> Result<Vec<BebopField>, AnalyzerError> {
 
 /// Parse all messages in the content
 fn parse_messages(content: &str) -> Result<Vec<BebopMessage>, AnalyzerError> {
+    // SAFETY: constant regex pattern, compile-time verified
     let message_regex = Regex::new(r"(readonly\s+)?message\s+(\w+)\s*\{([^}]+)\}").unwrap();
     let mut messages = Vec::new();
 
@@ -307,6 +311,7 @@ fn parse_field(line: &str, is_message: bool) -> Result<Option<BebopField>, Analy
 /// Parse type and field name
 fn parse_type_and_name(input: &str, number: Option<i32>, deprecated: bool) -> Result<Option<BebopField>, AnalyzerError> {
     // Check for array type: array[T]
+    // SAFETY: constant regex pattern, compile-time verified
     let array_regex = Regex::new(r"array\[([^\]]+)\]\s+(\w+)").unwrap();
     if let Some(cap) = array_regex.captures(input) {
         let element_type = cap[1].to_string();
@@ -324,6 +329,7 @@ fn parse_type_and_name(input: &str, number: Option<i32>, deprecated: bool) -> Re
     }
 
     // Check for map type: map[K, V]
+    // SAFETY: constant regex pattern, compile-time verified
     let map_regex = Regex::new(r"map\[([^,]+),\s*([^\]]+)\]\s+(\w+)").unwrap();
     if let Some(cap) = map_regex.captures(input) {
         let key_type = cap[1].trim().to_string();

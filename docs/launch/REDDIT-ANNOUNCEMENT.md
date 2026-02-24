@@ -1,4 +1,4 @@
-# I built a tool that auto-generates adapters between any two serialization formats (Rust↔Python working, 312 tests, formally verified)
+# I built a tool that auto-generates adapters between any two serialization formats (Rust↔Python working, 678 tests, formally verified)
 
 Hey everyone,
 
@@ -126,7 +126,7 @@ Zero serialization overhead
 ## Current Status
 
 **MVP Complete:**
-- ✅ 312 tests passing
+- ✅ 678 tests passing
 - ✅ Rust ↔ Python fully working
 - ✅ All 4 transport classes implemented
 - ✅ 4 theorems proven (Agda + Lean)
@@ -134,16 +134,12 @@ Zero serialization overhead
 - ✅ Comprehensive docs
 
 **Supported formats:**
-- Rust (serde)
-- Python (Pydantic)
-- JSON
+- Rust (serde), Python (Pydantic), Protobuf, Thrift, Avro, MessagePack, FlatBuffers, Cap'n Proto, Bebop, ReScript, JSON Schema
 
-**Phase 2 (next):**
-- Cap'n Proto
-- Protobuf
-- Thrift
-- Avro
-- MessagePack
+**Current focus (next):**
+- Larger real-world schema corpus
+- Synthesis quality improvements
+- Advanced FFI hardening + performance tuning
 
 ## Try It Yourself
 
@@ -174,7 +170,7 @@ Protocol Squisher makes this a build-time analysis instead of a runtime surprise
 
 1. **Wheelbarrow class is slow** - Narrowing conversions (i64→i32) need JSON serialization (100-1000x overhead)
 2. **Analysis needs schemas** - No runtime inference yet
-3. **Limited formats** - MVP is Rust/Python/JSON, more coming
+3. **Optimization quality differs by pair** - Some conversions still land in Wheelbarrow class until synthesis improves
 
 We don't hide the costs. The tool tells you upfront: "This conversion is Wheelbarrow class, expect 100-1000x overhead."
 

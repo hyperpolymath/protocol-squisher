@@ -173,9 +173,17 @@ fn remove_comments(content: &str) -> String {
     result
 }
 
+fn compile_regex(pattern: &str) -> Result<Regex, AnalyzerError> {
+    Regex::new(pattern).map_err(|e| {
+        AnalyzerError::ParseError(format!("Internal parser regex error for '{pattern}': {e}"))
+    })
+}
+
 /// Detect the protobuf syntax version
 fn detect_syntax(content: &str) -> ProtoSyntax {
-    let syntax_re = Regex::new(r#"syntax\s*=\s*"(proto[23])"\s*;"#).unwrap();
+    let Ok(syntax_re) = Regex::new(r#"syntax\s*=\s*"(proto[23])"\s*;"#) else {
+        return ProtoSyntax::Proto2;
+    };
 
     if let Some(caps) = syntax_re.captures(content) {
         match caps.get(1).map(|m| m.as_str()) {
@@ -191,7 +199,9 @@ fn detect_syntax(content: &str) -> ProtoSyntax {
 
 /// Parse package declaration
 fn parse_package(content: &str) -> Option<String> {
-    let package_re = Regex::new(r"package\s+([\w.]+)\s*;").unwrap();
+    let Ok(package_re) = Regex::new(r"package\s+([\w.]+)\s*;") else {
+        return None;
+    };
     package_re
         .captures(content)
         .and_then(|caps| caps.get(1))
@@ -203,7 +213,7 @@ fn parse_enums(content: &str, _depth: usize) -> Result<Vec<ProtoEnum>, AnalyzerE
     let mut enums = Vec::new();
 
     // Match enum blocks
-    let enum_re = Regex::new(r"enum\s+(\w+)\s*\{([^}]*)\}").unwrap();
+    let enum_re = compile_regex(r"enum\s+(\w+)\s*\{([^}]*)\}")?;
 
     for caps in enum_re.captures_iter(content) {
         let name = caps.get(1).map(|m| m.as_str()).unwrap_or("").to_string();
@@ -222,7 +232,7 @@ fn parse_enum_values(body: &str) -> Result<Vec<ProtoEnumValue>, AnalyzerError> {
     let mut values = Vec::new();
 
     // Match enum value definitions: NAME = NUMBER;
-    let value_re = Regex::new(r"(\w+)\s*=\s*(-?\d+)").unwrap();
+    let value_re = compile_regex(r"(\w+)\s*=\s*(-?\d+)")?;
 
     for caps in value_re.captures_iter(body) {
         let name = caps.get(1).map(|m| m.as_str()).unwrap_or("").to_string();
@@ -244,11 +254,14 @@ fn parse_messages(content: &str, syntax: ProtoSyntax) -> Result<Vec<ProtoMessage
     let mut messages = Vec::new();
 
     // Find message blocks with balanced braces
-    let message_start_re = Regex::new(r"message\s+(\w+)\s*\{").unwrap();
+    let message_start_re = compile_regex(r"message\s+(\w+)\s*\{")?;
 
     for caps in message_start_re.captures_iter(content) {
         let name = caps.get(1).map(|m| m.as_str()).unwrap_or("").to_string();
-        let start_pos = caps.get(0).unwrap().end() - 1; // Position of opening brace
+        let Some(full_match) = caps.get(0) else {
+            continue;
+        };
+        let start_pos = full_match.end() - 1; // Position of opening brace
 
         if let Some(body) = extract_brace_content(content, start_pos) {
             let message = parse_message_body(&name, &body, syntax)?;
@@ -318,11 +331,14 @@ fn parse_message_body(
 fn parse_oneofs(body: &str, syntax: ProtoSyntax) -> Result<Vec<ProtoOneof>, AnalyzerError> {
     let mut oneofs = Vec::new();
 
-    let oneof_start_re = Regex::new(r"oneof\s+(\w+)\s*\{").unwrap();
+    let oneof_start_re = compile_regex(r"oneof\s+(\w+)\s*\{")?;
 
     for caps in oneof_start_re.captures_iter(body) {
         let name = caps.get(1).map(|m| m.as_str()).unwrap_or("").to_string();
-        let start_pos = caps.get(0).unwrap().end() - 1;
+        let Some(full_match) = caps.get(0) else {
+            continue;
+        };
+        let start_pos = full_match.end() - 1;
 
         if let Some(oneof_body) = extract_brace_content(body, start_pos) {
             let fields = parse_oneof_fields(&oneof_body, syntax)?;
@@ -338,7 +354,7 @@ fn parse_oneof_fields(body: &str, _syntax: ProtoSyntax) -> Result<Vec<ProtoField
     let mut fields = Vec::new();
 
     // Oneof fields don't have labels
-    let field_re = Regex::new(r"(\w+)\s+(\w+)\s*=\s*(\d+)").unwrap();
+    let field_re = compile_regex(r"(\w+)\s+(\w+)\s*=\s*(\d+)")?;
 
     for caps in field_re.captures_iter(body) {
         let field_type = caps.get(1).map(|m| m.as_str()).unwrap_or("").to_string();
@@ -371,7 +387,7 @@ fn parse_fields(body: &str, syntax: ProtoSyntax) -> Result<Vec<ProtoField>, Anal
     let cleaned = remove_nested_blocks(body);
 
     // Match map fields: map<KeyType, ValueType> name = number;
-    let map_re = Regex::new(r"map\s*<\s*(\w+)\s*,\s*(\w+)\s*>\s+(\w+)\s*=\s*(\d+)").unwrap();
+    let map_re = compile_regex(r"map\s*<\s*(\w+)\s*,\s*(\w+)\s*>\s+(\w+)\s*=\s*(\d+)")?;
     for caps in map_re.captures_iter(&cleaned) {
         let key_type = caps.get(1).map(|m| m.as_str()).unwrap_or("").to_string();
         let value_type = caps.get(2).map(|m| m.as_str()).unwrap_or("").to_string();
@@ -398,14 +414,14 @@ fn parse_fields(body: &str, syntax: ProtoSyntax) -> Result<Vec<ProtoField>, Anal
         ProtoSyntax::Proto2 => {
             // Proto2: (optional|required|repeated)? type name = number;
             r"(optional|required|repeated)?\s*(\w+)\s+(\w+)\s*=\s*(\d+)"
-        }
+        },
         ProtoSyntax::Proto3 => {
             // Proto3: (optional|repeated)? type name = number;
             r"(optional|repeated)?\s*(\w+)\s+(\w+)\s*=\s*(\d+)"
-        }
+        },
     };
 
-    let field_re = Regex::new(field_pattern).unwrap();
+    let field_re = compile_regex(field_pattern)?;
 
     for caps in field_re.captures_iter(&cleaned) {
         let label_str = caps.get(1).map(|m| m.as_str()).unwrap_or("");
@@ -424,7 +440,16 @@ fn parse_fields(body: &str, syntax: ProtoSyntax) -> Result<Vec<ProtoField>, Anal
         }
 
         // Skip keyword-like types that aren't actually fields
-        if ["message", "enum", "oneof", "option", "reserved", "extensions"].contains(&field_type.as_str()) {
+        if [
+            "message",
+            "enum",
+            "oneof",
+            "option",
+            "reserved",
+            "extensions",
+        ]
+        .contains(&field_type.as_str())
+        {
             continue;
         }
 
@@ -438,7 +463,7 @@ fn parse_fields(body: &str, syntax: ProtoSyntax) -> Result<Vec<ProtoField>, Anal
                     ProtoSyntax::Proto2 => FieldLabel::Optional, // Proto2 defaults to optional
                     ProtoSyntax::Proto3 => FieldLabel::Required, // Proto3 fields have implicit presence (required)
                 }
-            }
+            },
         };
 
         fields.push(ProtoField {
@@ -457,10 +482,15 @@ fn parse_fields(body: &str, syntax: ProtoSyntax) -> Result<Vec<ProtoField>, Anal
 /// Remove nested message, enum, and oneof blocks
 fn remove_nested_blocks(content: &str) -> String {
     let mut result = content.to_string();
+    let Ok(message_re) = Regex::new(r"message\s+\w+\s*\{[^{}]*\}") else {
+        return result;
+    };
+    let Ok(oneof_re) = Regex::new(r"oneof\s+\w+\s*\{[^{}]*\}") else {
+        return result;
+    };
 
     // Remove message blocks
     loop {
-        let message_re = Regex::new(r"message\s+\w+\s*\{[^{}]*\}").unwrap();
         let new_result = message_re.replace_all(&result, "").to_string();
         if new_result == result {
             break;
@@ -469,12 +499,13 @@ fn remove_nested_blocks(content: &str) -> String {
     }
 
     // Remove enum blocks
-    let enum_re = Regex::new(r"enum\s+\w+\s*\{[^{}]*\}").unwrap();
+    let Ok(enum_re) = Regex::new(r"enum\s+\w+\s*\{[^{}]*\}") else {
+        return result;
+    };
     result = enum_re.replace_all(&result, "").to_string();
 
     // Remove oneof blocks
     loop {
-        let oneof_re = Regex::new(r"oneof\s+\w+\s*\{[^{}]*\}").unwrap();
         let new_result = oneof_re.replace_all(&result, "").to_string();
         if new_result == result {
             break;

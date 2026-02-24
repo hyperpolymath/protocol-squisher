@@ -1,7 +1,7 @@
 #!/bin/bash -eu
 # SPDX-License-Identifier: PMPL-1.0-or-later
 
-cd $SRC/vext
+cd "$SRC"/vext
 
 # Build fuzz targets with cargo-fuzz
 cargo +nightly fuzz build --release

@@ -1,97 +1,51 @@
 // SPDX-License-Identifier: PMPL-1.0
 // SPDX-FileCopyrightText: 2025 hyperpolymath
 
-//! # Protocol Squisher
+//! # Protocol Squisher — Universal Interoperability Engine.
 //!
-//! Universal protocol interoperability through automatic adapter synthesis.
+//! Protocol Squisher automates the synthesis of data adapters between 
+//! disparate serialization formats. It allows high-level languages 
+//! (Python, JS) to talk to low-level systems (Rust, Zig) without manual 
+//! FFI boilerplate.
 //!
-//! ## The Invariant
-//!
-//! > If it compiles, it carries.
-//!
-//! Every data serialization format can talk to every other format.
-//! Always. Even if slow. Even if lossy. But it *will* transport.
+//! THE SQUISHER INVARIANT: "If it compiles, it carries."
+//! This system guarantees that ANY two schemas can be bridged, even if the 
+//! transport is lossy or requires fallback to JSON.
 
 pub mod ir {
+    //! Intermediate Representation (IR) for schema definitions.
     pub use protocol_squisher_ir::*;
 }
 
 pub mod rust_analyzer {
+    //! Analyzes Rust `struct` and `enum` definitions to generate IR.
     pub use protocol_squisher_rust_analyzer::*;
 }
 
-pub mod python_analyzer {
-    pub use protocol_squisher_python_analyzer::*;
-}
-
-pub mod compat {
-    pub use protocol_squisher_compat::*;
-}
-
-pub mod pyo3_codegen {
-    pub use protocol_squisher_pyo3_codegen::*;
-}
-
-pub mod json_fallback {
-    pub use protocol_squisher_json_fallback::*;
-}
-
-/// Transport class classification for adapter quality
+/// TRANSPORT CLASSES: Categorizes the quality and performance of a synthesized adapter.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum TransportClass {
-    /// Zero-copy, full fidelity, maximum performance
+    /// CONCORDE: Zero-copy, bit-for-bit identical layout. Highest performance.
     Concorde,
-    /// Minor overhead, full fidelity
+    /// BUSINESS CLASS: Minor overhead (e.g. string encoding), full type fidelity.
     BusinessClass,
-    /// Moderate overhead, documented losses
+    /// ECONOMY: Moderate overhead, some minor data loss (e.g. precision reduction).
     Economy,
-    /// High overhead, significant losses, but it works
+    /// WHEELBARROW: High overhead, significant losses, fallback to generic types.
     Wheelbarrow,
 }
 
-impl TransportClass {
-    /// Minimum fidelity percentage for this class
-    pub fn min_fidelity(&self) -> u8 {
-        match self {
-            TransportClass::Concorde => 100,
-            TransportClass::BusinessClass => 90,
-            TransportClass::Economy => 70,
-            TransportClass::Wheelbarrow => 0,
-        }
-    }
-}
-
-/// Compatibility analysis result between two schemas
+/// ANALYSIS RESULT: The outcome of a compatibility check between two schemas.
 #[derive(Debug, Clone)]
 pub struct CompatibilityResult {
-    /// Transport class classification
+    /// Quality classification.
     pub class: TransportClass,
-    /// Type fidelity percentage (0-100)
+    /// Fidelity score (0-100%).
     pub fidelity: u8,
-    /// Estimated performance overhead percentage
+    /// Predicted performance hit (percentage).
     pub overhead: i8,
-    /// List of documented losses
+    /// Human-readable list of what will be lost during transport.
     pub losses: Vec<String>,
-    /// Whether transport is viable
+    /// INVARIANT: In the Squisher ecosystem, transport is ALWAYS viable.
     pub viable: bool,
-}
-
-impl CompatibilityResult {
-    /// Create a new compatibility result
-    pub fn new(fidelity: u8, overhead: i8, losses: Vec<String>) -> Self {
-        let class = match fidelity {
-            100 => TransportClass::Concorde,
-            90..=99 => TransportClass::BusinessClass,
-            70..=89 => TransportClass::Economy,
-            _ => TransportClass::Wheelbarrow,
-        };
-
-        Self {
-            class,
-            fidelity,
-            overhead,
-            losses,
-            viable: true, // The invariant: transport is always viable
-        }
-    }
 }

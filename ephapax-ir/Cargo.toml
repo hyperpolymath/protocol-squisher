@@ -20,8 +20,3 @@ proptest = "1.4.0"
 [build-dependencies]
 # Build script will compile ephapax sources to WASM
 anyhow = "1.0"
-
-# TODO: Re-enable when ephapax compiler is available
-# [[bin]]
-# name = "compile-ir"
-# path = "src/bin/compile.rs"

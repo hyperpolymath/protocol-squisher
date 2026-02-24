@@ -1,6 +1,6 @@
 # Protocol Squisher: Universal Protocol Interoperability with Formal Guarantees
 
-**TL;DR:** Automatic adapter synthesis between any two serialization formats. If it compiles, it carries. 312 tests, 4 theorems proven in Agda/Lean, Rust↔Python working now.
+**TL;DR:** Automatic adapter synthesis between any two serialization formats. If it compiles, it carries. 678 tests, 4 theorems proven in Agda/Lean, Rust↔Python working now.
 
 ---
 
@@ -121,19 +121,14 @@ Generated code handles all FFI, type conversions, and includes property tests.
 ## Current Status
 
 **MVP Complete (100%)**
-- ✅ 312 tests passing
+- ✅ 678 tests passing
 - ✅ Rust ↔ Python working (all 4 transport classes)
 - ✅ CLI with analysis, optimization suggestions, code generation
 - ✅ Formal proofs in Agda/Lean
 - ✅ Zero-copy benchmarks (~1ns Concorde, ~100-1000ns Wheelbarrow)
 
 **Supported formats:**
-- Rust (serde)
-- Python (Pydantic)
-- JSON
-
-**Coming soon:**
-- Cap'n Proto, Protobuf, Thrift, Avro, MessagePack, Factor
+- Rust (serde), Python (Pydantic), Protobuf, Thrift, Avro, MessagePack, FlatBuffers, Cap'n Proto, Bebop, ReScript, JSON Schema
 
 ## Try It
 
@@ -166,7 +161,7 @@ Protocol Squisher makes format interop a build step, not a maintenance burden.
 
 1. **Wheelbarrow class is slow** - Narrowing conversions need JSON (100-1000x overhead)
 2. **Analysis requires schemas** - No runtime schema inference yet
-3. **Limited formats** - MVP supports Rust/Python/JSON, expanding in Phase 2
+3. **Optimization coverage varies by format pair** - Some pairs remain Wheelbarrow-class until optimizer/synthesis tuning improves
 
 We document losses upfront. No surprises.
 

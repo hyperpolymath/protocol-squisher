@@ -7,7 +7,7 @@
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$PROJECT_ROOT"
+cd "${PROJECT_ROOT}"
 
 CRITERION_DIR="target/criterion"
 REPORT_DIR="benchmark-reports"
@@ -38,8 +38,8 @@ print_error() {
 }
 
 show_usage() {
-    cat << EOF
-Usage: $0 [OPTIONS]
+    cat <<'EOF'
+Usage: scripts/run-benchmarks.sh [OPTIONS]
 
 Run protocol-squisher performance benchmarks.
 
@@ -58,22 +58,22 @@ OPTIONS:
 
 EXAMPLES:
     # Run all benchmarks
-    $0 --all
+    scripts/run-benchmarks.sh --all
 
     # Run only transport class benchmarks
-    $0 --transport
+    scripts/run-benchmarks.sh --transport
 
     # Quick run for development
-    $0 --quick --transport
+    scripts/run-benchmarks.sh --quick --transport
 
     # Create baseline for comparison
-    $0 --all --baseline main
+    scripts/run-benchmarks.sh --all --baseline main
 
     # Compare against baseline
-    $0 --all --compare main
+    scripts/run-benchmarks.sh --all --compare main
 
     # Run and view results
-    $0 --all --view
+    scripts/run-benchmarks.sh --all --view
 EOF
 }
 
@@ -90,7 +90,7 @@ BASELINE_NAME=""
 COMPARE_BASELINE=""
 
 while [[ $# -gt 0 ]]; do
-    case $1 in
+    case "${1}" in
         -h|--help)
             show_usage
             exit 0
@@ -132,15 +132,23 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --baseline)
+            if [[ $# -lt 2 ]]; then
+                print_error "--baseline requires a value"
+                exit 1
+            fi
             BASELINE_NAME="$2"
             shift 2
             ;;
         --compare)
+            if [[ $# -lt 2 ]]; then
+                print_error "--compare requires a value"
+                exit 1
+            fi
             COMPARE_BASELINE="$2"
             shift 2
             ;;
         *)
-            print_error "Unknown option: $1"
+            print_error "Unknown option: ${1}"
             show_usage
             exit 1
             ;;
@@ -148,7 +156,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Determine which benchmarks to run
-if [[ "$RUN_ALL" == true ]]; then
+if [[ "${RUN_ALL}" == true ]]; then
     RUN_TRANSPORT=true
     RUN_CONTAINERS=true
     RUN_GENERATED=true
@@ -163,24 +171,24 @@ cargo build --release
 
 # Configure criterion
 BENCH_ARGS=()
-if [[ -n "$BASELINE_NAME" ]]; then
-    BENCH_ARGS+=(--save-baseline "$BASELINE_NAME")
-    print_info "Saving baseline: $BASELINE_NAME"
+if [[ -n "${BASELINE_NAME}" ]]; then
+    BENCH_ARGS+=(--save-baseline "${BASELINE_NAME}")
+    print_info "Saving baseline: ${BASELINE_NAME}"
 fi
 
-if [[ -n "$COMPARE_BASELINE" ]]; then
-    BENCH_ARGS+=(--baseline "$COMPARE_BASELINE")
-    print_info "Comparing against baseline: $COMPARE_BASELINE"
+if [[ -n "${COMPARE_BASELINE}" ]]; then
+    BENCH_ARGS+=(--baseline "${COMPARE_BASELINE}")
+    print_info "Comparing against baseline: ${COMPARE_BASELINE}"
 fi
 
 # Quick mode: reduce samples
-if [[ "$QUICK_MODE" == true ]]; then
+if [[ "${QUICK_MODE}" == true ]]; then
     print_warn "Quick mode enabled - results may be less precise"
     export CARGO_CRITERION_OPTS="--warm-up-time 1 --measurement-time 3 --sample-size 10"
 fi
 
 # Run benchmarks
-if [[ "$RUN_TRANSPORT" == true ]]; then
+if [[ "${RUN_TRANSPORT}" == true ]]; then
     print_header "Transport Class Benchmarks"
     print_info "Running Concorde, Business, Economy, and Wheelbarrow tests..."
     cargo bench --bench transport_classes "${BENCH_ARGS[@]}" || {
@@ -189,7 +197,7 @@ if [[ "$RUN_TRANSPORT" == true ]]; then
     }
 fi
 
-if [[ "$RUN_CONTAINERS" == true ]]; then
+if [[ "${RUN_CONTAINERS}" == true ]]; then
     print_header "Container Operations Benchmarks"
     print_info "Running Vec, Option, HashMap, and nested container tests..."
     cargo bench --bench container_operations "${BENCH_ARGS[@]}" || {
@@ -198,7 +206,7 @@ if [[ "$RUN_CONTAINERS" == true ]]; then
     }
 fi
 
-if [[ "$RUN_GENERATED" == true ]]; then
+if [[ "${RUN_GENERATED}" == true ]]; then
     print_header "Generated vs Handwritten Comparison"
     print_info "Comparing generated code against handwritten FFI and raw Rust..."
     cargo bench --bench generated_vs_handwritten "${BENCH_ARGS[@]}" || {
@@ -207,7 +215,7 @@ if [[ "$RUN_GENERATED" == true ]]; then
     }
 fi
 
-if [[ "$RUN_OPTIMIZER" == true ]]; then
+if [[ "${RUN_OPTIMIZER}" == true ]]; then
     print_header "Optimizer Benchmarks"
     print_info "Running optimizer comparison tests..."
     cargo bench --bench optimizer_bench "${BENCH_ARGS[@]}" || {
@@ -217,11 +225,11 @@ if [[ "$RUN_OPTIMIZER" == true ]]; then
 fi
 
 # Generate summary report
-if [[ "$GENERATE_SUMMARY" == true ]]; then
+if [[ "${GENERATE_SUMMARY}" == true ]]; then
     print_header "Generating Summary Report"
 
-    mkdir -p "$REPORT_DIR"
-    SUMMARY_FILE="$REPORT_DIR/summary-$(date +%Y%m%d-%H%M%S).txt"
+    mkdir -p "${REPORT_DIR}"
+    SUMMARY_FILE="${REPORT_DIR}/summary-$(date +%Y%m%d-%H%M%S).txt"
 
     {
         echo "Protocol Squisher Benchmark Summary"
@@ -229,15 +237,15 @@ if [[ "$GENERATE_SUMMARY" == true ]]; then
         echo "========================================"
         echo ""
 
-        if [[ -d "$CRITERION_DIR" ]]; then
+        if [[ -d "${CRITERION_DIR}" ]]; then
             echo "Benchmark Results Location:"
-            echo "  $CRITERION_DIR"
+            echo "  ${CRITERION_DIR}"
             echo ""
 
             echo "Available Reports:"
-            find "$CRITERION_DIR" -name "index.html" -type f | while read -r report; do
-                rel_path="${report#$CRITERION_DIR/}"
-                echo "  - $rel_path"
+            find "${CRITERION_DIR}" -name "index.html" -type f | while IFS= read -r report; do
+                rel_path="${report#"${CRITERION_DIR}"/}"
+                echo "  - ${rel_path}"
             done
             echo ""
 
@@ -248,28 +256,28 @@ if [[ "$GENERATE_SUMMARY" == true ]]; then
             echo "  Wheelbarrow:    100-1000ns (JSON fallback)"
             echo ""
         fi
-    } | tee "$SUMMARY_FILE"
+    } | tee "${SUMMARY_FILE}"
 
-    print_info "Summary saved to: $SUMMARY_FILE"
+    print_info "Summary saved to: ${SUMMARY_FILE}"
 fi
 
 # View reports
-if [[ "$VIEW_REPORTS" == true ]]; then
+if [[ "${VIEW_REPORTS}" == true ]]; then
     print_header "Opening HTML Reports"
 
-    if [[ -f "$CRITERION_DIR/report/index.html" ]]; then
+    if [[ -f "${CRITERION_DIR}/report/index.html" ]]; then
         print_info "Opening main report in browser..."
 
         # Detect browser
         if command -v xdg-open &> /dev/null; then
-            xdg-open "$CRITERION_DIR/report/index.html"
+            xdg-open "${CRITERION_DIR}/report/index.html"
         elif command -v open &> /dev/null; then
-            open "$CRITERION_DIR/report/index.html"
+            open "${CRITERION_DIR}/report/index.html"
         elif command -v firefox &> /dev/null; then
-            firefox "$CRITERION_DIR/report/index.html"
+            firefox "${CRITERION_DIR}/report/index.html"
         else
             print_warn "Could not detect browser. Open manually:"
-            echo "  file://$PROJECT_ROOT/$CRITERION_DIR/report/index.html"
+            echo "  file://${PROJECT_ROOT}/${CRITERION_DIR}/report/index.html"
         fi
     else
         print_error "No HTML reports found. Run benchmarks first."
@@ -278,16 +286,16 @@ if [[ "$VIEW_REPORTS" == true ]]; then
 fi
 
 print_header "Benchmark Complete"
-print_info "Results available at: $CRITERION_DIR/report/index.html"
+print_info "Results available at: ${CRITERION_DIR}/report/index.html"
 
 # Show quick summary if available
-if [[ -f "$CRITERION_DIR/report/index.html" ]]; then
+if [[ -f "${CRITERION_DIR}/report/index.html" ]]; then
     echo ""
     echo "Quick Access Links:"
-    echo "  Main Report:     file://$PROJECT_ROOT/$CRITERION_DIR/report/index.html"
-    [[ "$RUN_TRANSPORT" == true ]] && echo "  Transport Class: file://$PROJECT_ROOT/$CRITERION_DIR/Concorde/report/index.html"
-    [[ "$RUN_CONTAINERS" == true ]] && echo "  Containers:      file://$PROJECT_ROOT/$CRITERION_DIR/Vec/report/index.html"
-    [[ "$RUN_GENERATED" == true ]] && echo "  Comparison:      file://$PROJECT_ROOT/$CRITERION_DIR/Point/report/index.html"
+    echo "  Main Report:     file://${PROJECT_ROOT}/${CRITERION_DIR}/report/index.html"
+    [[ "${RUN_TRANSPORT}" == true ]] && echo "  Transport Class: file://${PROJECT_ROOT}/${CRITERION_DIR}/Concorde/report/index.html"
+    [[ "${RUN_CONTAINERS}" == true ]] && echo "  Containers:      file://${PROJECT_ROOT}/${CRITERION_DIR}/Vec/report/index.html"
+    [[ "${RUN_GENERATED}" == true ]] && echo "  Comparison:      file://${PROJECT_ROOT}/${CRITERION_DIR}/Point/report/index.html"
 fi
 
 exit 0

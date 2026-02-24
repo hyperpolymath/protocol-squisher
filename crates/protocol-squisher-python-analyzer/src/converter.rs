@@ -4,14 +4,14 @@
 //! Conversion from Python/Pydantic types to IR types
 
 use crate::types::{
-    FieldConstraints, IntrospectionResult, PydanticEnum, PydanticField,
-    PydanticModel, PydanticType, PythonType,
+    FieldConstraints, IntrospectionResult, PydanticEnum, PydanticField, PydanticModel,
+    PydanticType, PythonType,
 };
 use crate::AnalyzerError;
 use protocol_squisher_ir::{
-    Constraint, ContainerType, EnumDef, FieldDef, FieldMetadata, IrSchema,
-    IrType, NumberValue, PrimitiveType, SpecialType, StructDef, TagStyle, TypeDef,
-    TypeMetadata, VariantDef, VariantMetadata,
+    Constraint, ContainerType, EnumDef, FieldDef, FieldMetadata, IrSchema, IrType, NumberValue,
+    PrimitiveType, SpecialType, StructDef, TagStyle, TypeDef, TypeMetadata, VariantDef,
+    VariantMetadata,
 };
 
 /// Convert an introspection result to an IR schema
@@ -28,17 +28,17 @@ pub fn convert_introspection(result: &IntrospectionResult) -> Result<IrSchema, A
                 let type_def = convert_model(model)?;
                 schema.add_type(model.name.clone(), type_def);
                 schema.add_root(model.name.clone());
-            }
+            },
             PydanticType::Enum(enum_def) => {
                 let type_def = convert_enum(enum_def)?;
                 schema.add_type(enum_def.name.clone(), type_def);
                 schema.add_root(enum_def.name.clone());
-            }
+            },
             PydanticType::Error { name, error } => {
-                return Err(AnalyzerError::IntrospectionError(
-                    format!("Failed to extract {name}: {error}")
-                ));
-            }
+                return Err(AnalyzerError::IntrospectionError(format!(
+                    "Failed to extract {name}: {error}"
+                )));
+            },
         }
     }
 
@@ -121,12 +121,12 @@ pub fn convert_python_type(py_type: &PythonType) -> Result<IrType, AnalyzerError
                 "decimal" => PrimitiveType::Decimal,
                 "uuid" => PrimitiveType::Uuid,
                 other => {
-                    return Err(AnalyzerError::UnsupportedType(
-                        format!("Unknown primitive type: {other}")
-                    ));
-                }
+                    return Err(AnalyzerError::UnsupportedType(format!(
+                        "Unknown primitive type: {other}"
+                    )));
+                },
             }))
-        }
+        },
 
         PythonType::None => Ok(IrType::Special(SpecialType::Unit)),
 
@@ -134,12 +134,15 @@ pub fn convert_python_type(py_type: &PythonType) -> Result<IrType, AnalyzerError
 
         PythonType::Optional { inner } => {
             let inner_type = convert_python_type(inner)?;
-            Ok(IrType::Container(ContainerType::Option(Box::new(inner_type))))
-        }
+            Ok(IrType::Container(ContainerType::Option(Box::new(
+                inner_type,
+            ))))
+        },
 
         PythonType::Union { variants } => {
             // Check if this is effectively Optional (Union with None)
-            let non_none: Vec<_> = variants.iter()
+            let non_none: Vec<_> = variants
+                .iter()
                 .filter(|v| !matches!(v, PythonType::None))
                 .collect();
 
@@ -151,21 +154,20 @@ pub fn convert_python_type(py_type: &PythonType) -> Result<IrType, AnalyzerError
 
             // True union - convert to IR union (stored as tuple of variants)
             // Note: This is a simplification; full union support would need IR extension
-            let variant_types: Result<Vec<_>, _> = variants.iter()
-                .map(convert_python_type)
-                .collect();
+            let variant_types: Result<Vec<_>, _> =
+                variants.iter().map(convert_python_type).collect();
             Ok(IrType::Container(ContainerType::Tuple(variant_types?)))
-        }
+        },
 
         PythonType::List { inner } => {
             let inner_type = convert_python_type(inner)?;
             Ok(IrType::Container(ContainerType::Vec(Box::new(inner_type))))
-        }
+        },
 
         PythonType::Set { inner } => {
             let inner_type = convert_python_type(inner)?;
             Ok(IrType::Container(ContainerType::Set(Box::new(inner_type))))
-        }
+        },
 
         PythonType::Map { key, value } => {
             let key_type = convert_python_type(key)?;
@@ -174,34 +176,30 @@ pub fn convert_python_type(py_type: &PythonType) -> Result<IrType, AnalyzerError
                 Box::new(key_type),
                 Box::new(value_type),
             )))
-        }
+        },
 
         PythonType::Tuple { elements } => {
-            let element_types: Result<Vec<_>, _> = elements.iter()
-                .map(convert_python_type)
-                .collect();
+            let element_types: Result<Vec<_>, _> =
+                elements.iter().map(convert_python_type).collect();
             Ok(IrType::Container(ContainerType::Tuple(element_types?)))
-        }
+        },
 
-        PythonType::Enum { name, .. } => {
-            Ok(IrType::Reference(name.clone()))
-        }
+        PythonType::Enum { name, .. } => Ok(IrType::Reference(name.clone())),
 
-        PythonType::Reference { name, .. } => {
-            Ok(IrType::Reference(name.clone()))
-        }
+        PythonType::Reference { name, .. } => Ok(IrType::Reference(name.clone())),
 
-        PythonType::Unknown { repr } => {
-            Err(AnalyzerError::UnsupportedType(
-                format!("Unknown Python type: {}", repr.as_deref().unwrap_or("?"))
-            ))
-        }
+        PythonType::Unknown { repr } => Err(AnalyzerError::UnsupportedType(format!(
+            "Unknown Python type: {}",
+            repr.as_deref().unwrap_or("?")
+        ))),
     }
 }
 
 /// Convert a Python enum to an IR enum
 fn convert_enum(enum_def: &PydanticEnum) -> Result<TypeDef, AnalyzerError> {
-    let variants: Vec<VariantDef> = enum_def.variants.iter()
+    let variants: Vec<VariantDef> = enum_def
+        .variants
+        .iter()
         .map(|v| VariantDef {
             name: v.name.clone(),
             payload: None, // Python enums are typically unit variants with values
@@ -279,7 +277,9 @@ mod tests {
 
     #[test]
     fn test_convert_primitive() {
-        let py_type = PythonType::Primitive { prim_type: "string".to_string() };
+        let py_type = PythonType::Primitive {
+            prim_type: "string".to_string(),
+        };
         let ir_type = convert_python_type(&py_type).unwrap();
         assert!(matches!(ir_type, IrType::Primitive(PrimitiveType::String)));
     }
@@ -287,42 +287,47 @@ mod tests {
     #[test]
     fn test_convert_optional() {
         let py_type = PythonType::Optional {
-            inner: Box::new(PythonType::Primitive { prim_type: "int".to_string() })
+            inner: Box::new(PythonType::Primitive {
+                prim_type: "int".to_string(),
+            }),
         };
         let ir_type = convert_python_type(&py_type).unwrap();
-        if let IrType::Container(ContainerType::Option(inner)) = ir_type {
-            assert!(matches!(*inner, IrType::Primitive(PrimitiveType::I64)));
-        } else {
-            panic!("Expected Option container");
-        }
+        let IrType::Container(ContainerType::Option(inner)) = ir_type else {
+            unreachable!("optional python type should map to Option");
+        };
+        assert!(matches!(*inner, IrType::Primitive(PrimitiveType::I64)));
     }
 
     #[test]
     fn test_convert_list() {
         let py_type = PythonType::List {
-            inner: Box::new(PythonType::Primitive { prim_type: "string".to_string() })
+            inner: Box::new(PythonType::Primitive {
+                prim_type: "string".to_string(),
+            }),
         };
         let ir_type = convert_python_type(&py_type).unwrap();
-        if let IrType::Container(ContainerType::Vec(inner)) = ir_type {
-            assert!(matches!(*inner, IrType::Primitive(PrimitiveType::String)));
-        } else {
-            panic!("Expected Vec container");
-        }
+        let IrType::Container(ContainerType::Vec(inner)) = ir_type else {
+            unreachable!("list python type should map to Vec");
+        };
+        assert!(matches!(*inner, IrType::Primitive(PrimitiveType::String)));
     }
 
     #[test]
     fn test_convert_map() {
         let py_type = PythonType::Map {
-            key: Box::new(PythonType::Primitive { prim_type: "string".to_string() }),
-            value: Box::new(PythonType::Primitive { prim_type: "int".to_string() }),
+            key: Box::new(PythonType::Primitive {
+                prim_type: "string".to_string(),
+            }),
+            value: Box::new(PythonType::Primitive {
+                prim_type: "int".to_string(),
+            }),
         };
         let ir_type = convert_python_type(&py_type).unwrap();
-        if let IrType::Container(ContainerType::Map(key, value)) = ir_type {
-            assert!(matches!(*key, IrType::Primitive(PrimitiveType::String)));
-            assert!(matches!(*value, IrType::Primitive(PrimitiveType::I64)));
-        } else {
-            panic!("Expected Map container");
-        }
+        let IrType::Container(ContainerType::Map(key, value)) = ir_type else {
+            unreachable!("dict python type should map to Map");
+        };
+        assert!(matches!(*key, IrType::Primitive(PrimitiveType::String)));
+        assert!(matches!(*value, IrType::Primitive(PrimitiveType::I64)));
     }
 
     #[test]

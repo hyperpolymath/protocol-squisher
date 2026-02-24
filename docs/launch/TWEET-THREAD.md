@@ -195,16 +195,15 @@ Business is acceptable overhead for safety.
 
 MVP Complete (100%):
 
-✅ 312 tests passing
+✅ 678 tests passing
 ✅ Rust ↔ Python working
 ✅ All 4 transport classes
 ✅ Formal proofs (Agda + Lean)
 ✅ CLI (analyze/check/optimize/generate)
 ✅ Zero-copy benchmarks
 
-Supported: Rust, Python, JSON
-
-Coming: Protobuf, Thrift, Avro, Cap'n Proto
+Supported: Rust, Python, Protobuf, Thrift, Avro, MessagePack,
+FlatBuffers, Cap'n Proto, Bebop, ReScript, JSON Schema
 
 ---
 
@@ -266,7 +265,7 @@ Being real about limitations:
 
 ❌ Wheelbarrow is slow (by design)
 ❌ No runtime schema inference
-❌ Limited formats in MVP
+❌ Optimization quality varies by format pair
 ❌ No circular refs yet
 ❌ Enum compatibility is tricky
 

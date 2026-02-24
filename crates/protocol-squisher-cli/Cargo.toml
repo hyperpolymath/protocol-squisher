@@ -30,9 +30,17 @@ protocol-squisher-protobuf-analyzer = { path = "../protocol-squisher-protobuf-an
 protocol-squisher-json-schema-analyzer = { path = "../protocol-squisher-json-schema-analyzer" }
 protocol-squisher-compat = { path = "../protocol-squisher-compat" }
 protocol-squisher-optimizer = { path = "../protocol-squisher-optimizer" }
+protocol-squisher-minikanren = { path = "../protocol-squisher-minikanren" }
+protocol-squisher-security-bridge = { path = "../protocol-squisher-security-bridge" }
+protocol-squisher-performance = { path = "../protocol-squisher-performance" }
+protocol-squisher-enterprise = { path = "../protocol-squisher-enterprise" }
+protocol-squisher-distributed = { path = "../protocol-squisher-distributed" }
 protocol-squisher-pyo3-codegen = { path = "../protocol-squisher-pyo3-codegen" }
 protocol-squisher-json-fallback = { path = "../protocol-squisher-json-fallback" }
+protocol-squisher-meta-analysis = { path = "../protocol-squisher-meta-analysis" }
 protocol-squisher-transport-primitives = { path = "../../ephapax-ir" }
+
+serde = { version = "1.0", features = ["derive"] }
 
 clap = { version = "4.5", features = ["derive", "color", "suggestions"] }
 anyhow = "1.0"

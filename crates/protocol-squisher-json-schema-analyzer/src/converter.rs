@@ -111,11 +111,11 @@ impl SchemaConverter {
                         };
                         types.insert(name.to_string(), TypeDef::Struct(struct_def));
                     }
-                }
+                },
                 SchemaType::Multiple(_) => {
                     // Multi-type schemas become unions
                     // For now, treat as Any
-                }
+                },
             }
         }
 
@@ -256,7 +256,7 @@ impl SchemaConverter {
                 // For other multi-types, use Any for now
                 // (proper union support would require creating a Union type definition)
                 Ok(IrType::Special(protocol_squisher_ir::SpecialType::Any))
-            }
+            },
         }
     }
 
@@ -279,12 +279,12 @@ impl SchemaConverter {
                         "uri" | "uri-reference" => {
                             // URI is represented as String with format constraint
                             return Ok(IrType::Primitive(PrimitiveType::String));
-                        }
-                        _ => {}
+                        },
+                        _ => {},
                     }
                 }
                 Ok(IrType::Primitive(PrimitiveType::String))
-            }
+            },
             SingleType::Number => Ok(IrType::Primitive(PrimitiveType::F64)),
             SingleType::Integer => Ok(IrType::Primitive(PrimitiveType::I64)),
             SingleType::Boolean => Ok(IrType::Primitive(PrimitiveType::Bool)),
@@ -300,14 +300,14 @@ impl SchemaConverter {
                         IrType::Special(protocol_squisher_ir::SpecialType::Any),
                     ))))
                 }
-            }
+            },
             SingleType::Object => {
                 // Generic object without properties - use Map<String, Any>
                 Ok(IrType::Container(ContainerType::Map(
                     Box::new(IrType::Primitive(PrimitiveType::String)),
                     Box::new(IrType::Special(protocol_squisher_ir::SpecialType::Any)),
                 )))
-            }
+            },
         }
     }
 
@@ -471,7 +471,9 @@ impl SchemaConverter {
         if let Some(rest) = ref_uri.strip_prefix("#/") {
             let parts: Vec<&str> = rest.split('/').collect();
             if parts.len() >= 2 {
-                return Ok(parts.last().unwrap().to_string());
+                if let Some(name) = parts.last() {
+                    return Ok((*name).to_string());
+                }
             }
         }
 
@@ -538,17 +540,16 @@ mod tests {
         let ir = parse_and_convert(json, "Person").unwrap();
         assert!(ir.types.contains_key("Person"));
 
-        if let TypeDef::Struct(s) = &ir.types["Person"] {
-            assert_eq!(s.fields.len(), 2);
+        let TypeDef::Struct(s) = &ir.types["Person"] else {
+            unreachable!("Person should convert to struct");
+        };
+        assert_eq!(s.fields.len(), 2);
 
-            let name_field = s.fields.iter().find(|f| f.name == "name").unwrap();
-            assert!(!name_field.optional);
+        let name_field = s.fields.iter().find(|f| f.name == "name").unwrap();
+        assert!(!name_field.optional);
 
-            let age_field = s.fields.iter().find(|f| f.name == "age").unwrap();
-            assert!(age_field.optional);
-        } else {
-            panic!("Expected struct");
-        }
+        let age_field = s.fields.iter().find(|f| f.name == "age").unwrap();
+        assert!(age_field.optional);
     }
 
     #[test]
@@ -566,11 +567,10 @@ mod tests {
         let ir = parse_and_convert(json, "Task").unwrap();
         assert!(ir.types.contains_key("StatusEnum"));
 
-        if let TypeDef::Enum(e) = &ir.types["StatusEnum"] {
-            assert_eq!(e.variants.len(), 3);
-        } else {
-            panic!("Expected enum");
-        }
+        let TypeDef::Enum(e) = &ir.types["StatusEnum"] else {
+            unreachable!("StatusEnum should convert to enum");
+        };
+        assert_eq!(e.variants.len(), 3);
     }
 
     #[test]

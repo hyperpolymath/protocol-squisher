@@ -24,11 +24,13 @@ use protocol_squisher_ir::{
 use std::collections::HashMap;
 
 mod analysis;
+pub mod ai_assist;
 mod codegen;
 pub mod entropy;
 mod ephapax_optimizer;
 
 pub use analysis::*;
+pub use ai_assist::*;
 pub use codegen::*;
 pub use entropy::analyze_schema_entropy;
 pub use ephapax_optimizer::*;
@@ -97,7 +99,9 @@ pub enum ConversionStrategy {
     /// Struct field-by-field conversion
     StructConvert { field_mappings: Vec<FieldMapping> },
     /// Enum variant mapping
-    EnumConvert { variant_mappings: Vec<VariantMapping> },
+    EnumConvert {
+        variant_mappings: Vec<VariantMapping>,
+    },
     /// JSON serialization fallback
     JsonFallback,
 }
@@ -173,18 +177,10 @@ impl Optimizer {
     /// Analyze a pair of type definitions
     fn analyze_type_pair(&self, source: &TypeDef, target: &TypeDef) -> ConversionPath {
         match (source, target) {
-            (TypeDef::Struct(s), TypeDef::Struct(t)) => {
-                self.analyze_struct_pair(s, t)
-            }
-            (TypeDef::Enum(s), TypeDef::Enum(t)) => {
-                self.analyze_enum_pair(s, t)
-            }
-            (TypeDef::Alias(s), TypeDef::Alias(t)) => {
-                self.analyze_ir_types(&s.target, &t.target)
-            }
-            (TypeDef::Newtype(s), TypeDef::Newtype(t)) => {
-                self.analyze_ir_types(&s.inner, &t.inner)
-            }
+            (TypeDef::Struct(s), TypeDef::Struct(t)) => self.analyze_struct_pair(s, t),
+            (TypeDef::Enum(s), TypeDef::Enum(t)) => self.analyze_enum_pair(s, t),
+            (TypeDef::Alias(s), TypeDef::Alias(t)) => self.analyze_ir_types(&s.target, &t.target),
+            (TypeDef::Newtype(s), TypeDef::Newtype(t)) => self.analyze_ir_types(&s.inner, &t.inner),
             _ => ConversionPath {
                 source: IrType::Special(SpecialType::Any),
                 target: IrType::Special(SpecialType::Any),
@@ -220,7 +216,7 @@ impl Optimizer {
                         target_name: target_field.name.clone(),
                         conversion: Box::new(field_path),
                     });
-                }
+                },
                 None if target_field.optional => {
                     // Optional field with no source - that's fine
                     field_mappings.push(FieldMapping {
@@ -234,12 +230,12 @@ impl Optimizer {
                             nested: vec![],
                         }),
                     });
-                }
+                },
                 None => {
                     // Required field missing - fallback
                     all_matched = false;
                     break;
-                }
+                },
             }
         }
 
@@ -282,7 +278,10 @@ impl Optimizer {
 
         // Check if all source variants exist in target
         for source_variant in &source.variants {
-            let target_variant = target.variants.iter().find(|v| v.name == source_variant.name);
+            let target_variant = target
+                .variants
+                .iter()
+                .find(|v| v.name == source_variant.name);
 
             match target_variant {
                 Some(tv) => {
@@ -294,11 +293,11 @@ impl Optimizer {
                                 worst_level = path.level;
                             }
                             Some(Box::new(path))
-                        }
+                        },
                         _ => {
                             worst_level = OptimizationLevel::Fallback;
                             None
-                        }
+                        },
                     };
 
                     variant_mappings.push(VariantMapping {
@@ -306,7 +305,7 @@ impl Optimizer {
                         target_name: tv.name.clone(),
                         payload_conversion,
                     });
-                }
+                },
                 None => {
                     // Variant not found in target - fallback
                     return ConversionPath {
@@ -316,7 +315,7 @@ impl Optimizer {
                         strategy: ConversionStrategy::JsonFallback,
                         nested: vec![],
                     };
-                }
+                },
             }
         }
 
@@ -376,7 +375,7 @@ impl Optimizer {
                     strategy: ConversionStrategy::ContainerMap,
                     nested,
                 }
-            }
+            },
             (VariantPayload::Struct(sf), VariantPayload::Struct(tf)) => {
                 // Treat as inline struct
                 let source_struct = protocol_squisher_ir::StructDef {
@@ -390,7 +389,7 @@ impl Optimizer {
                     metadata: protocol_squisher_ir::TypeMetadata::default(),
                 };
                 self.analyze_struct_pair(&source_struct, &target_struct)
-            }
+            },
             _ => ConversionPath {
                 source: IrType::Special(SpecialType::Any),
                 target: IrType::Special(SpecialType::Any),
@@ -414,14 +413,10 @@ impl Optimizer {
             },
 
             // Primitive conversions
-            (IrType::Primitive(sp), IrType::Primitive(tp)) => {
-                self.analyze_primitive_pair(sp, tp)
-            }
+            (IrType::Primitive(sp), IrType::Primitive(tp)) => self.analyze_primitive_pair(sp, tp),
 
             // Container conversions
-            (IrType::Container(sc), IrType::Container(tc)) => {
-                self.analyze_container_pair(sc, tc)
-            }
+            (IrType::Container(sc), IrType::Container(tc)) => self.analyze_container_pair(sc, tc),
 
             // Type references - would need schema lookup
             (IrType::Reference(_), IrType::Reference(_)) => ConversionPath {
@@ -444,49 +439,60 @@ impl Optimizer {
     }
 
     /// Analyze primitive type pair
-    fn analyze_primitive_pair(&self, source: &PrimitiveType, target: &PrimitiveType) -> ConversionPath {
+    fn analyze_primitive_pair(
+        &self,
+        source: &PrimitiveType,
+        target: &PrimitiveType,
+    ) -> ConversionPath {
         let (level, checked) = match (source, target) {
             // Same type
             (s, t) if s == t => (OptimizationLevel::ZeroCopy, false),
 
             // Integer widening (safe)
-            (PrimitiveType::I8, PrimitiveType::I16 | PrimitiveType::I32 | PrimitiveType::I64 | PrimitiveType::I128) |
-            (PrimitiveType::I16, PrimitiveType::I32 | PrimitiveType::I64 | PrimitiveType::I128) |
-            (PrimitiveType::I32, PrimitiveType::I64 | PrimitiveType::I128) |
-            (PrimitiveType::I64, PrimitiveType::I128) |
-            (PrimitiveType::U8, PrimitiveType::U16 | PrimitiveType::U32 | PrimitiveType::U64 | PrimitiveType::U128) |
-            (PrimitiveType::U16, PrimitiveType::U32 | PrimitiveType::U64 | PrimitiveType::U128) |
-            (PrimitiveType::U32, PrimitiveType::U64 | PrimitiveType::U128) |
-            (PrimitiveType::U64, PrimitiveType::U128) |
-            (PrimitiveType::F32, PrimitiveType::F64) => {
-                (OptimizationLevel::DirectCast, false)
-            }
+            (
+                PrimitiveType::I8,
+                PrimitiveType::I16 | PrimitiveType::I32 | PrimitiveType::I64 | PrimitiveType::I128,
+            )
+            | (PrimitiveType::I16, PrimitiveType::I32 | PrimitiveType::I64 | PrimitiveType::I128)
+            | (PrimitiveType::I32, PrimitiveType::I64 | PrimitiveType::I128)
+            | (PrimitiveType::I64, PrimitiveType::I128)
+            | (
+                PrimitiveType::U8,
+                PrimitiveType::U16 | PrimitiveType::U32 | PrimitiveType::U64 | PrimitiveType::U128,
+            )
+            | (PrimitiveType::U16, PrimitiveType::U32 | PrimitiveType::U64 | PrimitiveType::U128)
+            | (PrimitiveType::U32, PrimitiveType::U64 | PrimitiveType::U128)
+            | (PrimitiveType::U64, PrimitiveType::U128)
+            | (PrimitiveType::F32, PrimitiveType::F64) => (OptimizationLevel::DirectCast, false),
 
             // Integer narrowing (needs check)
-            (PrimitiveType::I128, PrimitiveType::I64 | PrimitiveType::I32 | PrimitiveType::I16 | PrimitiveType::I8) |
-            (PrimitiveType::I64, PrimitiveType::I32 | PrimitiveType::I16 | PrimitiveType::I8) |
-            (PrimitiveType::I32, PrimitiveType::I16 | PrimitiveType::I8) |
-            (PrimitiveType::I16, PrimitiveType::I8) |
-            (PrimitiveType::U128, PrimitiveType::U64 | PrimitiveType::U32 | PrimitiveType::U16 | PrimitiveType::U8) |
-            (PrimitiveType::U64, PrimitiveType::U32 | PrimitiveType::U16 | PrimitiveType::U8) |
-            (PrimitiveType::U32, PrimitiveType::U16 | PrimitiveType::U8) |
-            (PrimitiveType::U16, PrimitiveType::U8) |
-            (PrimitiveType::F64, PrimitiveType::F32) => {
-                (OptimizationLevel::DirectCast, true)
-            }
+            (
+                PrimitiveType::I128,
+                PrimitiveType::I64 | PrimitiveType::I32 | PrimitiveType::I16 | PrimitiveType::I8,
+            )
+            | (PrimitiveType::I64, PrimitiveType::I32 | PrimitiveType::I16 | PrimitiveType::I8)
+            | (PrimitiveType::I32, PrimitiveType::I16 | PrimitiveType::I8)
+            | (PrimitiveType::I16, PrimitiveType::I8)
+            | (
+                PrimitiveType::U128,
+                PrimitiveType::U64 | PrimitiveType::U32 | PrimitiveType::U16 | PrimitiveType::U8,
+            )
+            | (PrimitiveType::U64, PrimitiveType::U32 | PrimitiveType::U16 | PrimitiveType::U8)
+            | (PrimitiveType::U32, PrimitiveType::U16 | PrimitiveType::U8)
+            | (PrimitiveType::U16, PrimitiveType::U8)
+            | (PrimitiveType::F64, PrimitiveType::F32) => (OptimizationLevel::DirectCast, true),
 
             // Unsigned to signed widening
-            (PrimitiveType::U8, PrimitiveType::I16 | PrimitiveType::I32 | PrimitiveType::I64 | PrimitiveType::I128) |
-            (PrimitiveType::U16, PrimitiveType::I32 | PrimitiveType::I64 | PrimitiveType::I128) |
-            (PrimitiveType::U32, PrimitiveType::I64 | PrimitiveType::I128) |
-            (PrimitiveType::U64, PrimitiveType::I128) => {
-                (OptimizationLevel::DirectCast, false)
-            }
+            (
+                PrimitiveType::U8,
+                PrimitiveType::I16 | PrimitiveType::I32 | PrimitiveType::I64 | PrimitiveType::I128,
+            )
+            | (PrimitiveType::U16, PrimitiveType::I32 | PrimitiveType::I64 | PrimitiveType::I128)
+            | (PrimitiveType::U32, PrimitiveType::I64 | PrimitiveType::I128)
+            | (PrimitiveType::U64, PrimitiveType::I128) => (OptimizationLevel::DirectCast, false),
 
             // String types are compatible
-            (PrimitiveType::String, PrimitiveType::String) => {
-                (OptimizationLevel::ZeroCopy, false)
-            }
+            (PrimitiveType::String, PrimitiveType::String) => (OptimizationLevel::ZeroCopy, false),
 
             // Everything else needs fallback
             _ => (OptimizationLevel::Fallback, false),
@@ -499,8 +505,8 @@ impl Optimizer {
         };
 
         ConversionPath {
-            source: IrType::Primitive(source.clone()),
-            target: IrType::Primitive(target.clone()),
+            source: IrType::Primitive(*source),
+            target: IrType::Primitive(*target),
             level,
             strategy,
             nested: vec![],
@@ -508,7 +514,11 @@ impl Optimizer {
     }
 
     /// Analyze container type pair
-    fn analyze_container_pair(&self, source: &ContainerType, target: &ContainerType) -> ConversionPath {
+    fn analyze_container_pair(
+        &self,
+        source: &ContainerType,
+        target: &ContainerType,
+    ) -> ConversionPath {
         match (source, target) {
             // Option<T> conversions
             (ContainerType::Option(s), ContainerType::Option(t)) => {
@@ -520,7 +530,7 @@ impl Optimizer {
                     strategy: ConversionStrategy::ContainerMap,
                     nested: vec![inner],
                 }
-            }
+            },
 
             // Vec<T> conversions
             (ContainerType::Vec(s), ContainerType::Vec(t)) => {
@@ -532,13 +542,16 @@ impl Optimizer {
                     strategy: ConversionStrategy::ContainerMap,
                     nested: vec![inner],
                 }
-            }
+            },
 
             // Map conversions
             (ContainerType::Map(sk, sv), ContainerType::Map(tk, tv)) => {
                 let key_path = self.analyze_ir_types(sk, tk);
                 let val_path = self.analyze_ir_types(sv, tv);
-                let level = key_path.level.max(val_path.level).max(OptimizationLevel::ContainerMatch);
+                let level = key_path
+                    .level
+                    .max(val_path.level)
+                    .max(OptimizationLevel::ContainerMatch);
 
                 ConversionPath {
                     source: IrType::Container(source.clone()),
@@ -547,7 +560,7 @@ impl Optimizer {
                     strategy: ConversionStrategy::ContainerMap,
                     nested: vec![key_path, val_path],
                 }
-            }
+            },
 
             // Tuple conversions
             (ContainerType::Tuple(st), ContainerType::Tuple(tt)) if st.len() == tt.len() => {
@@ -569,7 +582,7 @@ impl Optimizer {
                     strategy: ConversionStrategy::ContainerMap,
                     nested,
                 }
-            }
+            },
 
             // Everything else
             _ => ConversionPath {
@@ -599,10 +612,7 @@ pub struct OptimizationResult {
 }
 
 /// Analyze two schemas and find optimization opportunities
-pub fn analyze_optimization(
-    source: &IrSchema,
-    target: &IrSchema,
-) -> OptimizationResult {
+pub fn analyze_optimization(source: &IrSchema, target: &IrSchema) -> OptimizationResult {
     let mut optimizer = Optimizer::new();
     let mut type_paths = HashMap::new();
     let mut optimized_types = Vec::new();
@@ -610,7 +620,7 @@ pub fn analyze_optimization(
     let mut worst_level = OptimizationLevel::ZeroCopy;
 
     // Find matching types between schemas
-    for (source_type_id, _source_def) in &source.types {
+    for source_type_id in source.types.keys() {
         if let Some(_target_def) = target.types.get(source_type_id) {
             let path = optimizer.find_path(source, target, source_type_id, source_type_id);
 
@@ -664,7 +674,10 @@ mod tests {
             &make_primitive_type(PrimitiveType::I64),
         );
         assert_eq!(path.level, OptimizationLevel::DirectCast);
-        assert!(matches!(path.strategy, ConversionStrategy::NumericCast { checked: false }));
+        assert!(matches!(
+            path.strategy,
+            ConversionStrategy::NumericCast { checked: false }
+        ));
     }
 
     #[test]
@@ -675,7 +688,10 @@ mod tests {
             &make_primitive_type(PrimitiveType::I32),
         );
         assert_eq!(path.level, OptimizationLevel::DirectCast);
-        assert!(matches!(path.strategy, ConversionStrategy::NumericCast { checked: true }));
+        assert!(matches!(
+            path.strategy,
+            ConversionStrategy::NumericCast { checked: true }
+        ));
     }
 
     #[test]
@@ -692,8 +708,12 @@ mod tests {
     fn test_vec_optimization() {
         let optimizer = Optimizer::new();
         let path = optimizer.analyze_ir_types(
-            &IrType::Container(ContainerType::Vec(Box::new(make_primitive_type(PrimitiveType::I32)))),
-            &IrType::Container(ContainerType::Vec(Box::new(make_primitive_type(PrimitiveType::I64)))),
+            &IrType::Container(ContainerType::Vec(Box::new(make_primitive_type(
+                PrimitiveType::I32,
+            )))),
+            &IrType::Container(ContainerType::Vec(Box::new(make_primitive_type(
+                PrimitiveType::I64,
+            )))),
         );
         // Vec conversion with element widening
         assert_eq!(path.level, OptimizationLevel::ContainerMatch);
@@ -703,8 +723,12 @@ mod tests {
     fn test_option_optimization() {
         let optimizer = Optimizer::new();
         let path = optimizer.analyze_ir_types(
-            &IrType::Container(ContainerType::Option(Box::new(make_primitive_type(PrimitiveType::String)))),
-            &IrType::Container(ContainerType::Option(Box::new(make_primitive_type(PrimitiveType::String)))),
+            &IrType::Container(ContainerType::Option(Box::new(make_primitive_type(
+                PrimitiveType::String,
+            )))),
+            &IrType::Container(ContainerType::Option(Box::new(make_primitive_type(
+                PrimitiveType::String,
+            )))),
         );
         assert_eq!(path.level, OptimizationLevel::ZeroCopy);
     }
@@ -757,7 +781,10 @@ mod tests {
 
         let path = optimizer.analyze_struct_pair(&source, &target);
         assert_eq!(path.level, OptimizationLevel::StructuralMatch);
-        assert!(matches!(path.strategy, ConversionStrategy::StructConvert { .. }));
+        assert!(matches!(
+            path.strategy,
+            ConversionStrategy::StructConvert { .. }
+        ));
     }
 
     #[test]
@@ -770,9 +797,21 @@ mod tests {
 
     #[test]
     fn test_transport_class_mapping() {
-        assert_eq!(OptimizationLevel::ZeroCopy.to_transport_class(), TransportClass::Concorde);
-        assert_eq!(OptimizationLevel::DirectCast.to_transport_class(), TransportClass::Concorde);
-        assert_eq!(OptimizationLevel::StructuralMatch.to_transport_class(), TransportClass::BusinessClass);
-        assert_eq!(OptimizationLevel::Fallback.to_transport_class(), TransportClass::Wheelbarrow);
+        assert_eq!(
+            OptimizationLevel::ZeroCopy.to_transport_class(),
+            TransportClass::Concorde
+        );
+        assert_eq!(
+            OptimizationLevel::DirectCast.to_transport_class(),
+            TransportClass::Concorde
+        );
+        assert_eq!(
+            OptimizationLevel::StructuralMatch.to_transport_class(),
+            TransportClass::BusinessClass
+        );
+        assert_eq!(
+            OptimizationLevel::Fallback.to_transport_class(),
+            TransportClass::Wheelbarrow
+        );
     }
 }
