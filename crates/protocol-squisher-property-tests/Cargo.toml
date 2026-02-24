@@ -14,7 +14,7 @@ protocol-squisher-ir = { path = "../protocol-squisher-ir" }
 protocol-squisher-compat = { path = "../protocol-squisher-compat" }
 protocol-squisher-transport-primitives = { path = "../../ephapax-ir" }
 proptest = "1.4"
-proptest-derive = "0.5"
+proptest-derive = "0.8"
 
 [lib]
 name = "protocol_squisher_property_tests"
