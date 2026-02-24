@@ -183,13 +183,13 @@ toc::[]
 
 === Continuous Learning System
 
-- [ ] Elixir OTP crawler for GitHub schemas
+- [x] Elixir OTP crawler for GitHub schemas
 - [ ] Parallel schema parsing
 - [ ] Empirical compatibility database
 - [ ] Pattern extraction
 - [ ] Feed patterns back to synthesis layer
 
-**Deliverable:** Self-improving system
+**Deliverable:** Self-improving system (crawler scaffolded in `explorer/crawler`)
 
 == Phase 3: Advanced Features (Months 7-12)
 

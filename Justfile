@@ -169,6 +169,18 @@ container-bench:
 container-bench-verified-real:
     ./scripts/podman-dev.sh bench-verified-real
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# EXPLORER (ELIXIR OTP CRAWLER)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Run Elixir crawler tests
+explorer-crawler-test:
+    cd explorer/crawler && mix test
+
+# Run Elixir GitHub schema crawler (pass extra flags after `--`)
+explorer-crawler-run *args:
+    cd explorer/crawler && mix crawler.run {{args}}
+
 # Install pinned real ephapax-cli in Podman dev container
 container-install-ephapax-cli:
     ./scripts/podman-dev.sh install-ephapax-cli
