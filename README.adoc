@@ -60,7 +60,7 @@ Protocol Squisher analyzes two incompatible serialization formats and synthesize
 
 [source,bash]
 ----
-$ protocol-squish analyze factor-schema.factor capnproto-schema.capnp
+$ protocol-squisher analyze-schema --protocol capnproto --input capnproto-schema.capnp
 
 Compatibility Analysis:
   Transport Class: Wheelbarrow (47% type fidelity)
@@ -69,7 +69,11 @@ Compatibility Analysis:
 
 TRANSPORT VIABLE: ✓
 
-$ protocol-squish generate --output ./adapter/
+$ protocol-squisher compile \
+    --from capnproto \
+    --to rust \
+    --input capnproto-schema.capnp \
+    --output ./adapter/
 
 Generated:
   ✓ adapter.rs (1,247 lines)
@@ -139,6 +143,12 @@ protocol-squisher check \
 # Get optimization suggestions
 protocol-squisher optimize --rust src/lib.rs --python models.py
 
+# Apply empirical explorer hints (optional)
+protocol-squisher optimize \
+  --rust src/lib.rs \
+  --python models.py \
+  --synthesis-hints target/explorer/database/synthesis-hints.json
+
 # Generate PyO3 bindings
 protocol-squisher generate \
   --rust src/lib.rs \
@@ -176,6 +186,7 @@ See link:ROADMAP.adoc[ROADMAP.adoc] for the full expansion plan.
 
 **Getting Started:**
 - link:docs/CLI-GUIDE.adoc[CLI Usage Guide] - Command reference and workflows (**start here**)
+- link:docs/CONTAINER-GUIDE.md[Container Guide (Podman)] - Reproducible dev/test/bench workflows
 - link:examples/README.md[Example Projects] - Working examples with benchmarks
 - link:docs/OPTIMIZATION-GUIDE.adoc[Optimization Guide] - How to achieve zero-copy transport
 - link:docs/TRANSPORT-CLASSES.adoc[Transport Classes Reference] - Detailed theory and API
