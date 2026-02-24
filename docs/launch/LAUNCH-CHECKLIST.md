@@ -7,7 +7,8 @@
 ## Pre-Launch Verification (Do This First)
 
 ### Technical Verification
-- [ ] Run full test suite: `cargo test --all` (expect 312 passing)
+- [ ] Refresh launch metrics snapshot: `./scripts/ci/refresh-launch-metrics.sh`
+- [ ] Run full test suite: `cargo test --all` (record current pass count in announcements; as of 2026-02-24: 678 passed, 7 ignored, 0 failed)
 - [ ] Run examples: `cd examples/zero-copy-demo && ./build.sh && python test.py`
 - [ ] Verify CLI builds: `cargo build --release -p protocol-squisher-cli`
 - [ ] Check CI status: All workflows green on GitHub
@@ -18,7 +19,7 @@
 - [ ] GitHub links correct in all announcements
 - [ ] Social handles updated (replace `@hyperpolymath` if needed)
 - [ ] Performance numbers match latest benchmarks
-- [ ] Test count accurate (currently 312)
+- [ ] Test count accurate (as of 2026-02-24: 678 passed, 7 ignored)
 - [ ] Examples referenced in announcements still exist
 - [ ] License information correct (PMPL-1.0-or-later)
 
@@ -72,7 +73,7 @@
 #### r/rust (Tuesday)
 1. [ ] Check r/rust rules (no spam, check if self-promotion allowed)
 2. [ ] Copy content from `REDDIT-ANNOUNCEMENT.md`
-3. [ ] Post with title: "I built a tool that auto-generates adapters between any two serialization formats (Rust↔Python working, 312 tests, formally verified)"
+3. [ ] Post with title: "I built a tool that auto-generates adapters between any two serialization formats (Rust↔Python working, 678 tests, formally verified)"
 4. [ ] Add flair if required
 5. [ ] Monitor comments
 
@@ -250,7 +251,7 @@
 - [ ] Write case study if real-world adoption
 - [ ] Present at local Rust meetup
 - [ ] Submit talk proposal to conference
-- [ ] Start Phase 2 format work (Protobuf, etc.)
+- [ ] Start Phase 3 hardening work (real-world validation, synthesis, advanced features)
 
 ### Month 3
 - [ ] Publish academic paper on formal verification

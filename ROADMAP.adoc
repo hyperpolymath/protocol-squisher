@@ -10,7 +10,7 @@
 
 [NOTE]
 ====
-**Current Status:** ✅ **MVP Complete** (February 2026)
+**Current Status:** ✅ **Phase 2 Format Expansion Complete** (February 2026)
 
 Phase 0 (Foundation) and Phase 1 (MVP) are 100% complete:
 - ✅ ephapax IR with Idris2 dependent types
@@ -24,9 +24,11 @@ Phase 0 (Foundation) and Phase 1 (MVP) are 100% complete:
 - ✅ Formal verification (Agda + Lean proofs)
 - ✅ Comprehensive documentation
 
-**Total:** 692 tests passing, 100% MVP deliverables complete
+**Phase 2 (Format Expansion):**
+- ✅ 11 protocol analyzers implemented (Rust, Python, JSON Schema, Protobuf, Bebop, FlatBuffers, MessagePack, Avro, Cap'n Proto, Thrift, ReScript)
+- ✅ Diversity/squishability analysis across protocol families
 
-**Now:** Ready for Phase 2 (Format Expansion) and public launch
+**Now:** Public launch hardening and Phase 3 (real-world validation, synthesis, advanced features)
 ====
 
 toc::[]
@@ -135,13 +137,14 @@ toc::[]
 **Deliverable:** Concorde-class adapters for compatible types ✓ **COMPLETE** (34 tests passing)
 
 === Weeks 11-12: Polish & Demo
-- [x] CLI tool (`protocol-squish` binary)
+- [x] CLI tool (`protocol-squisher` binary)
 - [x] End-to-end examples
 - [x] Performance benchmarks
 - [x] Documentation
-- [ ] HN launch post
+- [x] HN launch post draft + runbook
+- [ ] HN submission + day-1 response window
 
-**Deliverable:** Public demo, first users 🚧 **IN PROGRESS** (CLI, examples, docs complete; HN launch pending)
+**Deliverable:** Public demo, first users 🚧 **IN PROGRESS** (CLI, examples, docs, and HN assets complete; external HN posting pending)
 
 == Phase 2: Format Expansion (Months 4-6)
 
