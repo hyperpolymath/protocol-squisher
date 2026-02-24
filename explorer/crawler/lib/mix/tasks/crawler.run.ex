@@ -23,7 +23,9 @@ defmodule Mix.Tasks.Crawler.Run do
     max_pages: :integer,
     per_page: :integer,
     concurrency: :integer,
+    parser_concurrency: :integer,
     request_timeout_ms: :integer,
+    parse_timeout_ms: :integer,
     sleep_ms: :integer,
     max_bytes: :integer,
     with_corpus: :boolean,
@@ -73,7 +75,9 @@ defmodule Mix.Tasks.Crawler.Run do
       --max-pages <n>               Max pages per query (default: 2)
       --per-page <n>                Results per page (default: 25)
       --concurrency <n>             Concurrent item workers (default: 8)
+      --parser-concurrency <n>      Concurrent parser workers (default: 8)
       --request-timeout-ms <n>      HTTP request timeout in ms (default: 15000)
+      --parse-timeout-ms <n>        Parse stage timeout in ms (default: 20000)
       --sleep-ms <n>                Delay between pages in ms (default: 250)
       --max-bytes <n>               Max schema file size in bytes (default: 500000)
       --with-corpus                 Run protocol-squisher corpus-analyze per file

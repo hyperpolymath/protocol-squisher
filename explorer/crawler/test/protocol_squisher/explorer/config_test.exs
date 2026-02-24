@@ -9,6 +9,8 @@ defmodule ProtocolSquisher.Explorer.ConfigTest do
     assert config.max_pages == 2
     assert config.per_page == 25
     assert config.concurrency == 8
+    assert config.parser_concurrency == 8
+    assert config.parse_timeout_ms == 20_000
     assert config.with_corpus == false
     assert is_binary(config.output_path)
     assert length(config.queries) > 0

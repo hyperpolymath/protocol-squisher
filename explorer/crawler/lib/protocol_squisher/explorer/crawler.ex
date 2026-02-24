@@ -5,7 +5,7 @@ defmodule ProtocolSquisher.Explorer.Crawler do
 
   require Logger
 
-  alias ProtocolSquisher.Explorer.{Config, CorpusAnalyzer, FormatDetector, GitHubApi, SchemaSink}
+  alias ProtocolSquisher.Explorer.{Config, FormatDetector, GitHubApi, ParallelParser, SchemaSink}
 
   @type crawl_summary :: %{
           queries: non_neg_integer(),
@@ -71,7 +71,7 @@ defmodule ProtocolSquisher.Explorer.Crawler do
   end
 
   defp process_items(items, query, %Config{} = config, sink) do
-    stream_opts = [
+    fetch_stream_opts = [
       max_concurrency: config.concurrency,
       timeout: config.request_timeout_ms * 2,
       on_timeout: :kill_task,
@@ -79,37 +79,46 @@ defmodule ProtocolSquisher.Explorer.Crawler do
       supervisor: ProtocolSquisher.Explorer.TaskSupervisor
     ]
 
-    Enum.reduce(
-      Task.async_stream(items, &process_item(&1, query, config), stream_opts),
-      %{written: 0, errors: 0},
-      fn
-        {:ok, {:ok, record}}, acc ->
-          case SchemaSink.write(sink, record) do
-            :ok -> %{acc | written: acc.written + 1}
-            {:error, _reason} -> %{acc | errors: acc.errors + 1}
-          end
+    {fetched_records, fetch_errors} =
+      Enum.reduce(
+        Task.async_stream(items, &fetch_item(&1, query, config), fetch_stream_opts),
+        {[], 0},
+        fn
+          {:ok, {:ok, record}}, {records, errors} ->
+            {[record | records], errors}
 
-        {:ok, {:error, reason}}, acc ->
-          Logger.debug("item skipped: #{inspect(reason)}")
-          %{acc | errors: acc.errors + 1}
+          {:ok, {:error, reason}}, {records, errors} ->
+            Logger.debug("fetch skipped: #{inspect(reason)}")
+            {records, errors + 1}
 
-        {:exit, reason}, acc ->
-          Logger.warning("item worker crashed: #{inspect(reason)}")
-          %{acc | errors: acc.errors + 1}
-      end
-    )
+          {:exit, reason}, {records, errors} ->
+            Logger.warning("fetch worker crashed: #{inspect(reason)}")
+            {records, errors + 1}
+        end
+      )
+
+    fetched_records
+    |> ParallelParser.parse_and_enrich(config)
+    |> Enum.reduce(%{written: 0, errors: fetch_errors}, fn
+      %{"record_error" => reason}, acc ->
+        Logger.warning("parse worker crashed: #{reason}")
+        %{acc | errors: acc.errors + 1}
+
+      record, acc ->
+        case SchemaSink.write(sink, record) do
+          :ok -> %{acc | written: acc.written + 1}
+          {:error, _reason} -> %{acc | errors: acc.errors + 1}
+        end
+    end)
   end
 
-  defp process_item(item, query, %Config{} = config) do
+  defp fetch_item(item, query, %Config{} = config) do
     path = Map.get(item, "path")
     format = if is_binary(path), do: FormatDetector.detect(path), else: nil
 
     with true <- is_binary(path) || {:error, :missing_path},
          true <- is_binary(format) || {:error, {:unsupported_format, path}},
          {:ok, content_payload} <- GitHubApi.fetch_content(config, item) do
-      {corpus_analysis, corpus_error} =
-        corpus_result(CorpusAnalyzer.analyze(config, content_payload["content"], format))
-
       {:ok,
        %{
          "fetched_at_utc" => DateTime.utc_now() |> DateTime.to_iso8601(),
@@ -124,18 +133,13 @@ defmodule ProtocolSquisher.Explorer.Crawler do
          "content_encoding" => content_payload["content_encoding"],
          "content" => content_payload["content"],
          "content_sha" => content_payload["content_sha"],
-         "download_url" => content_payload["download_url"],
-         "corpus_analysis" => corpus_analysis,
-         "corpus_error" => corpus_error
+         "download_url" => content_payload["download_url"]
        }}
     else
       false -> {:error, :invalid_item}
       {:error, reason} -> {:error, reason}
     end
   end
-
-  defp corpus_result({:ok, analysis}), do: {analysis, nil}
-  defp corpus_result({:error, reason}), do: {nil, inspect(reason)}
 
   defp merge_counts(counts, summary) do
     %{summary | written: summary.written + counts.written, errors: summary.errors + counts.errors}
