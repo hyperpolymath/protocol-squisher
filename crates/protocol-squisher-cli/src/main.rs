@@ -9,13 +9,13 @@ use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use colored::Colorize;
 use protocol_squisher_compat::EphapaxCompatibilityEngine;
-use protocol_squisher_transport_primitives::TransportClass;
 use protocol_squisher_ir::IrSchema;
 use protocol_squisher_optimizer::EphapaxOptimizer;
+use protocol_squisher_python_analyzer::PythonAnalyzer;
 use protocol_squisher_rust_analyzer::RustAnalyzer;
 use std::collections::HashMap;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 mod analyze;
 mod compiler;
@@ -39,11 +39,11 @@ enum Commands {
     /// Analyze Rust and Python schemas for compatibility
     Analyze {
         /// Path to Rust source file
-        #[arg(short, long)]
-        rust: PathBuf,
+        #[arg(short, long, required_unless_present = "python")]
+        rust: Option<PathBuf>,
 
-        /// Path to Python source file (optional)
-        #[arg(short, long)]
+        /// Path to Python source file
+        #[arg(short, long, required_unless_present = "rust")]
         python: Option<PathBuf>,
 
         /// Show detailed field-level analysis
@@ -68,6 +68,10 @@ enum Commands {
         /// Show only suggestions with impact > threshold
         #[arg(short, long, default_value = "0.0")]
         threshold: f64,
+
+        /// Path to synthesis hints JSON (defaults to PROTOCOL_SQUISHER_SYNTHESIS_HINTS if set)
+        #[arg(long)]
+        synthesis_hints: Option<PathBuf>,
     },
 
     /// Generate PyO3 bindings with transport-class optimization
@@ -100,7 +104,7 @@ enum Commands {
         python: PathBuf,
     },
 
-    /// Universal protocol compiler (ephapax-verified)
+    /// Universal protocol compiler (ephapax backend when available)
     Compile {
         /// Source protocol format (bebop, flatbuffers, protobuf, etc.)
         #[arg(short = 'f', long)]
@@ -176,7 +180,8 @@ fn main() -> Result<()> {
             rust,
             python,
             threshold,
-        } => optimize(rust, python, threshold),
+            synthesis_hints,
+        } => optimize(rust, python, threshold, synthesis_hints),
 
         Commands::Generate {
             rust,
@@ -236,9 +241,13 @@ fn corpus_analyze(input: PathBuf, format_hint: String) -> Result<()> {
     }
 
     let protocol = ProtocolFormat::from_str(&format_hint)?;
-    let schema = protocol
-        .analyze_file(&input)
-        .with_context(|| format!("Failed to analyze {} as {}", input.display(), protocol.name()))?;
+    let schema = protocol.analyze_file(&input).with_context(|| {
+        format!(
+            "Failed to analyze {} as {}",
+            input.display(),
+            protocol.name()
+        )
+    })?;
 
     // Build squishability report from the parsed IR schema
     let mut field_transport_classes: HashMap<String, MetaTransportClass> = HashMap::new();
@@ -262,7 +271,7 @@ fn corpus_analyze(input: PathBuf, format_hint: String) -> Result<()> {
                             field: key.clone(),
                             protocol_native: true,
                         });
-                    }
+                    },
                     protocol_squisher_ir::IrType::Primitive(
                         protocol_squisher_ir::PrimitiveType::String,
                     ) => {
@@ -271,7 +280,7 @@ fn corpus_analyze(input: PathBuf, format_hint: String) -> Result<()> {
                             possible_values: vec![],
                             blocker_to: MetaTransportClass::Business,
                         });
-                    }
+                    },
                     protocol_squisher_ir::IrType::Container(
                         protocol_squisher_ir::ContainerType::Option(_),
                     ) => {
@@ -279,8 +288,8 @@ fn corpus_analyze(input: PathBuf, format_hint: String) -> Result<()> {
                             field: key.clone(),
                             prevents: MetaTransportClass::Concorde,
                         });
-                    }
-                    _ => {}
+                    },
+                    _ => {},
                 }
 
                 if field.optional {
@@ -395,9 +404,7 @@ fn determine_best_class(
 }
 
 /// Calculate predicted speedup over JSON baseline
-fn calculate_predicted_speedup(
-    class: &protocol_squisher_meta_analysis::TransportClass,
-) -> f64 {
+fn calculate_predicted_speedup(class: &protocol_squisher_meta_analysis::TransportClass) -> f64 {
     use protocol_squisher_meta_analysis::TransportClass as MTC;
     match class {
         MTC::Concorde => 50.0,
@@ -418,14 +425,17 @@ fn compile_universal(from: String, to: String, input: PathBuf, output: PathBuf) 
     let result = compiler.compile(source_format, &input, target_format, &output)?;
 
     println!("\n{}", result.summary());
-    println!(
-        "{}",
-        format!(
-            "Ephapax verification: {} (linear types guarantee correctness)",
-            if result.ephapax_verified { "✓" } else { "✗" }
-        )
-        .bright_green()
-    );
+    if result.ephapax_verified {
+        println!(
+            "{}",
+            "Ephapax backend: ✓ verified (linear-type proofs active)".bright_green()
+        );
+    } else {
+        println!(
+            "{}",
+            "Ephapax backend: ⚠ stub mode (heuristic fallback; ephapax-cli not active)".yellow()
+        );
+    }
 
     Ok(())
 }
@@ -447,8 +457,14 @@ fn analyze_schema(protocol: String, input: PathBuf, detailed: bool) -> Result<()
     println!("\n{}", "Schema Analysis:".bold());
     println!("  Format: {}", format.name().bright_green());
     println!("  Name: {}", schema.name.bright_cyan());
-    println!("  Types: {}", schema.types.len().to_string().bright_yellow());
-    println!("  Roots: {}", schema.roots.len().to_string().bright_yellow());
+    println!(
+        "  Types: {}",
+        schema.types.len().to_string().bright_yellow()
+    );
+    println!(
+        "  Roots: {}",
+        schema.roots.len().to_string().bright_yellow()
+    );
 
     if detailed {
         println!("\n{}", "Type Definitions:".bold());
@@ -459,25 +475,30 @@ fn analyze_schema(protocol: String, input: PathBuf, detailed: bool) -> Result<()
                     for field in &s.fields {
                         println!("    - {}: {:?}", field.name, field.ty);
                     }
-                }
+                },
                 protocol_squisher_ir::TypeDef::Enum(e) => {
                     println!("  {} enum {} ({})", "→".blue(), name, e.variants.len());
                     for variant in &e.variants {
                         println!("    - {}", variant.name);
                     }
-                }
+                },
                 protocol_squisher_ir::TypeDef::Union(u) => {
-                    println!("  {} union {} ({} types)", "→".blue(), name, u.variants.len());
+                    println!(
+                        "  {} union {} ({} types)",
+                        "→".blue(),
+                        name,
+                        u.variants.len()
+                    );
                     for (i, variant_ty) in u.variants.iter().enumerate() {
                         println!("    - variant {}: {:?}", i, variant_ty);
                     }
-                }
+                },
                 protocol_squisher_ir::TypeDef::Alias(a) => {
                     println!("  {} alias {} = {:?}", "→".blue(), name, a.target);
-                }
+                },
                 protocol_squisher_ir::TypeDef::Newtype(n) => {
                     println!("  {} newtype {} = {:?}", "→".blue(), name, n.inner);
-                }
+                },
             }
         }
     }
@@ -520,68 +541,102 @@ fn cross_compile(input: PathBuf, targets: String, output: PathBuf) -> Result<()>
             Ok(result) => {
                 println!("  {} {}", "✓".green(), target.name());
                 results.push(result);
-            }
+            },
             Err(e) => {
                 println!("  {} {} - {}", "✗".red(), target.name(), e);
-            }
+            },
         }
     }
 
-    println!("\n{}", format!("Cross-compilation complete: {}/{} succeeded",
-        results.len(), targets.split(',').count()).bright_green().bold());
+    println!(
+        "\n{}",
+        format!(
+            "Cross-compilation complete: {}/{} succeeded",
+            results.len(),
+            targets.split(',').count()
+        )
+        .bright_green()
+        .bold()
+    );
 
     Ok(())
 }
 
-fn optimize(rust_path: PathBuf, python_path: PathBuf, threshold: f64) -> Result<()> {
+fn optimize(
+    rust_path: PathBuf,
+    python_path: PathBuf,
+    threshold: f64,
+    synthesis_hints: Option<PathBuf>,
+) -> Result<()> {
     println!("{}", "🔍 Analyzing schemas for optimization...".cyan());
 
-    // Parse Rust schema
-    let rust_source = fs::read_to_string(&rust_path)
-        .with_context(|| format!("Failed to read Rust file: {}", rust_path.display()))?;
-    let rust_analyzer = RustAnalyzer::new();
-    let rust_schema = rust_analyzer
-        .analyze_source(&rust_source)
-        .context("Failed to analyze Rust source")?;
-
-    // Parse Python schema (stub for now - would use PythonAnalyzer)
-    let _python_source = fs::read_to_string(&python_path)
-        .with_context(|| format!("Failed to read Python file: {}", python_path.display()))?;
-
-    // For now, create a target schema from Rust (would normally be from Python)
-    let target_schema = create_target_schema(&rust_schema);
+    // Parse schemas
+    let rust_schema = analyze_rust_schema(&rust_path)?;
+    let target_schema = analyze_python_schema(&python_path)?;
 
     // Run optimizer
     let engine = EphapaxCompatibilityEngine::new();
-    let optimizer = EphapaxOptimizer::new(engine);
+    let hints_path = resolve_synthesis_hints_path(synthesis_hints);
+    let optimizer = if let Some(path) = hints_path.as_ref() {
+        EphapaxOptimizer::new(engine)
+            .with_empirical_hints_from_file(path)
+            .map_err(anyhow::Error::msg)
+            .with_context(|| format!("Failed to load synthesis hints from {}", path.display()))?
+    } else {
+        EphapaxOptimizer::new(engine)
+    };
     let result = optimizer.analyze_and_suggest(&rust_schema, &target_schema);
 
     // Display current status
     println!("\n{}", "Current Status:".bold());
-    println!("  Transport Class: {}", format_transport_class(&result.current.overall_class));
-    println!("  Zero-Copy Fields: {}/{} ({:.1}%)",
-        result.current.type_analyses.iter()
+    println!(
+        "  Transport Class: {}",
+        format_transport_class(&result.current.overall_class)
+    );
+    println!(
+        "  Zero-Copy Fields: {}/{} ({:.1}%)",
+        result
+            .current
+            .type_analyses
+            .iter()
             .flat_map(|t| &t.field_analyses)
-            .filter(|f| f.class == TransportClass::Concorde)
+            .filter(|f| f.class == protocol_squisher_transport_primitives::TransportClass::Concorde)
             .count(),
-        result.current.type_analyses.iter()
+        result
+            .current
+            .type_analyses
+            .iter()
             .flat_map(|t| &t.field_analyses)
             .count(),
         calculate_zero_copy_percentage(&result.current)
     );
+    if result.empirical_hints_applied {
+        let source = result
+            .empirical_hints_source
+            .as_ref()
+            .map(|p| p.display().to_string())
+            .unwrap_or_else(|| "<inline>".to_string());
+        println!("  Empirical Hints: {}", source.cyan());
+    }
 
     // Display suggestions
     println!("\n{}", "Optimization Suggestions:".bold().green());
 
-    let filtered_suggestions: Vec<_> = result.suggestions.iter()
+    let filtered_suggestions: Vec<_> = result
+        .suggestions
+        .iter()
         .filter(|s| s.impact >= threshold)
         .collect();
 
     if filtered_suggestions.is_empty() {
-        println!("  {} No optimization opportunities found (schema is already optimal)", "✓".green());
+        println!(
+            "  {} No optimization opportunities found (schema is already optimal)",
+            "✓".green()
+        );
     } else {
         for (i, suggestion) in filtered_suggestions.iter().enumerate() {
-            println!("\n  {}. {} → {}",
+            println!(
+                "\n  {}. {} → {}",
                 i + 1,
                 format!("{:?}", suggestion.current_class).red(),
                 format!("{:?}", suggestion.improved_class).green()
@@ -595,7 +650,8 @@ fn optimize(rust_path: PathBuf, python_path: PathBuf, threshold: f64) -> Result<
     // Display potential after optimizations
     println!("\n{}", "Potential After Optimizations:".bold());
     println!("  Zero-Copy: {:.1}%", result.potential_zero_copy_percentage);
-    println!("  Production Ready: {}",
+    println!(
+        "  Production Ready: {}",
         if result.would_be_production_ready {
             "Yes ✓".green()
         } else {
@@ -609,19 +665,9 @@ fn optimize(rust_path: PathBuf, python_path: PathBuf, threshold: f64) -> Result<
 fn check(rust_path: PathBuf, python_path: PathBuf) -> Result<()> {
     println!("{}", "⚡ Quick compatibility check...".cyan());
 
-    // Parse Rust schema
-    let rust_source = fs::read_to_string(&rust_path)
-        .with_context(|| format!("Failed to read Rust file: {}", rust_path.display()))?;
-    let rust_analyzer = RustAnalyzer::new();
-    let rust_schema = rust_analyzer
-        .analyze_source(&rust_source)
-        .context("Failed to analyze Rust source")?;
-
-    // Parse Python schema (stub)
-    let _python_source = fs::read_to_string(&python_path)
-        .with_context(|| format!("Failed to read Python file: {}", python_path.display()))?;
-
-    let target_schema = create_target_schema(&rust_schema);
+    // Parse schemas
+    let rust_schema = analyze_rust_schema(&rust_path)?;
+    let target_schema = analyze_python_schema(&python_path)?;
 
     // Analyze compatibility
     let engine = EphapaxCompatibilityEngine::new();
@@ -629,7 +675,10 @@ fn check(rust_path: PathBuf, python_path: PathBuf) -> Result<()> {
 
     // Display result
     println!("\n{}", "Compatibility Result:".bold());
-    println!("  Overall Class: {}", format_transport_class(&result.overall_class));
+    println!(
+        "  Overall Class: {}",
+        format_transport_class(&result.overall_class)
+    );
 
     let zero_copy_pct = calculate_zero_copy_percentage(&result);
     println!("  Zero-Copy: {:.1}%", zero_copy_pct);
@@ -647,7 +696,11 @@ fn check(rust_path: PathBuf, python_path: PathBuf) -> Result<()> {
     Ok(())
 }
 
-fn format_transport_class(class: &TransportClass) -> String {
+fn format_transport_class(
+    class: &protocol_squisher_transport_primitives::TransportClass,
+) -> String {
+    use protocol_squisher_transport_primitives::TransportClass;
+
     match class {
         TransportClass::Concorde => "Concorde (100% fidelity, 0% overhead)".green().to_string(),
         TransportClass::Business => "Business (98% fidelity, 5% overhead)".cyan().to_string(),
@@ -656,8 +709,12 @@ fn format_transport_class(class: &TransportClass) -> String {
     }
 }
 
-fn calculate_zero_copy_percentage(result: &protocol_squisher_compat::SchemaCompatibilityResult) -> f64 {
-    let total: usize = result.type_analyses.iter()
+fn calculate_zero_copy_percentage(
+    result: &protocol_squisher_compat::SchemaCompatibilityResult,
+) -> f64 {
+    let total: usize = result
+        .type_analyses
+        .iter()
         .map(|t| t.field_analyses.len())
         .sum();
 
@@ -665,60 +722,37 @@ fn calculate_zero_copy_percentage(result: &protocol_squisher_compat::SchemaCompa
         return 0.0;
     }
 
-    let zero_copy: usize = result.type_analyses.iter()
+    let zero_copy: usize = result
+        .type_analyses
+        .iter()
         .flat_map(|t| &t.field_analyses)
-        .filter(|f| f.class == TransportClass::Concorde)
+        .filter(|f| f.class == protocol_squisher_transport_primitives::TransportClass::Concorde)
         .count();
 
     (zero_copy as f64 / total as f64) * 100.0
 }
 
-// Helper to create a target schema (would normally come from Python analyzer)
-fn create_target_schema(source: &IrSchema) -> IrSchema {
-    // For now, create a modified version with some narrowing conversions
-    use protocol_squisher_ir::*;
-    use std::collections::BTreeMap;
+fn resolve_synthesis_hints_path(cli_path: Option<PathBuf>) -> Option<PathBuf> {
+    cli_path.or_else(|| {
+        std::env::var("PROTOCOL_SQUISHER_SYNTHESIS_HINTS")
+            .ok()
+            .map(PathBuf::from)
+    })
+}
 
-    let mut target_types = BTreeMap::new();
+pub(crate) fn analyze_rust_schema(path: &Path) -> Result<IrSchema> {
+    let rust_source = fs::read_to_string(path)
+        .with_context(|| format!("Failed to read Rust file: {}", path.display()))?;
+    let rust_analyzer = RustAnalyzer::new();
+    rust_analyzer
+        .analyze_source(&rust_source)
+        .context("Failed to analyze Rust source")
+}
 
-    for (type_id, type_def) in &source.types {
-        if let TypeDef::Struct(s) = type_def {
-            let mut narrowed_fields = Vec::new();
-
-            for field in &s.fields {
-                // Narrow some fields to demonstrate optimization
-                let narrowed_ty = match &field.ty {
-                    IrType::Primitive(PrimitiveType::I64) => IrType::Primitive(PrimitiveType::I32),
-                    IrType::Primitive(PrimitiveType::F64) => IrType::Primitive(PrimitiveType::F32),
-                    other => other.clone(),
-                };
-
-                narrowed_fields.push(FieldDef {
-                    name: field.name.clone(),
-                    ty: narrowed_ty,
-                    optional: field.optional,
-                    constraints: field.constraints.clone(),
-                    metadata: field.metadata.clone(),
-                });
-            }
-
-            target_types.insert(
-                type_id.clone(),
-                TypeDef::Struct(StructDef {
-                    name: s.name.clone(),
-                    fields: narrowed_fields,
-                    metadata: s.metadata.clone(),
-                }),
-            );
-        }
-    }
-
-    IrSchema {
-        name: format!("{}_target", source.name),
-        version: source.version.clone(),
-        source_format: "python-pydantic".to_string(),
-        types: target_types,
-        roots: source.roots.clone(),
-        metadata: source.metadata.clone(),
-    }
+pub(crate) fn analyze_python_schema(path: &Path) -> Result<IrSchema> {
+    let analyzer = PythonAnalyzer::new();
+    analyzer
+        .analyze_file(path)
+        .map_err(|e| anyhow::anyhow!(e))
+        .with_context(|| format!("Failed to analyze Python file: {}", path.display()))
 }
