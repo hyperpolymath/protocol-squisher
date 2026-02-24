@@ -63,19 +63,19 @@
 //! }
 //! ```
 
-pub mod mapping;
-pub mod struct_gen;
 pub mod enum_gen;
+pub mod mapping;
 pub mod module_gen;
 pub mod optimized_gen;
+pub mod struct_gen;
 
-pub use mapping::{MappingContext, PyO3Primitive, PyO3Type};
-pub use struct_gen::{generate_struct, is_hashable, StructGenConfig};
 pub use enum_gen::{generate_enum, EnumGenConfig};
+pub use mapping::{MappingContext, PyO3Primitive, PyO3Type};
 pub use module_gen::{generate_module, GeneratedModule, ModuleGenConfig};
 pub use optimized_gen::{
-    OptimizedPyO3Generator, OptimizedGenConfig, OptimizedGeneratedCode, GenerationStats,
+    GenerationStats, OptimizedGenConfig, OptimizedGeneratedCode, OptimizedPyO3Generator,
 };
+pub use struct_gen::{generate_struct, is_hashable, StructGenConfig};
 
 use protocol_squisher_ir::IrSchema;
 
@@ -155,10 +155,7 @@ pub fn quick_generate(schema: &IrSchema, module_name: &str) -> String {
 }
 
 /// Generate PyO3 module with Python stubs
-pub fn generate_with_stubs(
-    schema: &IrSchema,
-    module_name: &str,
-) -> (String, String) {
+pub fn generate_with_stubs(schema: &IrSchema, module_name: &str) -> (String, String) {
     let config = ModuleGenConfig::new(module_name);
     let result = generate_module(schema, &config);
     (result.rust_code, result.python_stub.unwrap_or_default())
@@ -168,8 +165,8 @@ pub fn generate_with_stubs(
 mod tests {
     use super::*;
     use protocol_squisher_ir::{
-        ContainerType, EnumDef, FieldDef, FieldMetadata, IrType, PrimitiveType,
-        StructDef, TagStyle, TypeDef, TypeMetadata, VariantDef,
+        ContainerType, EnumDef, FieldDef, FieldMetadata, IrType, PrimitiveType, StructDef,
+        TagStyle, TypeDef, TypeMetadata, VariantDef,
     };
 
     fn make_user_schema() -> IrSchema {
@@ -284,9 +281,9 @@ mod tests {
                     },
                     FieldDef {
                         name: "items".to_string(),
-                        ty: IrType::Container(ContainerType::Vec(Box::new(
-                            IrType::Primitive(PrimitiveType::String),
-                        ))),
+                        ty: IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(
+                            PrimitiveType::String,
+                        )))),
                         optional: false,
                         constraints: vec![],
                         metadata: FieldMetadata::default(),
@@ -336,9 +333,9 @@ mod tests {
 
     #[test]
     fn test_container_mapping() {
-        let list_type = PyO3Type::from_ir(&IrType::Container(ContainerType::Vec(
-            Box::new(IrType::Primitive(PrimitiveType::String)),
-        )));
+        let list_type = PyO3Type::from_ir(&IrType::Container(ContainerType::Vec(Box::new(
+            IrType::Primitive(PrimitiveType::String),
+        ))));
         assert_eq!(list_type.python_annotation(), "list[str]");
         assert_eq!(list_type.rust_type(), "Vec<String>");
     }
@@ -354,9 +351,9 @@ mod tests {
 
     #[test]
     fn test_optional_mapping() {
-        let opt_type = PyO3Type::from_ir(&IrType::Container(ContainerType::Option(
-            Box::new(IrType::Primitive(PrimitiveType::String)),
-        )));
+        let opt_type = PyO3Type::from_ir(&IrType::Container(ContainerType::Option(Box::new(
+            IrType::Primitive(PrimitiveType::String),
+        ))));
         assert_eq!(opt_type.python_annotation(), "str | None");
         assert_eq!(opt_type.rust_type(), "Option<String>");
     }

@@ -53,7 +53,7 @@ We've built a **complete hypothesis-driven protocol analysis platform** that emp
 
 **Key Finding**: Thrift ServerConfig scored **0.840** due to many default values!
 
-**H2: "Zero-Copy = Unsquishable" ⚠️ PARTIALLY FALSE**
+**H2: "Zero-Copy = Unsquishable" ⚠️ PARTLY FALSE**
 - **Hypothesis**: Zero-copy protocols score low (<0.3)
 - **Result**: Cap'n Proto scores 0.7-1.0 depending on field types
 - **Surprise**: Text/Data fields use **pointer indirection** → NOT true zero-copy!

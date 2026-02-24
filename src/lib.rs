@@ -3,13 +3,13 @@
 
 //! # Protocol Squisher — Universal Interoperability Engine.
 //!
-//! Protocol Squisher automates the synthesis of data adapters between 
-//! disparate serialization formats. It allows high-level languages 
-//! (Python, JS) to talk to low-level systems (Rust, Zig) without manual 
+//! Protocol Squisher automates the synthesis of data adapters between
+//! disparate serialization formats. It allows high-level languages
+//! (Python, JS) to talk to low-level systems (Rust, Zig) without manual
 //! FFI boilerplate.
 //!
 //! THE SQUISHER INVARIANT: "If it compiles, it carries."
-//! This system guarantees that ANY two schemas can be bridged, even if the 
+//! This system guarantees that ANY two schemas can be bridged, even if the
 //! transport is lossy or requires fallback to JSON.
 
 pub mod ir {

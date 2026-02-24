@@ -55,12 +55,12 @@
 //! | `(T1, T2, ...)` | `Tuple<T1, T2, ...>` | Matching tuples |
 
 mod converter;
-mod parser;
 mod ephapax_bridge;
+mod parser;
 
 pub use converter::ReScriptConverter;
+pub use ephapax_bridge::{analyze_transport_compatibility, TransportAnalysis};
 pub use parser::ReScriptParser;
-pub use ephapax_bridge::{TransportAnalysis, analyze_transport_compatibility};
 
 use protocol_squisher_ir::IrSchema;
 use std::path::Path;

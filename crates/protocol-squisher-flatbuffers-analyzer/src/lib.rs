@@ -24,7 +24,7 @@
 //! let analyzer = FlatBuffersAnalyzer::new();
 //!
 //! // Analyze from file
-//! let schema = analyzer.analyze_file(Path::new("schema.fbs")).unwrap();
+//! let schema = analyzer.analyze_file(Path::new("schema.fbs"));
 //!
 //! // Analyze from string
 //! let fbs = r#"
@@ -34,11 +34,13 @@
 //!     }
 //!     root_type User;
 //! "#;
-//! let schema = analyzer.analyze_str(fbs, "user").unwrap();
+//! let schema = analyzer.analyze_str(fbs, "user");
 //!
 //! // Access types
-//! for (name, type_def) in &schema.types {
-//!     println!("Found type: {}", name);
+//! if let Ok(schema) = schema {
+//!     for (name, _type_def) in &schema.types {
+//!         println!("Found type: {}", name);
+//!     }
 //! }
 //! ```
 //!
@@ -67,12 +69,12 @@
 //! - **Backwards compatibility**: Tables support optional fields and schema evolution
 
 mod converter;
-mod parser;
 mod ephapax_bridge;
+mod parser;
 
 pub use converter::FlatBuffersConverter;
+pub use ephapax_bridge::{analyze_transport_compatibility, TransportAnalysis};
 pub use parser::FlatBuffersParser;
-pub use ephapax_bridge::{TransportAnalysis, analyze_transport_compatibility};
 
 use protocol_squisher_ir::IrSchema;
 use std::path::Path;
@@ -261,11 +263,14 @@ mod tests {
         let ir = result.unwrap();
         let all_types = ir.types.get("AllTypes").unwrap();
 
-        if let protocol_squisher_ir::TypeDef::Struct(s) = all_types {
-            assert_eq!(s.fields.len(), 12);
-        } else {
-            panic!("Expected struct type");
-        }
+        assert!(
+            matches!(all_types, protocol_squisher_ir::TypeDef::Struct(_)),
+            "Expected struct type"
+        );
+        let protocol_squisher_ir::TypeDef::Struct(s) = all_types else {
+            unreachable!("asserted struct");
+        };
+        assert_eq!(s.fields.len(), 12);
     }
 
     #[test]

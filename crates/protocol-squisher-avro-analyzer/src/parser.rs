@@ -96,13 +96,9 @@ pub enum AvroSchema {
 #[serde(rename_all = "lowercase")]
 pub enum AvroComplexSchema {
     /// Array type
-    Array {
-        items: AvroSchema,
-    },
+    Array { items: AvroSchema },
     /// Map type (keys are always strings in Avro)
-    Map {
-        values: AvroSchema,
-    },
+    Map { values: AvroSchema },
     /// Inline record definition
     Record {
         name: String,
@@ -167,21 +163,23 @@ impl AvroParser {
         match &value {
             serde_json::Value::Object(obj) if obj.contains_key("type") => {
                 // Single type definition
-                let avro_type: AvroType = serde_json::from_value(value.clone())
-                    .map_err(|e| AnalyzerError::ParseError(format!("Invalid Avro schema: {}", e)))?;
+                let avro_type: AvroType = serde_json::from_value(value.clone()).map_err(|e| {
+                    AnalyzerError::ParseError(format!("Invalid Avro schema: {}", e))
+                })?;
                 types.push(avro_type);
-            }
+            },
             serde_json::Value::Array(_) => {
                 // Multiple type definitions (protocol)
-                let avro_types: Vec<AvroType> = serde_json::from_value(value)
-                    .map_err(|e| AnalyzerError::ParseError(format!("Invalid Avro protocol: {}", e)))?;
+                let avro_types: Vec<AvroType> = serde_json::from_value(value).map_err(|e| {
+                    AnalyzerError::ParseError(format!("Invalid Avro protocol: {}", e))
+                })?;
                 types.extend(avro_types);
-            }
+            },
             _ => {
                 return Err(AnalyzerError::InvalidSchema(
                     "Expected Avro schema object or array".to_string(),
                 ));
-            }
+            },
         }
 
         Ok(ParsedAvro { types })
@@ -193,9 +191,9 @@ impl AvroSchema {
     pub fn is_optional(&self) -> bool {
         if let AvroSchema::Union(variants) = self {
             if variants.len() == 2 {
-                return variants.iter().any(|v| {
-                    matches!(v, AvroSchema::Name(name) if name == "null")
-                });
+                return variants
+                    .iter()
+                    .any(|v| matches!(v, AvroSchema::Name(name) if name == "null"));
             }
         }
         false
@@ -252,14 +250,17 @@ mod tests {
         let parsed = result.unwrap();
         assert_eq!(parsed.types.len(), 1);
 
-        if let AvroType::Record { name, fields, .. } = &parsed.types[0] {
-            assert_eq!(name, "Person");
-            assert_eq!(fields.len(), 2);
-            assert_eq!(fields[0].name, "name");
-            assert_eq!(fields[1].name, "age");
-        } else {
-            panic!("Expected record type");
-        }
+        assert!(
+            matches!(&parsed.types[0], AvroType::Record { .. }),
+            "Expected record type"
+        );
+        let AvroType::Record { name, fields, .. } = &parsed.types[0] else {
+            unreachable!("asserted record");
+        };
+        assert_eq!(name, "Person");
+        assert_eq!(fields.len(), 2);
+        assert_eq!(fields[0].name, "name");
+        assert_eq!(fields[1].name, "age");
     }
 
     #[test]
@@ -333,12 +334,15 @@ mod tests {
         assert!(result.is_ok());
 
         let parsed = result.unwrap();
-        if let AvroType::Enum { name, symbols, .. } = &parsed.types[0] {
-            assert_eq!(name, "Status");
-            assert_eq!(symbols.len(), 3);
-        } else {
-            panic!("Expected enum type");
-        }
+        assert!(
+            matches!(&parsed.types[0], AvroType::Enum { .. }),
+            "Expected enum type"
+        );
+        let AvroType::Enum { name, symbols, .. } = &parsed.types[0] else {
+            unreachable!("asserted enum");
+        };
+        assert_eq!(name, "Status");
+        assert_eq!(symbols.len(), 3);
     }
 
     #[test]
@@ -356,12 +360,15 @@ mod tests {
         assert!(result.is_ok());
 
         let parsed = result.unwrap();
-        if let AvroType::Fixed { name, size, .. } = &parsed.types[0] {
-            assert_eq!(name, "UUID");
-            assert_eq!(*size, 16);
-        } else {
-            panic!("Expected fixed type");
-        }
+        assert!(
+            matches!(&parsed.types[0], AvroType::Fixed { .. }),
+            "Expected fixed type"
+        );
+        let AvroType::Fixed { name, size, .. } = &parsed.types[0] else {
+            unreachable!("asserted fixed");
+        };
+        assert_eq!(name, "UUID");
+        assert_eq!(*size, 16);
     }
 
     #[test]

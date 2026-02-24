@@ -54,7 +54,7 @@ Analyze **12 diverse protocols** spanning different design philosophies to under
 ### H1: Zero-Copy = Unsquishable
 **Protocols**: Cap'n Proto ✅, FlatBuffers
 **Prediction**: Score <0.5 (already optimized)
-**Status**: Cap'n Proto = 0.7-1.0 → **PARTIALLY FALSE** (Text/Data pointers have overhead!)
+**Status**: Cap'n Proto = 0.7-1.0 → **PARTLY FALSE** (Text/Data pointers have overhead!)
 
 ### H2: Dynamic Typing = Low Squishability
 **Protocols**: MessagePack, CBOR, Bencode

@@ -695,7 +695,7 @@ fn corpus_analyze(input: PathBuf, format_hint: String) -> Result<()> {
     let mut patterns: Vec<Pattern> = Vec::new();
     let mut blockers: Vec<Blocker> = Vec::new();
 
-    for (_type_id, type_def) in &schema.types {
+    for type_def in schema.types.values() {
         if let protocol_squisher_ir::TypeDef::Struct(s) = type_def {
             for field in &s.fields {
                 let class = classify_field_transport(&field.ty, field.optional);
@@ -948,10 +948,10 @@ fn synthesize_command(
             println!("\n{}", "Steps:".bold());
             for (idx, step) in plan.steps.iter().enumerate() {
                 println!(
-                    "  {}. {} [{}] {}",
+                    "  {}. {} [{:?}] {}",
                     idx + 1,
                     step.path,
-                    format!("{:?}", step.action),
+                    step.action,
                     step.rationale
                 );
             }
@@ -1158,7 +1158,10 @@ fn performance_command(format: String, sample_size: usize) -> Result<()> {
     match format.as_str() {
         "json" => println!("{}", serde_json::to_string_pretty(&report)?),
         "text" => {
-            println!("{}", "Performance Optimization Report".bright_green().bold());
+            println!(
+                "{}",
+                "Performance Optimization Report".bright_green().bold()
+            );
             println!("  Sample size: {}", report.sample_size);
             println!(
                 "  Zero-copy possible: {}",
@@ -1354,8 +1357,16 @@ fn migrate_command(
         "json" => println!("{}", serde_json::to_string_pretty(&plan)?),
         "text" => {
             println!("{}", "Migration Plan".bright_green().bold());
-            println!("  Source: {} ({})", source_schema.name, source_format.name());
-            println!("  Target: {} ({})", target_schema.name, target_format.name());
+            println!(
+                "  Source: {} ({})",
+                source_schema.name,
+                source_format.name()
+            );
+            println!(
+                "  Target: {} ({})",
+                target_schema.name,
+                target_format.name()
+            );
             println!("  Overall Class: {:?}", plan.overall_class);
             println!("  Breaking Changes: {}", plan.breaking_changes);
             println!("  Steps:");
@@ -1412,7 +1423,10 @@ fn governance_check_command(
         max_breaking_changes,
         minimum_transport_class: parse_transport_class(&minimum_class)?,
         require_audit_log: true,
-        allowed_formats: vec![source_format.name().to_string(), target_format.name().to_string()],
+        allowed_formats: vec![
+            source_format.name().to_string(),
+            target_format.name().to_string(),
+        ],
         ..GovernancePolicy::default()
     };
     let decision = evaluate_policy(
@@ -1492,7 +1506,9 @@ fn marketplace_command(
     marketplace_dir: PathBuf,
     format: String,
 ) -> Result<()> {
-    use protocol_squisher_enterprise::marketplace::{AdapterMarketplace, ListingFilter};
+    use protocol_squisher_enterprise::marketplace::{
+        AdapterMarketplace, ListingFilter, PublishListingRequest,
+    };
 
     let marketplace = AdapterMarketplace::new(marketplace_dir);
     match command {
@@ -1505,15 +1521,15 @@ fn marketplace_command(
             description,
             tags,
         } => {
-            let listing = marketplace.publish(
-                &id,
-                &name,
-                &from_format,
-                &to_format,
-                &version,
-                &description,
+            let listing = marketplace.publish(PublishListingRequest {
+                id,
+                name,
+                from_format,
+                to_format,
+                version,
+                description,
                 tags,
-            )?;
+            })?;
             safe_record_audit(
                 "marketplace.publish",
                 "success",
@@ -1635,8 +1651,16 @@ fn explore_command(
         },
         "text" => {
             println!("{}", "Compatibility Explorer".bright_green().bold());
-            println!("  Source: {} ({})", source_schema.name, source_format.name());
-            println!("  Target: {} ({})", target_schema.name, target_format.name());
+            println!(
+                "  Source: {} ({})",
+                source_schema.name,
+                source_format.name()
+            );
+            println!(
+                "  Target: {} ({})",
+                target_schema.name,
+                target_format.name()
+            );
             println!("  Overall Class: {:?}", comparison.class);
             println!("  Paths:");
             for row in rows {
@@ -1721,7 +1745,11 @@ fn playground_command(host: String, port: u16, dump_html: bool) -> Result<()> {
         let first_line = request.lines().next().unwrap_or("");
 
         let (status, content_type, body) = if first_line.starts_with("GET /health ") {
-            ("200 OK", "application/json", r#"{"status":"ok"}"#.to_string())
+            (
+                "200 OK",
+                "application/json",
+                r#"{"status":"ok"}"#.to_string(),
+            )
         } else if first_line.starts_with("GET / ") {
             (
                 "200 OK",
@@ -1763,7 +1791,12 @@ fn read_lsp_message<R: std::io::BufRead + std::io::Read>(reader: &mut R) -> Resu
         }
 
         if let Some(value) = trimmed.strip_prefix("Content-Length:") {
-            content_length = Some(value.trim().parse().context("Invalid Content-Length header")?);
+            content_length = Some(
+                value
+                    .trim()
+                    .parse()
+                    .context("Invalid Content-Length header")?,
+            );
         }
     }
 
@@ -2178,10 +2211,7 @@ fn optimize_ai(
             println!("{}", "AI-Assisted Optimization".bright_green().bold());
             println!("  Source: {}", out.source);
             println!("  Target: {}", out.target);
-            println!(
-                "  Confidence: {:.2}",
-                out.summary.recommendation_confidence
-            );
+            println!("  Confidence: {:.2}", out.summary.recommendation_confidence);
             println!(
                 "  Potential Zero-Copy: {:.1}%",
                 out.summary.potential_zero_copy_percentage

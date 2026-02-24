@@ -10,7 +10,7 @@
 //! - **Types**: IR type system (primitives, containers, composites)
 //! - **Compatibility**: Transport class analysis with totality-checked proofs
 //! - **Linear Safety**: Zero-copy paths proven safe at compile-time
-//! - **Backend**: Idris2 implementation with Rust FFI bindings
+//! - **Backend**: Idris2 implementation with a Zig C-ABI bridge
 //!
 //! ## Transport Classes
 //!
@@ -31,6 +31,22 @@
 mod ffi;
 
 use std::marker::PhantomData;
+
+/// Build-time backend mode reported by `build.rs`.
+///
+/// - `verified`: ephapax sources compiled successfully.
+/// - `stub`: Rust fallback path is in use.
+pub const EPHAPAX_BACKEND_MODE: &str = env!("PROTOCOL_SQUISHER_EPHAPAX_MODE");
+
+/// Returns true when the ephapax backend is fully compiled and active.
+pub fn ephapax_backend_verified() -> bool {
+    EPHAPAX_BACKEND_MODE == "verified"
+}
+
+/// Returns the active backend mode string (`verified` or `stub`).
+pub fn ephapax_backend_mode() -> &'static str {
+    EPHAPAX_BACKEND_MODE
+}
 
 /// Primitive types in the IR
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -151,6 +167,36 @@ impl Default for IRContext {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_backend_mode_contract() {
+        assert!(
+            matches!(EPHAPAX_BACKEND_MODE, "stub" | "verified"),
+            "unexpected backend mode: {EPHAPAX_BACKEND_MODE}"
+        );
+        assert_eq!(ephapax_backend_mode(), EPHAPAX_BACKEND_MODE);
+        assert_eq!(
+            ephapax_backend_verified(),
+            EPHAPAX_BACKEND_MODE == "verified"
+        );
+    }
+
+    #[test]
+    fn backend_mode_matches_expectation() {
+        let expected = match std::env::var("EXPECT_EPHAPAX_MODE") {
+            Ok(mode) => mode,
+            Err(_) => return,
+        };
+
+        assert!(
+            expected == "stub" || expected == "verified",
+            "EXPECT_EPHAPAX_MODE must be 'stub' or 'verified', got '{expected}'"
+        );
+        assert_eq!(
+            EPHAPAX_BACKEND_MODE, expected,
+            "backend mode mismatch: expected {expected}, got {EPHAPAX_BACKEND_MODE}"
+        );
+    }
 
     #[test]
     fn test_exact_match() {

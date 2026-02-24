@@ -44,10 +44,7 @@ pub fn generate_enum(
     let mut code = String::new();
 
     // Check if this is a simple enum (all unit variants)
-    let is_simple = enum_def
-        .variants
-        .iter()
-        .all(|v| v.payload.is_none());
+    let is_simple = enum_def.variants.iter().all(|v| v.payload.is_none());
 
     if is_simple {
         code.push_str(&generate_simple_enum(enum_def, config));
@@ -137,19 +134,22 @@ fn generate_complex_enum(
     let mut code = String::new();
 
     // Generate a Rust enum with serde support
-    code.push_str(&format!(
-        "#[pyclass{}]\n",
-        if config.generate_eq { "" } else { "" }
-    ));
+    code.push_str("#[pyclass]\n");
     code.push_str("#[derive(Clone, Debug)]\n");
 
     // Determine serde tag attribute based on IR tag style
     let tag_attr = match &enum_def.tag_style {
         TagStyle::External => String::new(),
         TagStyle::Internal { tag_field } => format!("#[serde(tag = \"{}\")]\n", tag_field),
-        TagStyle::Adjacent { tag_field, content_field } => {
-            format!("#[serde(tag = \"{}\", content = \"{}\")]\n", tag_field, content_field)
-        }
+        TagStyle::Adjacent {
+            tag_field,
+            content_field,
+        } => {
+            format!(
+                "#[serde(tag = \"{}\", content = \"{}\")]\n",
+                tag_field, content_field
+            )
+        },
         TagStyle::Untagged => "#[serde(untagged)]\n".to_string(),
     };
     code.push_str(&tag_attr);
@@ -223,7 +223,7 @@ fn generate_variant_definition(variant: &VariantDef, ctx: &mut MappingContext) -
                 })
                 .collect();
             format!("    {}({}),\n", variant.name, type_strs.join(", "))
-        }
+        },
         Some(VariantPayload::Struct(fields)) => {
             let mut field_strs = Vec::new();
             for field in fields {
@@ -234,7 +234,7 @@ fn generate_variant_definition(variant: &VariantDef, ctx: &mut MappingContext) -
                 field_strs.push(format!("{}: {}", field.name, pyo3_type.rust_type()));
             }
             format!("    {} {{ {} }},\n", variant.name, field_strs.join(", "))
-        }
+        },
     }
 }
 
@@ -249,7 +249,7 @@ fn generate_variant_constructor(variant: &VariantDef, _enum_name: &str) -> Strin
                 variant.name.to_lowercase(),
                 variant.name
             ));
-        }
+        },
         Some(VariantPayload::Tuple(types)) => {
             let params: Vec<String> = types
                 .iter()
@@ -265,7 +265,7 @@ fn generate_variant_constructor(variant: &VariantDef, _enum_name: &str) -> Strin
                 variant.name,
                 args.join(", ")
             ));
-        }
+        },
         Some(VariantPayload::Struct(fields)) => {
             let params: Vec<String> = fields
                 .iter()
@@ -280,7 +280,7 @@ fn generate_variant_constructor(variant: &VariantDef, _enum_name: &str) -> Strin
                 variant.name,
                 args.join(", ")
             ));
-        }
+        },
     }
 
     code
@@ -300,10 +300,9 @@ fn generate_enum_repr(enum_def: &EnumDef) -> String {
                     "            Self::{} => \"{}.{}\".to_string(),\n",
                     variant.name, enum_def.name, variant.name
                 ));
-            }
+            },
             Some(VariantPayload::Tuple(types)) => {
-                let patterns: Vec<String> =
-                    (0..types.len()).map(|i| format!("v{}", i)).collect();
+                let patterns: Vec<String> = (0..types.len()).map(|i| format!("v{}", i)).collect();
                 let format_args: Vec<String> =
                     (0..types.len()).map(|i| format!("v{}", i)).collect();
                 code.push_str(&format!(
@@ -314,7 +313,7 @@ fn generate_enum_repr(enum_def: &EnumDef) -> String {
                     variant.name,
                     format_args.join(", ")
                 ));
-            }
+            },
             Some(VariantPayload::Struct(fields)) => {
                 let patterns: Vec<String> = fields.iter().map(|f| f.name.clone()).collect();
                 code.push_str(&format!(
@@ -325,7 +324,7 @@ fn generate_enum_repr(enum_def: &EnumDef) -> String {
                     variant.name,
                     patterns.join(", ")
                 ));
-            }
+            },
         }
     }
 
@@ -353,10 +352,9 @@ fn generate_enum_to_dict(enum_def: &EnumDef) -> String {
                     "            Self::{} => {{ dict.set_item(\"type\", \"{}\")?; }}\n",
                     variant.name, variant.name
                 ));
-            }
+            },
             Some(VariantPayload::Tuple(types)) => {
-                let patterns: Vec<String> =
-                    (0..types.len()).map(|i| format!("v{}", i)).collect();
+                let patterns: Vec<String> = (0..types.len()).map(|i| format!("v{}", i)).collect();
                 code.push_str(&format!(
                     "            Self::{}({}) => {{\n",
                     variant.name,
@@ -373,7 +371,7 @@ fn generate_enum_to_dict(enum_def: &EnumDef) -> String {
                     ));
                 }
                 code.push_str("            }\n");
-            }
+            },
             Some(VariantPayload::Struct(fields)) => {
                 let patterns: Vec<String> = fields.iter().map(|f| f.name.clone()).collect();
                 code.push_str(&format!(
@@ -392,7 +390,7 @@ fn generate_enum_to_dict(enum_def: &EnumDef) -> String {
                     ));
                 }
                 code.push_str("            }\n");
-            }
+            },
         }
     }
 

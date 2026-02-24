@@ -5,10 +5,10 @@
 //! This module uses the ephapax IR's proven-correct transport class analysis
 //! to determine the best conversion strategy between Rust and Python types.
 
-use protocol_squisher_transport_primitives::{IRContext, TransportClass as EphapaxTransportClass};
 use protocol_squisher_ir::IrSchema;
-use protocol_squisher_rust_analyzer::RustAnalyzer;
 use protocol_squisher_python_analyzer::PythonAnalyzer;
+use protocol_squisher_rust_analyzer::RustAnalyzer;
+use protocol_squisher_transport_primitives::{IRContext, TransportClass as EphapaxTransportClass};
 
 /// Compatibility engine using ephapax for proven-correct analysis
 pub struct EphapaxCompatibilityEngine {
@@ -90,7 +90,7 @@ impl EphapaxCompatibilityEngine {
         match (source, target) {
             (TypeDef::Struct(s_struct), TypeDef::Struct(t_struct)) => {
                 self.analyze_structs(s_struct, t_struct)
-            }
+            },
             _ => None, // Other type combinations not yet supported
         }
     }
@@ -113,7 +113,7 @@ impl EphapaxCompatibilityEngine {
                 if let Ok(class) = protocol_squisher_rust_analyzer::analyze_transport_compatibility(
                     &self.ir_ctx,
                     &source_field.ty,
-                    &target_field.ty
+                    &target_field.ty,
                 ) {
                     let fidelity = self.ir_ctx.get_fidelity(class);
                     let overhead = self.ir_ctx.get_overhead(class);
@@ -143,10 +143,7 @@ impl EphapaxCompatibilityEngine {
     }
 
     /// Get a summary of conversion quality
-    pub fn get_conversion_summary(
-        &self,
-        result: &SchemaCompatibilityResult,
-    ) -> ConversionSummary {
+    pub fn get_conversion_summary(&self, result: &SchemaCompatibilityResult) -> ConversionSummary {
         let total_fields = result
             .type_analyses
             .iter()
@@ -254,8 +251,7 @@ impl ConversionSummary {
         if self.total_fields == 0 {
             return false;
         }
-        let fallback_pct =
-            (self.json_fallback_fields as f64 / self.total_fields as f64) * 100.0;
+        let fallback_pct = (self.json_fallback_fields as f64 / self.total_fields as f64) * 100.0;
         fallback_pct > 20.0
     }
 }
@@ -290,10 +286,12 @@ mod tests {
     #[test]
     fn test_engine_creation() {
         let engine = EphapaxCompatibilityEngine::new();
-        assert!(engine.ir_context().analyze_compatibility(
-            protocol_squisher_transport_primitives::PrimitiveType::I32,
-            protocol_squisher_transport_primitives::PrimitiveType::I32
-        ) == EphapaxTransportClass::Concorde);
+        assert!(
+            engine.ir_context().analyze_compatibility(
+                protocol_squisher_transport_primitives::PrimitiveType::I32,
+                protocol_squisher_transport_primitives::PrimitiveType::I32
+            ) == EphapaxTransportClass::Concorde
+        );
     }
 
     #[test]

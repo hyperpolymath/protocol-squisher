@@ -9,7 +9,7 @@
 //! - HashMap lookups and conversions
 //! - Nested containers (Vec<Option<T>>, etc.)
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use std::collections::HashMap;
 
 // ============================================================================
@@ -17,12 +17,12 @@ use std::collections::HashMap;
 // ============================================================================
 
 /// Direct Vec access (Concorde baseline)
-fn vec_direct_access(vec: &Vec<i64>, index: usize) -> i64 {
+fn vec_direct_access(vec: &[i64], index: usize) -> i64 {
     vec[index]
 }
 
 /// Vec element conversion (Business Class)
-fn vec_element_widen(vec: &Vec<i32>) -> Vec<i64> {
+fn vec_element_widen(vec: &[i32]) -> Vec<i64> {
     vec.iter().map(|&x| x as i64).collect()
 }
 
@@ -34,12 +34,12 @@ struct ComplexItem {
     value: String,
 }
 
-fn vec_complex_clone(vec: &Vec<ComplexItem>) -> Vec<ComplexItem> {
-    vec.clone()
+fn vec_complex_clone(vec: &[ComplexItem]) -> Vec<ComplexItem> {
+    vec.to_vec()
 }
 
 /// Nested Vec (Economy to Wheelbarrow boundary)
-fn vec_nested_flatten(vec: &Vec<Vec<i32>>) -> Vec<i32> {
+fn vec_nested_flatten(vec: &[Vec<i32>]) -> Vec<i32> {
     vec.iter().flat_map(|inner| inner.iter()).copied().collect()
 }
 
@@ -49,7 +49,7 @@ fn vec_nested_flatten(vec: &Vec<Vec<i32>>) -> Vec<i32> {
 
 /// Option::map (zero-cost if optimized)
 fn option_map_identity(opt: Option<i64>) -> Option<i64> {
-    opt.map(|x| x)
+    opt
 }
 
 /// Option::map with conversion (Business Class)
@@ -101,7 +101,7 @@ fn map_complex_clone(map: &HashMap<String, ComplexItem>) -> HashMap<String, Comp
 // ============================================================================
 
 /// Vec<Option<T>> - common pattern
-fn vec_option_filter_map(vec: &Vec<Option<i64>>) -> Vec<i64> {
+fn vec_option_filter_map(vec: &[Option<i64>]) -> Vec<i64> {
     vec.iter().filter_map(|&x| x).collect()
 }
 
@@ -118,7 +118,7 @@ fn map_option_compact(map: &HashMap<String, Option<i64>>) -> HashMap<String, i64
 }
 
 /// Vec<HashMap<String, T>> - complex nesting
-fn vec_map_merge(vec: &Vec<HashMap<String, i64>>) -> HashMap<String, i64> {
+fn vec_map_merge(vec: &[HashMap<String, i64>]) -> HashMap<String, i64> {
     let mut result = HashMap::new();
     for map in vec {
         result.extend(map.iter().map(|(k, v)| (k.clone(), *v)));

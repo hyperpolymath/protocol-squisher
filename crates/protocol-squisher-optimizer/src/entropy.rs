@@ -90,7 +90,7 @@ pub fn analyze_schema_entropy(schema: &IrSchema) -> SchemaEntropy {
 
     // Find top optimization targets
     let mut sorted = all_fields.clone();
-    sorted.sort_by(|a, b| b.wasted_bits.partial_cmp(&a.wasted_bits).unwrap());
+    sorted.sort_by(|a, b| b.wasted_bits.total_cmp(&a.wasted_bits));
     let optimization_targets: Vec<String> = sorted
         .iter()
         .filter(|f| f.wasted_bits > 0.0)
@@ -111,19 +111,23 @@ pub fn analyze_schema_entropy(schema: &IrSchema) -> SchemaEntropy {
 
 /// Analyze entropy for all fields in a struct.
 fn analyze_struct_entropy(s: &StructDef) -> Vec<FieldEntropy> {
-    s.fields.iter().map(|f| analyze_field_entropy(f)).collect()
+    s.fields.iter().map(analyze_field_entropy).collect()
 }
 
 /// Analyze entropy for a single field.
 fn analyze_field_entropy(field: &FieldDef) -> FieldEntropy {
-    let (entropy_bits, allocated_bits, reasoning) = estimate_type_entropy(&field.ty, &field.constraints);
+    let (entropy_bits, allocated_bits, reasoning) =
+        estimate_type_entropy(&field.ty, &field.constraints);
 
     // Optional fields have additional entropy: 1 bit for presence/absence
     let (entropy_bits, allocated_bits, reasoning) = if field.optional {
         (
             entropy_bits + 1.0,
             allocated_bits + 8.0, // Most formats use at least a byte for optionality
-            format!("{} + 1 bit optionality (8 bits allocated for presence tag)", reasoning),
+            format!(
+                "{} + 1 bit optionality (8 bits allocated for presence tag)",
+                reasoning
+            ),
         )
     } else {
         (entropy_bits, allocated_bits, reasoning)
@@ -170,49 +174,83 @@ fn estimate_primitive_entropy(p: &PrimitiveType, constraints: &[Constraint]) -> 
     });
 
     match p {
-        PrimitiveType::Bool => (1.0, 8.0, "bool: 1 bit entropy, 8 bits allocated".to_string()),
+        PrimitiveType::Bool => (
+            1.0,
+            8.0,
+            "bool: 1 bit entropy, 8 bits allocated".to_string(),
+        ),
 
         PrimitiveType::I8 | PrimitiveType::U8 => {
             if let Some((min, max)) = range_constraint {
                 let range = (max - min + 1.0).max(1.0);
                 let entropy = range.log2();
-                (entropy, 8.0, format!("u8 with range [{}, {}]: {:.1} bits entropy", min, max, entropy))
+                (
+                    entropy,
+                    8.0,
+                    format!(
+                        "u8 with range [{}, {}]: {:.1} bits entropy",
+                        min, max, entropy
+                    ),
+                )
             } else {
                 (8.0, 8.0, "u8/i8: full 8-bit range".to_string())
             }
-        }
+        },
 
         PrimitiveType::I16 | PrimitiveType::U16 => {
             if let Some((min, max)) = range_constraint {
                 let range = (max - min + 1.0).max(1.0);
                 let entropy = range.log2();
-                (entropy, 16.0, format!("u16 with range [{}, {}]: {:.1} bits entropy", min, max, entropy))
+                (
+                    entropy,
+                    16.0,
+                    format!(
+                        "u16 with range [{}, {}]: {:.1} bits entropy",
+                        min, max, entropy
+                    ),
+                )
             } else {
                 (16.0, 16.0, "u16/i16: full 16-bit range".to_string())
             }
-        }
+        },
 
         PrimitiveType::I32 | PrimitiveType::U32 => {
             if let Some((min, max)) = range_constraint {
                 let range = (max - min + 1.0).max(1.0);
                 let entropy = range.log2();
-                (entropy, 32.0, format!("u32 with range [{}, {}]: {:.1} bits entropy", min, max, entropy))
+                (
+                    entropy,
+                    32.0,
+                    format!(
+                        "u32 with range [{}, {}]: {:.1} bits entropy",
+                        min, max, entropy
+                    ),
+                )
             } else {
                 (32.0, 32.0, "u32/i32: full 32-bit range".to_string())
             }
-        }
+        },
 
         PrimitiveType::I64 | PrimitiveType::U64 => {
             if let Some((min, max)) = range_constraint {
                 let range = (max - min + 1.0).max(1.0);
                 let entropy = range.log2();
-                (entropy, 64.0, format!("u64 with range [{}, {}]: {:.1} bits entropy", min, max, entropy))
+                (
+                    entropy,
+                    64.0,
+                    format!(
+                        "u64 with range [{}, {}]: {:.1} bits entropy",
+                        min, max, entropy
+                    ),
+                )
             } else {
                 (64.0, 64.0, "u64/i64: full 64-bit range".to_string())
             }
-        }
+        },
 
-        PrimitiveType::I128 | PrimitiveType::U128 => (128.0, 128.0, "i128/u128: full 128-bit range".to_string()),
+        PrimitiveType::I128 | PrimitiveType::U128 => {
+            (128.0, 128.0, "i128/u128: full 128-bit range".to_string())
+        },
 
         PrimitiveType::F32 => (32.0, 32.0, "f32: IEEE 754 single precision".to_string()),
         PrimitiveType::F64 => (64.0, 64.0, "f64: IEEE 754 double precision".to_string()),
@@ -220,24 +258,56 @@ fn estimate_primitive_entropy(p: &PrimitiveType, constraints: &[Constraint]) -> 
         PrimitiveType::String => {
             // Check for max length constraint
             let max_len = constraints.iter().find_map(|c| {
-                if let Constraint::MaxLength(n) = c { Some(*n) } else { None }
+                if let Constraint::MaxLength(n) = c {
+                    Some(*n)
+                } else {
+                    None
+                }
             });
             match max_len {
                 Some(n) if n <= 255 => {
                     let bits = (n as f64) * 8.0;
-                    (bits * 0.6, bits + 16.0, format!("string(max {}): ~{:.0} bits entropy (English text ~4.7 bits/char)", n, bits * 0.6))
-                }
-                _ => (80.0, 128.0, "string: ~80 bits entropy estimate (10 char avg)".to_string()),
+                    (
+                        bits * 0.6,
+                        bits + 16.0,
+                        format!(
+                            "string(max {}): ~{:.0} bits entropy (English text ~4.7 bits/char)",
+                            n,
+                            bits * 0.6
+                        ),
+                    )
+                },
+                _ => (
+                    80.0,
+                    128.0,
+                    "string: ~80 bits entropy estimate (10 char avg)".to_string(),
+                ),
             }
-        }
+        },
 
         PrimitiveType::Bytes => (64.0, 128.0, "bytes: variable length".to_string()),
-        PrimitiveType::Char => (8.0, 16.0, "char: ~8 bits entropy in 16-bit allocation".to_string()),
-        PrimitiveType::DateTime => (40.0, 64.0, "datetime: ~40 bits entropy (reasonable range)".to_string()),
-        PrimitiveType::Date => (16.0, 32.0, "date: ~16 bits entropy (year range)".to_string()),
+        PrimitiveType::Char => (
+            8.0,
+            16.0,
+            "char: ~8 bits entropy in 16-bit allocation".to_string(),
+        ),
+        PrimitiveType::DateTime => (
+            40.0,
+            64.0,
+            "datetime: ~40 bits entropy (reasonable range)".to_string(),
+        ),
+        PrimitiveType::Date => (
+            16.0,
+            32.0,
+            "date: ~16 bits entropy (year range)".to_string(),
+        ),
         PrimitiveType::Time => (17.0, 32.0, "time: ~17 bits (86400 seconds)".to_string()),
         PrimitiveType::Duration => (32.0, 64.0, "duration: wide range".to_string()),
-        PrimitiveType::Uuid => (122.0, 128.0, "uuid: 122 random bits in 128-bit allocation".to_string()),
+        PrimitiveType::Uuid => (
+            122.0,
+            128.0,
+            "uuid: 122 random bits in 128-bit allocation".to_string(),
+        ),
         PrimitiveType::Decimal => (64.0, 128.0, "decimal: variable precision".to_string()),
         PrimitiveType::BigInt => (64.0, 128.0, "bigint: variable size".to_string()),
     }
@@ -251,26 +321,42 @@ fn estimate_container_entropy(c: &ContainerType, constraints: &[Constraint]) -> 
             // 1 bit for Some/None, plus inner entropy weighted by expected presence
             let entropy = 1.0 + inner_entropy * 0.7; // assume 70% present
             let allocated = 8.0 + inner_alloc; // tag byte + inner
-            (entropy, allocated, format!("Option: 1 bit presence + {:.0} bits inner", inner_entropy))
-        }
+            (
+                entropy,
+                allocated,
+                format!("Option: 1 bit presence + {:.0} bits inner", inner_entropy),
+            )
+        },
         ContainerType::Vec(inner) => {
             let (inner_entropy, inner_alloc, _) = estimate_type_entropy(inner, constraints);
             // Estimate 10 elements by default
             let count = 10.0;
             let entropy = 4.0 + inner_entropy * count; // ~4 bits for length
             let allocated = 32.0 + inner_alloc * count; // length prefix + elements
-            (entropy, allocated, format!("Vec: ~{:.0} elements x {:.0} bits", count, inner_entropy))
-        }
+            (
+                entropy,
+                allocated,
+                format!("Vec: ~{:.0} elements x {:.0} bits", count, inner_entropy),
+            )
+        },
         ContainerType::Array(inner, size) => {
             let (inner_entropy, inner_alloc, _) = estimate_type_entropy(inner, constraints);
             let n = *size as f64;
-            (inner_entropy * n, inner_alloc * n, format!("Array[{}]: {} x {:.0} bits", size, size, inner_entropy))
-        }
+            (
+                inner_entropy * n,
+                inner_alloc * n,
+                format!("Array[{}]: {} x {:.0} bits", size, size, inner_entropy),
+            )
+        },
         ContainerType::Set(inner) => {
             let (inner_entropy, inner_alloc, _) = estimate_type_entropy(inner, constraints);
             let count = 8.0;
-            (inner_entropy * count, inner_alloc * count + 32.0, format!("Set: ~{:.0} unique elements", count))
-        }
+            (
+                inner_entropy * count,
+                inner_alloc * count + 32.0,
+                format!("Set: ~{:.0} unique elements", count),
+            )
+        },
         ContainerType::Map(key, val) => {
             let (key_entropy, key_alloc, _) = estimate_type_entropy(key, constraints);
             let (val_entropy, val_alloc, _) = estimate_type_entropy(val, constraints);
@@ -278,7 +364,7 @@ fn estimate_container_entropy(c: &ContainerType, constraints: &[Constraint]) -> 
             let entropy = count * (key_entropy + val_entropy);
             let allocated = 32.0 + count * (key_alloc + val_alloc);
             (entropy, allocated, format!("Map: ~{:.0} entries", count))
-        }
+        },
         ContainerType::Tuple(types) => {
             let mut total_entropy = 0.0;
             let mut total_alloc = 0.0;
@@ -287,23 +373,31 @@ fn estimate_container_entropy(c: &ContainerType, constraints: &[Constraint]) -> 
                 total_entropy += e;
                 total_alloc += a;
             }
-            (total_entropy, total_alloc, format!("Tuple of {} elements", types.len()))
-        }
+            (
+                total_entropy,
+                total_alloc,
+                format!("Tuple of {} elements", types.len()),
+            )
+        },
         ContainerType::Result(ok, err) => {
             let (ok_entropy, ok_alloc, _) = estimate_type_entropy(ok, constraints);
             let (err_entropy, err_alloc, _) = estimate_type_entropy(err, constraints);
             // 1 bit for Ok/Err, weighted average of payloads (assume 90% Ok)
             let entropy = 1.0 + ok_entropy * 0.9 + err_entropy * 0.1;
             let allocated = 8.0 + ok_alloc.max(err_alloc);
-            (entropy, allocated, "Result: 1 bit discriminant + payload".to_string())
-        }
+            (
+                entropy,
+                allocated,
+                "Result: 1 bit discriminant + payload".to_string(),
+            )
+        },
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use protocol_squisher_ir::{*, constraints::NumberValue};
+    use protocol_squisher_ir::{constraints::NumberValue, *};
 
     fn make_field(name: &str, ty: IrType, constraints: Vec<Constraint>) -> FieldDef {
         FieldDef {
@@ -329,7 +423,10 @@ mod tests {
         let field = make_field(
             "status",
             IrType::Primitive(PrimitiveType::U32),
-            vec![Constraint::Range { min: NumberValue::Integer(0), max: NumberValue::Integer(3) }],
+            vec![Constraint::Range {
+                min: NumberValue::Integer(0),
+                max: NumberValue::Integer(3),
+            }],
         );
         let result = analyze_field_entropy(&field);
         assert!(result.entropy_bits < 3.0); // log2(4) = 2
@@ -381,7 +478,10 @@ mod tests {
                     make_field(
                         "status",
                         IrType::Primitive(PrimitiveType::U8),
-                        vec![Constraint::Range { min: NumberValue::Integer(0), max: NumberValue::Integer(7) }],
+                        vec![Constraint::Range {
+                            min: NumberValue::Integer(0),
+                            max: NumberValue::Integer(7),
+                        }],
                     ),
                 ],
                 metadata: TypeMetadata::default(),

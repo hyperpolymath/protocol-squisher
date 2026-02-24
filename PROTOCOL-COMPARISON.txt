@@ -91,7 +91,7 @@ HYPOTHESIS TESTING RESULTS
    Evidence: Zero-copy (Cap'n/FlatBuffers) avg 0.215 vs others 0.584 (-63%)
 
 3. "Dynamic typing requires Wheelbarrow class"
-   Status: ⚠️ PARTIALLY SUPPORTED
+   Status: ⚠️ PARTLY SUPPORTED
    Evidence: Dynamic protocols avg 0.407, better than expected (type tags help)
 
 4. "Field numbers help compatibility"

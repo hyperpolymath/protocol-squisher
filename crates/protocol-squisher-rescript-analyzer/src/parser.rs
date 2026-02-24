@@ -137,16 +137,22 @@ fn remove_comments(content: &str) -> String {
     result
 }
 
+fn compile_regex(pattern: &str) -> Result<Regex, AnalyzerError> {
+    Regex::new(pattern).map_err(|e| {
+        AnalyzerError::ParseError(format!("Internal parser regex error for '{pattern}': {e}"))
+    })
+}
+
 /// Parse type aliases (e.g., `type userId = int`)
 fn parse_type_aliases(content: &str) -> Result<Vec<ReScriptTypeAlias>, AnalyzerError> {
     // Match: type name<'a, 'b> = targetType
-    // SAFETY: constant regex pattern, compile-time verified
-    let alias_regex = Regex::new(r"type\s+(\w+)(?:<([^>]+)>)?\s*=\s*([^{}\n|]+)").unwrap();
+    let alias_regex = compile_regex(r"type\s+(\w+)(?:<([^>]+)>)?\s*=\s*([^{}\n|]+)")?;
     let mut aliases = Vec::new();
 
     for cap in alias_regex.captures_iter(content) {
         let name = cap[1].to_string();
-        let type_params = cap.get(2)
+        let type_params = cap
+            .get(2)
             .map(|m| parse_type_params(m.as_str()))
             .unwrap_or_default();
         let target = cap[3].trim().to_string();
@@ -169,13 +175,13 @@ fn parse_type_aliases(content: &str) -> Result<Vec<ReScriptTypeAlias>, AnalyzerE
 /// Parse record types
 fn parse_records(content: &str) -> Result<Vec<ReScriptRecord>, AnalyzerError> {
     // Match: type name<'a> = { field1: type1, field2: type2 }
-    // SAFETY: constant regex pattern, compile-time verified
-    let record_regex = Regex::new(r"type\s+(\w+)(?:<([^>]+)>)?\s*=\s*\{([^}]+)\}").unwrap();
+    let record_regex = compile_regex(r"type\s+(\w+)(?:<([^>]+)>)?\s*=\s*\{([^}]+)\}")?;
     let mut records = Vec::new();
 
     for cap in record_regex.captures_iter(content) {
         let name = cap[1].to_string();
-        let type_params = cap.get(2)
+        let type_params = cap
+            .get(2)
             .map(|m| parse_type_params(m.as_str()))
             .unwrap_or_default();
         let body = &cap[3];
@@ -236,19 +242,21 @@ fn parse_record_fields(body: &str) -> Result<Vec<ReScriptField>, AnalyzerError> 
 fn parse_variants(content: &str) -> Result<Vec<ReScriptVariant>, AnalyzerError> {
     // Match: type name<'a> = | Constructor1 | Constructor2(payload) | ...
     // Also handles: type name = Constructor1 | Constructor2
-    // SAFETY: constant regex pattern, compile-time verified
-    let variant_regex = Regex::new(r"type\s+(\w+)(?:<([^>]+)>)?\s*=\s*\|?\s*([^{}=]+)").unwrap();
+    let variant_regex = compile_regex(r"type\s+(\w+)(?:<([^>]+)>)?\s*=\s*\|?\s*([^{}=]+)")?;
     let mut variants = Vec::new();
 
     for cap in variant_regex.captures_iter(content) {
         let name = cap[1].to_string();
-        let type_params = cap.get(2)
+        let type_params = cap
+            .get(2)
             .map(|m| parse_type_params(m.as_str()))
             .unwrap_or_default();
         let body = &cap[3];
 
         // Skip if this looks like a record or alias
-        if body.contains('{') || (!body.contains('|') && !body.trim().chars().next().unwrap_or(' ').is_uppercase()) {
+        if body.contains('{')
+            || (!body.contains('|') && !body.trim().chars().next().unwrap_or(' ').is_uppercase())
+        {
             continue;
         }
 
@@ -314,16 +322,20 @@ fn parse_type_params(params: &str) -> Vec<String> {
 
 /// Extract @as("jsName") attribute
 fn extract_js_name(field_str: &str) -> Option<String> {
-    // SAFETY: constant regex pattern, compile-time verified
-    let as_regex = Regex::new(r#"@as\("([^"]+)"\)"#).unwrap();
-    as_regex.captures(field_str)
-        .map(|cap| cap[1].to_string())
+    let Ok(as_regex) = Regex::new(r#"@as\("([^"]+)"\)"#) else {
+        return None;
+    };
+    as_regex
+        .captures(field_str)
+        .and_then(|cap| cap.get(1))
+        .map(|m| m.as_str().to_string())
 }
 
 /// Remove attributes from field string
 fn remove_attributes(field_str: &str) -> String {
-    // SAFETY: constant regex pattern, compile-time verified
-    let attr_regex = Regex::new(r"@\w+\([^)]*\)").unwrap();
+    let Ok(attr_regex) = Regex::new(r"@\w+\([^)]*\)") else {
+        return field_str.to_string();
+    };
     attr_regex.replace_all(field_str, "").to_string()
 }
 
@@ -338,15 +350,15 @@ fn split_by_comma(s: &str) -> Vec<String> {
             '<' | '(' => {
                 depth += 1;
                 current.push(c);
-            }
+            },
             '>' | ')' => {
                 depth -= 1;
                 current.push(c);
-            }
+            },
             ',' if depth == 0 => {
                 parts.push(current.trim().to_string());
                 current.clear();
-            }
+            },
             _ => current.push(c),
         }
     }

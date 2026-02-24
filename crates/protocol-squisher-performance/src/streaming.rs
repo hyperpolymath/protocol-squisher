@@ -71,7 +71,11 @@ where
             }
         }
 
-        if chunk.is_empty() { None } else { Some(chunk) }
+        if chunk.is_empty() {
+            None
+        } else {
+            Some(chunk)
+        }
     })
 }
 
@@ -97,15 +101,18 @@ where
             continue;
         }
 
-        let record = serde_json::from_str::<T>(&line).map_err(|source| StreamingError::Deserialize {
-            line: line_no,
-            source,
-        })?;
+        let record =
+            serde_json::from_str::<T>(&line).map_err(|source| StreamingError::Deserialize {
+                line: line_no,
+                source,
+            })?;
 
         let mapped = transform(record);
-        serde_json::to_writer(&mut writer, &mapped).map_err(|source| StreamingError::Serialize {
-            line: line_no,
-            source,
+        serde_json::to_writer(&mut writer, &mapped).map_err(|source| {
+            StreamingError::Serialize {
+                line: line_no,
+                source,
+            }
         })?;
         writer.write_all(b"\n")?;
         processed += 1;
@@ -175,13 +182,14 @@ not-json
         let reader = Cursor::new(input.as_bytes());
         let mut output = Vec::new();
 
-        let err = transform_json_lines::<_, _, InRecord, OutRecord, _>(reader, &mut output, |record| {
-            OutRecord {
-                id: record.id,
-                score: record.score,
-            }
-        })
-        .expect_err("expected parse error");
+        let err =
+            transform_json_lines::<_, _, InRecord, OutRecord, _>(reader, &mut output, |record| {
+                OutRecord {
+                    id: record.id,
+                    score: record.score,
+                }
+            })
+            .expect_err("expected parse error");
 
         match err {
             StreamingError::Deserialize { line, .. } => assert_eq!(line, 2),

@@ -20,15 +20,15 @@
 #[cfg(test)]
 use protocol_squisher_compat::EphapaxCompatibilityEngine;
 #[cfg(test)]
-use protocol_squisher_transport_primitives::TransportClass;
-#[cfg(test)]
 use protocol_squisher_ir::{
     FieldDef, FieldMetadata, IrSchema, IrType, PrimitiveType, StructDef, TypeDef, TypeMetadata,
 };
 #[cfg(test)]
+use protocol_squisher_json_fallback::EphapaxFallbackGenerator;
+#[cfg(test)]
 use protocol_squisher_pyo3_codegen::OptimizedPyO3Generator;
 #[cfg(test)]
-use protocol_squisher_json_fallback::EphapaxFallbackGenerator;
+use protocol_squisher_transport_primitives::TransportClass;
 
 #[cfg(test)]
 mod tests {
@@ -116,15 +116,13 @@ mod tests {
             "Data".to_string(),
             TypeDef::Struct(StructDef {
                 name: "Data".to_string(),
-                fields: vec![
-                    FieldDef {
-                        name: "value".to_string(),
-                        ty: IrType::Primitive(PrimitiveType::I64),
-                        optional: false,
-                        constraints: vec![],
-                        metadata: FieldMetadata::default(),
-                    },
-                ],
+                fields: vec![FieldDef {
+                    name: "value".to_string(),
+                    ty: IrType::Primitive(PrimitiveType::I64),
+                    optional: false,
+                    constraints: vec![],
+                    metadata: FieldMetadata::default(),
+                }],
                 metadata: TypeMetadata::default(),
             }),
         );
@@ -136,15 +134,13 @@ mod tests {
             "Data".to_string(),
             TypeDef::Struct(StructDef {
                 name: "Data".to_string(),
-                fields: vec![
-                    FieldDef {
-                        name: "value".to_string(),
-                        ty: IrType::Primitive(PrimitiveType::I32),
-                        optional: false,
-                        constraints: vec![],
-                        metadata: FieldMetadata::default(),
-                    },
-                ],
+                fields: vec![FieldDef {
+                    name: "value".to_string(),
+                    ty: IrType::Primitive(PrimitiveType::I32),
+                    optional: false,
+                    constraints: vec![],
+                    metadata: FieldMetadata::default(),
+                }],
                 metadata: TypeMetadata::default(),
             }),
         );
@@ -329,7 +325,6 @@ mod tests {
 
             assert!(result.stats.is_production_ready);
             assert!(!result.rust_code.contains("WARNING: JSON fallback"));
-
         } else if summary.zero_copy_percentage() > 50.0 {
             // Mixed - use optimized PyO3 with selective JSON fallback
             let pyo3_gen = OptimizedPyO3Generator::new();
@@ -338,7 +333,6 @@ mod tests {
             // Should have both direct and JSON paths
             assert!(result.stats.zero_copy_fields > 0);
             assert!(result.stats.json_fallback_fields > 0);
-
         } else {
             // Low quality - use JSON fallback throughout
             let fallback_gen = EphapaxFallbackGenerator::new();
@@ -430,12 +424,24 @@ mod tests {
 
         // All three should agree on overall transport class
         assert_eq!(compat_analysis.overall_class, TransportClass::Wheelbarrow);
-        assert_eq!(pyo3_result.analysis.overall_class, TransportClass::Wheelbarrow);
-        assert_eq!(fallback_result.analysis.overall_class, TransportClass::Wheelbarrow);
+        assert_eq!(
+            pyo3_result.analysis.overall_class,
+            TransportClass::Wheelbarrow
+        );
+        assert_eq!(
+            fallback_result.analysis.overall_class,
+            TransportClass::Wheelbarrow
+        );
 
         // All three should agree on fallback count
         let compat_summary = compat_engine.get_conversion_summary(&compat_analysis);
-        assert_eq!(compat_summary.json_fallback_fields, pyo3_result.stats.json_fallback_fields);
-        assert_eq!(compat_summary.json_fallback_fields, fallback_result.stats.json_fallback_fields);
+        assert_eq!(
+            compat_summary.json_fallback_fields,
+            pyo3_result.stats.json_fallback_fields
+        );
+        assert_eq!(
+            compat_summary.json_fallback_fields,
+            fallback_result.stats.json_fallback_fields
+        );
     }
 }

@@ -5,8 +5,8 @@
 
 use crate::FallbackConfig;
 use protocol_squisher_ir::{
-    ContainerType, EnumDef, FieldDef, IrSchema, IrType, PrimitiveType, SpecialType,
-    StructDef, TagStyle, TypeDef, TypeId, VariantPayload,
+    ContainerType, EnumDef, FieldDef, IrSchema, IrType, PrimitiveType, SpecialType, StructDef,
+    TagStyle, TypeDef, TypeId, VariantPayload,
 };
 
 /// Generate Python code for JSON serialization/deserialization
@@ -122,20 +122,19 @@ fn generate_struct(s: &StructDef, config: &FallbackConfig) -> String {
 fn generate_field(field: &FieldDef, config: &FallbackConfig) -> String {
     let python_type = ir_type_to_python(&field.ty, config.python_type_hints);
 
-    let type_hint = if field.optional
-        && !matches!(&field.ty, IrType::Container(ContainerType::Option(_)))
-    {
-        format!("Optional[{}]", python_type)
-    } else {
-        python_type
-    };
+    let type_hint =
+        if field.optional && !matches!(&field.ty, IrType::Container(ContainerType::Option(_))) {
+            format!("Optional[{}]", python_type)
+        } else {
+            python_type
+        };
 
     if field.optional || field.metadata.default.is_some() {
         let default_val = field
             .metadata
             .default
             .as_ref()
-            .map(|d| json_value_to_python(d))
+            .map(json_value_to_python)
             .unwrap_or_else(|| "None".to_string());
         format!("    {}: {} = {}\n", field.name, type_hint, default_val)
     } else {
@@ -152,14 +151,14 @@ fn json_value_to_python(value: &serde_json::Value) -> String {
         serde_json::Value::Array(arr) => {
             let items: Vec<String> = arr.iter().map(json_value_to_python).collect();
             format!("[{}]", items.join(", "))
-        }
+        },
         serde_json::Value::Object(obj) => {
             let items: Vec<String> = obj
                 .iter()
                 .map(|(k, v)| format!("'{}': {}", k, json_value_to_python(v)))
                 .collect();
             format!("{{{}}}", items.join(", "))
-        }
+        },
     }
 }
 
@@ -188,7 +187,7 @@ fn generate_enum(e: &EnumDef, config: &FallbackConfig) -> String {
                     code.push_str(&format!("class {}{}:\n", e.name, variant.name));
                     code.push_str(&format!("    tag: str = '{}'\n", variant.name));
                     code.push('\n');
-                }
+                },
                 Some(VariantPayload::Tuple(types)) => {
                     code.push_str("@dataclass\n");
                     code.push_str(&format!("class {}{}:\n", e.name, variant.name));
@@ -208,7 +207,7 @@ fn generate_enum(e: &EnumDef, config: &FallbackConfig) -> String {
                     }
                     code.push_str(&format!("    tag: str = '{}'\n", variant.name));
                     code.push('\n');
-                }
+                },
                 Some(VariantPayload::Struct(fields)) => {
                     code.push_str("@dataclass\n");
                     code.push_str(&format!("class {}{}:\n", e.name, variant.name));
@@ -221,7 +220,7 @@ fn generate_enum(e: &EnumDef, config: &FallbackConfig) -> String {
                     }
                     code.push_str(&format!("    tag: str = '{}'\n", variant.name));
                     code.push('\n');
-                }
+                },
             }
         }
 
@@ -258,7 +257,7 @@ fn generate_enum(e: &EnumDef, config: &FallbackConfig) -> String {
             match &variant.payload {
                 None => {
                     code.push_str(&format!("        return {}{}()\n", e.name, variant.name));
-                }
+                },
                 Some(VariantPayload::Tuple(types)) => {
                     let content_field = match &e.tag_style {
                         TagStyle::Adjacent { content_field, .. } => content_field.as_str(),
@@ -270,16 +269,13 @@ fn generate_enum(e: &EnumDef, config: &FallbackConfig) -> String {
                             e.name, variant.name, content_field
                         ));
                     } else {
-                        code.push_str(&format!(
-                            "        return {}{}(",
-                            e.name, variant.name
-                        ));
+                        code.push_str(&format!("        return {}{}(", e.name, variant.name));
                         for i in 0..types.len() {
                             code.push_str(&format!("value_{}=data.get('value_{}'), ", i, i));
                         }
                         code.push_str(")\n");
                     }
-                }
+                },
                 Some(VariantPayload::Struct(fields)) => {
                     code.push_str(&format!("        return {}{}(\n", e.name, variant.name));
                     for field in fields {
@@ -289,7 +285,7 @@ fn generate_enum(e: &EnumDef, config: &FallbackConfig) -> String {
                         ));
                     }
                     code.push_str("        )\n");
-                }
+                },
             }
         }
 
@@ -335,7 +331,7 @@ fn container_to_python(c: &ContainerType, type_hints: bool) -> String {
     match c {
         ContainerType::Option(inner) => {
             format!("Optional[{}]", ir_type_to_python(inner, type_hints))
-        }
+        },
         ContainerType::Vec(inner) => format!("List[{}]", ir_type_to_python(inner, type_hints)),
         ContainerType::Array(inner, _) => format!("List[{}]", ir_type_to_python(inner, type_hints)),
         ContainerType::Set(inner) => format!("Set[{}]", ir_type_to_python(inner, type_hints)),
@@ -345,21 +341,21 @@ fn container_to_python(c: &ContainerType, type_hints: bool) -> String {
                 ir_type_to_python(key, type_hints),
                 ir_type_to_python(value, type_hints)
             )
-        }
+        },
         ContainerType::Tuple(elements) => {
             let types: Vec<String> = elements
                 .iter()
                 .map(|e| ir_type_to_python(e, type_hints))
                 .collect();
             format!("Tuple[{}]", types.join(", "))
-        }
+        },
         ContainerType::Result(ok, err) => {
             format!(
                 "Union[{}, {}]",
                 ir_type_to_python(ok, type_hints),
                 ir_type_to_python(err, type_hints)
             )
-        }
+        },
     }
 }
 
@@ -468,7 +464,9 @@ fn to_snake_case(s: &str) -> String {
             if i > 0 {
                 result.push('_');
             }
-            result.push(c.to_lowercase().next().unwrap());
+            for lower in c.to_lowercase() {
+                result.push(lower);
+            }
         } else {
             result.push(c);
         }

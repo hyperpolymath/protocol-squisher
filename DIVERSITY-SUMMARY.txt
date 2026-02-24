@@ -112,7 +112,7 @@
 ┌──────────────────────────────────────────────────────────────────────────┐
 │ H3: "Dynamic typing requires Wheelbarrow class"                          │
 ├──────────────────────────────────────────────────────────────────────────┤
-│ Status:     ⚠️  PARTIALLY SUPPORTED (confidence: 0.58)                   │
+│ Status:     ⚠️  PARTLY SUPPORTED (confidence: 0.58)                   │
 │ Evidence:   Dynamic avg 0.407, better than expected                      │
 │ Reason:     Binary type tags (MessagePack) mitigate overhead             │
 └──────────────────────────────────────────────────────────────────────────┘

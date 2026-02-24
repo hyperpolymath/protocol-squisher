@@ -42,15 +42,11 @@ impl MessagePackConverter {
     }
 
     /// Convert a JSON Schema object to an IR struct
-    fn convert_object(
-        &self,
-        obj: &SchemaObject,
-        name: &str,
-    ) -> Result<TypeDef, AnalyzerError> {
+    fn convert_object(&self, obj: &SchemaObject, name: &str) -> Result<TypeDef, AnalyzerError> {
         let mut fields = Vec::new();
 
         for (field_name, field_schema) in &obj.properties {
-            let field_type = self.convert_type(field_schema)?;
+            let field_type = Self::convert_type(field_schema)?;
             let optional = !obj.required.contains(field_name);
             let constraints = self.extract_constraints(field_schema);
 
@@ -76,10 +72,9 @@ impl MessagePackConverter {
         if let Some(desc) = &obj.description {
             type_metadata.doc = Some(desc.clone());
         }
-        type_metadata.extra.insert(
-            "messagepack_dynamic".to_string(),
-            "true".to_string(),
-        );
+        type_metadata
+            .extra
+            .insert("messagepack_dynamic".to_string(), "true".to_string());
 
         Ok(TypeDef::Struct(StructDef {
             name: name.to_string(),
@@ -89,24 +84,28 @@ impl MessagePackConverter {
     }
 
     /// Convert a JSON Schema type to an IR type
-    fn convert_type(&self, schema: &SchemaObject) -> Result<IrType, AnalyzerError> {
+    fn convert_type(schema: &SchemaObject) -> Result<IrType, AnalyzerError> {
         // Handle empty schema (any type - dynamic)
         if schema.schema_type.is_none() {
             return Ok(IrType::Special(SpecialType::Any));
         }
 
-        // SAFETY: schema_type.is_none() checked above, so unwrap is guaranteed to succeed
-        match schema.schema_type.unwrap() {
+        let schema_type = match schema.schema_type {
+            Some(t) => t,
+            None => return Ok(IrType::Special(SpecialType::Any)),
+        };
+
+        match schema_type {
             SchemaType::Null => Ok(IrType::Special(SpecialType::Unit)),
             SchemaType::Boolean => Ok(IrType::Primitive(PrimitiveType::Bool)),
             SchemaType::Integer => {
                 // MessagePack uses variable-length encoding, default to I64
                 Ok(IrType::Primitive(PrimitiveType::I64))
-            }
+            },
             SchemaType::Number => {
                 // MessagePack float, default to F64
                 Ok(IrType::Primitive(PrimitiveType::F64))
-            }
+            },
             SchemaType::String => {
                 // Check for format hints
                 if let Some(format) = &schema.format {
@@ -120,10 +119,10 @@ impl MessagePackConverter {
                 } else {
                     Ok(IrType::Primitive(PrimitiveType::String))
                 }
-            }
+            },
             SchemaType::Array => {
                 if let Some(items) = &schema.items {
-                    let item_type = self.convert_type(items)?;
+                    let item_type = Self::convert_type(items)?;
                     Ok(IrType::Container(ContainerType::Vec(Box::new(item_type))))
                 } else {
                     // Array of any type
@@ -131,7 +130,7 @@ impl MessagePackConverter {
                         IrType::Special(SpecialType::Any),
                     ))))
                 }
-            }
+            },
             SchemaType::Object => {
                 if schema.properties.is_empty() {
                     // Map<String, Any> for generic objects
@@ -147,7 +146,7 @@ impl MessagePackConverter {
                         Box::new(IrType::Special(SpecialType::Any)),
                     )))
                 }
-            }
+            },
         }
     }
 
@@ -243,17 +242,21 @@ mod tests {
         let converter = MessagePackConverter::new();
         let ir = converter.convert(&parsed, "user").unwrap();
 
-        if let Some(TypeDef::Struct(s)) = ir.types.get("User") {
-            // id is required (not wrapped in Option)
-            let id_field = s.fields.iter().find(|f| f.name == "id").unwrap();
-            assert!(!id_field.optional);
+        let user = ir.types.get("User");
+        assert!(
+            matches!(user, Some(TypeDef::Struct(_))),
+            "Expected User struct"
+        );
+        let Some(TypeDef::Struct(s)) = user else {
+            unreachable!("asserted struct");
+        };
+        // id is required (not wrapped in Option)
+        let id_field = s.fields.iter().find(|f| f.name == "id").unwrap();
+        assert!(!id_field.optional);
 
-            // name is optional (wrapped in Option)
-            let name_field = s.fields.iter().find(|f| f.name == "name").unwrap();
-            assert!(name_field.optional);
-        } else {
-            panic!("Expected User struct");
-        }
+        // name is optional (wrapped in Option)
+        let name_field = s.fields.iter().find(|f| f.name == "name").unwrap();
+        assert!(name_field.optional);
     }
 
     #[test]
@@ -274,26 +277,28 @@ mod tests {
         let converter = MessagePackConverter::new();
         let ir = converter.convert(&parsed, "tagged").unwrap();
 
-        if let Some(TypeDef::Struct(s)) = ir.types.get("Tagged") {
-            let tags_field = s.fields.iter().find(|f| f.name == "tags").unwrap();
-            // Should be Vec<String> wrapped in Option (since not required)
-            match &tags_field.ty {
-                IrType::Container(ContainerType::Option(inner)) => {
-                    match inner.as_ref() {
-                        IrType::Container(ContainerType::Vec(item)) => {
-                            match item.as_ref() {
-                                IrType::Primitive(PrimitiveType::String) => {},
-                                _ => panic!("Expected String item type"),
-                            }
-                        }
-                        _ => panic!("Expected Vec container"),
-                    }
-                }
-                _ => panic!("Expected Option wrapper"),
-            }
-        } else {
-            panic!("Expected Tagged struct");
-        }
+        let tagged = ir.types.get("Tagged");
+        assert!(
+            matches!(tagged, Some(TypeDef::Struct(_))),
+            "Expected Tagged struct"
+        );
+        let Some(TypeDef::Struct(s)) = tagged else {
+            unreachable!("asserted struct");
+        };
+        let tags_field = s.fields.iter().find(|f| f.name == "tags").unwrap();
+        // Should be Vec<String> wrapped in Option (since not required)
+        assert!(
+            matches!(
+                &tags_field.ty,
+                IrType::Container(ContainerType::Option(inner))
+                    if matches!(
+                        inner.as_ref(),
+                        IrType::Container(ContainerType::Vec(item))
+                            if matches!(item.as_ref(), IrType::Primitive(PrimitiveType::String))
+                    )
+            ),
+            "Expected Option<Vec<String>> for tags field"
+        );
     }
 
     #[test]
@@ -321,18 +326,33 @@ mod tests {
         let converter = MessagePackConverter::new();
         let ir = converter.convert(&parsed, "user").unwrap();
 
-        if let Some(TypeDef::Struct(s)) = ir.types.get("User") {
-            let age_field = s.fields.iter().find(|f| f.name == "age").unwrap();
-            assert!(age_field.constraints.contains(&Constraint::Min(NumberValue::Float(0.0))));
-            assert!(age_field.constraints.contains(&Constraint::Max(NumberValue::Float(150.0))));
+        let user = ir.types.get("User");
+        assert!(
+            matches!(user, Some(TypeDef::Struct(_))),
+            "Expected User struct"
+        );
+        let Some(TypeDef::Struct(s)) = user else {
+            unreachable!("asserted struct");
+        };
+        let age_field = s.fields.iter().find(|f| f.name == "age").unwrap();
+        assert!(age_field
+            .constraints
+            .contains(&Constraint::Min(NumberValue::Float(0.0))));
+        assert!(age_field
+            .constraints
+            .contains(&Constraint::Max(NumberValue::Float(150.0))));
 
-            let username_field = s.fields.iter().find(|f| f.name == "username").unwrap();
-            assert!(username_field.constraints.contains(&Constraint::MinLength(3)));
-            assert!(username_field.constraints.contains(&Constraint::MaxLength(20)));
-            assert!(username_field.constraints.iter().any(|c| matches!(c, Constraint::Pattern(_))));
-        } else {
-            panic!("Expected User struct");
-        }
+        let username_field = s.fields.iter().find(|f| f.name == "username").unwrap();
+        assert!(username_field
+            .constraints
+            .contains(&Constraint::MinLength(3)));
+        assert!(username_field
+            .constraints
+            .contains(&Constraint::MaxLength(20)));
+        assert!(username_field
+            .constraints
+            .iter()
+            .any(|c| matches!(c, Constraint::Pattern(_))));
     }
 
     #[test]
@@ -357,33 +377,33 @@ mod tests {
         let converter = MessagePackConverter::new();
         let ir = converter.convert(&parsed, "record").unwrap();
 
-        if let Some(TypeDef::Struct(s)) = ir.types.get("Record") {
-            let created_field = s.fields.iter().find(|f| f.name == "created_at").unwrap();
-            // Should map to DateTime type
-            match &created_field.ty {
-                IrType::Container(ContainerType::Option(inner)) => {
-                    match inner.as_ref() {
-                        IrType::Primitive(PrimitiveType::DateTime) => {},
-                        _ => panic!("Expected DateTime type"),
-                    }
-                }
-                _ => panic!("Expected Option wrapper"),
-            }
+        let record = ir.types.get("Record");
+        assert!(
+            matches!(record, Some(TypeDef::Struct(_))),
+            "Expected Record struct"
+        );
+        let Some(TypeDef::Struct(s)) = record else {
+            unreachable!("asserted struct");
+        };
+        let created_field = s.fields.iter().find(|f| f.name == "created_at").unwrap();
+        assert!(
+            matches!(
+                &created_field.ty,
+                IrType::Container(ContainerType::Option(inner))
+                    if matches!(inner.as_ref(), IrType::Primitive(PrimitiveType::DateTime))
+            ),
+            "Expected Option<DateTime> for created_at"
+        );
 
-            let id_field = s.fields.iter().find(|f| f.name == "user_id").unwrap();
-            // Should map to Uuid type
-            match &id_field.ty {
-                IrType::Container(ContainerType::Option(inner)) => {
-                    match inner.as_ref() {
-                        IrType::Primitive(PrimitiveType::Uuid) => {},
-                        _ => panic!("Expected Uuid type"),
-                    }
-                }
-                _ => panic!("Expected Option wrapper"),
-            }
-        } else {
-            panic!("Expected Record struct");
-        }
+        let id_field = s.fields.iter().find(|f| f.name == "user_id").unwrap();
+        assert!(
+            matches!(
+                &id_field.ty,
+                IrType::Container(ContainerType::Option(inner))
+                    if matches!(inner.as_ref(), IrType::Primitive(PrimitiveType::Uuid))
+            ),
+            "Expected Option<Uuid> for user_id"
+        );
     }
 
     #[test]
@@ -401,21 +421,24 @@ mod tests {
         let converter = MessagePackConverter::new();
         let ir = converter.convert(&parsed, "dynamic").unwrap();
 
-        if let Some(TypeDef::Struct(s)) = ir.types.get("Dynamic") {
-            let field = s.fields.iter().find(|f| f.name == "dynamic_field").unwrap();
-            // Should map to Any type (dynamic)
-            match &field.ty {
-                IrType::Container(ContainerType::Option(inner)) => {
-                    match inner.as_ref() {
-                        IrType::Special(SpecialType::Any) => {},
-                        _ => panic!("Expected Any type for dynamic field"),
-                    }
-                }
-                _ => panic!("Expected Option wrapper"),
-            }
-        } else {
-            panic!("Expected Dynamic struct");
-        }
+        let dynamic = ir.types.get("Dynamic");
+        assert!(
+            matches!(dynamic, Some(TypeDef::Struct(_))),
+            "Expected Dynamic struct"
+        );
+        let Some(TypeDef::Struct(s)) = dynamic else {
+            unreachable!("asserted struct");
+        };
+        let field = s.fields.iter().find(|f| f.name == "dynamic_field").unwrap();
+        // Should map to Any type (dynamic)
+        assert!(
+            matches!(
+                &field.ty,
+                IrType::Container(ContainerType::Option(inner))
+                    if matches!(inner.as_ref(), IrType::Special(SpecialType::Any))
+            ),
+            "Expected Option<Any> for dynamic_field"
+        );
     }
 
     #[test]
@@ -433,14 +456,18 @@ mod tests {
         let converter = MessagePackConverter::new();
         let ir = converter.convert(&parsed, "test").unwrap();
 
-        if let Some(TypeDef::Struct(s)) = ir.types.get("Test") {
-            // Should have messagepack_dynamic metadata
-            assert_eq!(
-                s.metadata.extra.get("messagepack_dynamic"),
-                Some(&"true".to_string())
-            );
-        } else {
-            panic!("Expected Test struct");
-        }
+        let test_ty = ir.types.get("Test");
+        assert!(
+            matches!(test_ty, Some(TypeDef::Struct(_))),
+            "Expected Test struct"
+        );
+        let Some(TypeDef::Struct(s)) = test_ty else {
+            unreachable!("asserted struct");
+        };
+        // Should have messagepack_dynamic metadata
+        assert_eq!(
+            s.metadata.extra.get("messagepack_dynamic"),
+            Some(&"true".to_string())
+        );
     }
 }

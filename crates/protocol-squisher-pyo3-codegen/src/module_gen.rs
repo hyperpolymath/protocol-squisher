@@ -85,18 +85,11 @@ pub fn generate_module(schema: &IrSchema, config: &ModuleGenConfig) -> Generated
     for type_name in &type_order {
         if let Some(type_def) = schema.types.get(type_name.as_str()) {
             let code = match type_def {
-                TypeDef::Struct(s) => {
-                    generate_struct(s, &config.struct_config, &mut ctx)
-                }
-                TypeDef::Enum(e) => {
-                    generate_enum(e, &config.enum_config, &mut ctx)
-                }
+                TypeDef::Struct(s) => generate_struct(s, &config.struct_config, &mut ctx),
+                TypeDef::Enum(e) => generate_enum(e, &config.enum_config, &mut ctx),
                 TypeDef::Alias(a) => generate_alias(a),
                 TypeDef::Newtype(n) => generate_newtype(n),
-                TypeDef::Union(_) => {
-                    // Unions are complex - skip for now
-                    format!("// TODO: Union type {} not yet supported\n", type_name)
-                }
+                TypeDef::Union(u) => generate_union(u),
             };
             type_codes.push(code);
             generated_types.push(type_name.clone());
@@ -104,7 +97,7 @@ pub fn generate_module(schema: &IrSchema, config: &ModuleGenConfig) -> Generated
     }
 
     // Build the complete module
-    let rust_code = build_rust_module(&config, &type_codes);
+    let rust_code = build_rust_module(config, &type_codes);
 
     // Generate Python stubs if requested
     let python_stub = if config.generate_stubs {
@@ -140,12 +133,12 @@ fn build_rust_module(config: &ModuleGenConfig, type_codes: &[String]) -> String 
     if config.add_serde_derive {
         code.push_str("use serde::{Deserialize, Serialize};\n");
     }
-    code.push_str("\n");
+    code.push('\n');
 
     // Type definitions
     for type_code in type_codes {
         code.push_str(type_code);
-        code.push_str("\n");
+        code.push('\n');
     }
 
     // Module definition
@@ -227,6 +220,37 @@ fn generate_newtype(newtype: &protocol_squisher_ir::NewtypeDef) -> String {
     code
 }
 
+/// Generate a union wrapper.
+///
+/// Unions are represented as validated JSON payload strings for now, which keeps
+/// the generated module usable while preserving opaque union semantics.
+fn generate_union(union_def: &protocol_squisher_ir::UnionDef) -> String {
+    let mut code = String::new();
+
+    code.push_str("#[pyclass]\n");
+    code.push_str("#[derive(Clone, Debug)]\n");
+    code.push_str(&format!("pub struct {} {{\n", union_def.name));
+    code.push_str("    pub raw_json: String,\n");
+    code.push_str("}\n\n");
+
+    code.push_str("#[pymethods]\n");
+    code.push_str(&format!("impl {} {{\n", union_def.name));
+    code.push_str("    #[new]\n");
+    code.push_str("    pub fn new(raw_json: String) -> pyo3::PyResult<Self> {\n");
+    code.push_str(
+        "        serde_json::from_str::<serde_json::Value>(&raw_json)\n            .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;\n",
+    );
+    code.push_str("        Ok(Self { raw_json })\n");
+    code.push_str("    }\n\n");
+    code.push_str("    #[getter]\n");
+    code.push_str("    pub fn raw_json(&self) -> String {\n");
+    code.push_str("        self.raw_json.clone()\n");
+    code.push_str("    }\n");
+    code.push_str("}\n");
+
+    code
+}
+
 /// Generate Python type stubs (.pyi content)
 fn generate_python_stubs(schema: &IrSchema, types: &[String]) -> String {
     let mut stub = String::new();
@@ -239,24 +263,20 @@ fn generate_python_stubs(schema: &IrSchema, types: &[String]) -> String {
             match type_def {
                 TypeDef::Struct(s) => {
                     stub.push_str(&generate_struct_stub(s));
-                }
+                },
                 TypeDef::Enum(e) => {
                     stub.push_str(&generate_enum_stub(e));
-                }
+                },
                 TypeDef::Alias(a) => {
                     let target = crate::mapping::PyO3Type::from_ir(&a.target);
-                    stub.push_str(&format!(
-                        "{} = {}\n\n",
-                        a.name,
-                        target.python_annotation()
-                    ));
-                }
+                    stub.push_str(&format!("{} = {}\n\n", a.name, target.python_annotation()));
+                },
                 TypeDef::Newtype(n) => {
                     stub.push_str(&generate_newtype_stub(n));
-                }
-                TypeDef::Union(_) => {
-                    stub.push_str(&format!("# Union {} not yet supported\n\n", type_name));
-                }
+                },
+                TypeDef::Union(u) => {
+                    stub.push_str(&generate_union_stub(u));
+                },
             }
         }
     }
@@ -288,7 +308,11 @@ fn generate_struct_stub(s: &protocol_squisher_ir::StructDef) -> String {
         .map(|f| {
             let pyo3_type = crate::mapping::PyO3Type::from_ir(&f.ty);
             if f.optional {
-                format!("{}: {} | None = None", f.name, pyo3_type.python_annotation())
+                format!(
+                    "{}: {} | None = None",
+                    f.name,
+                    pyo3_type.python_annotation()
+                )
             } else {
                 format!("{}: {}", f.name, pyo3_type.python_annotation())
             }
@@ -344,13 +368,17 @@ fn generate_enum_stub(e: &protocol_squisher_ir::EnumDef) -> String {
                         variant.name.to_lowercase(),
                         e.name
                     ));
-                }
+                },
                 Some(protocol_squisher_ir::VariantPayload::Tuple(types)) => {
                     let params: Vec<String> = types
                         .iter()
                         .enumerate()
                         .map(|(i, t)| {
-                            format!("v{}: {}", i, crate::mapping::PyO3Type::from_ir(t).python_annotation())
+                            format!(
+                                "v{}: {}",
+                                i,
+                                crate::mapping::PyO3Type::from_ir(t).python_annotation()
+                            )
                         })
                         .collect();
                     stub.push_str(&format!(
@@ -359,12 +387,16 @@ fn generate_enum_stub(e: &protocol_squisher_ir::EnumDef) -> String {
                         params.join(", "),
                         e.name
                     ));
-                }
+                },
                 Some(protocol_squisher_ir::VariantPayload::Struct(fields)) => {
                     let params: Vec<String> = fields
                         .iter()
                         .map(|f| {
-                            format!("{}: {}", f.name, crate::mapping::PyO3Type::from_ir(&f.ty).python_annotation())
+                            format!(
+                                "{}: {}",
+                                f.name,
+                                crate::mapping::PyO3Type::from_ir(&f.ty).python_annotation()
+                            )
                         })
                         .collect();
                     stub.push_str(&format!(
@@ -373,7 +405,7 @@ fn generate_enum_stub(e: &protocol_squisher_ir::EnumDef) -> String {
                         params.join(", "),
                         e.name
                     ));
-                }
+                },
             }
 
             // is_* method
@@ -413,10 +445,22 @@ fn generate_newtype_stub(n: &protocol_squisher_ir::NewtypeDef) -> String {
     stub
 }
 
+/// Generate Python stub for a union wrapper.
+fn generate_union_stub(u: &protocol_squisher_ir::UnionDef) -> String {
+    let mut stub = String::new();
+    stub.push_str(&format!("class {}:\n", u.name));
+    stub.push_str("    raw_json: str\n");
+    stub.push_str("    def __init__(self, raw_json: str) -> None: ...\n");
+    stub.push_str("    def raw_json(self) -> str: ...\n\n");
+    stub
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use protocol_squisher_ir::{FieldDef, FieldMetadata, IrType, PrimitiveType, StructDef, TypeMetadata};
+    use protocol_squisher_ir::{
+        FieldDef, FieldMetadata, IrType, PrimitiveType, StructDef, TypeMetadata,
+    };
 
     #[test]
     fn test_generate_simple_module() {

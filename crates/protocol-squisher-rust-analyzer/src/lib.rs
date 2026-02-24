@@ -31,20 +31,19 @@
 //! ```
 
 use protocol_squisher_ir::{
-    Constraint, FieldDef, FieldMetadata, IrSchema,
-    StructDef, TypeDef, TypeMetadata, EnumDef, VariantDef,
-    VariantPayload, TagStyle,
+    Constraint, EnumDef, FieldDef, FieldMetadata, IrSchema, StringFormat, StructDef, TagStyle,
+    TypeDef, TypeMetadata, VariantDef, VariantPayload,
 };
 
-mod parser;
-mod converter;
 mod attributes;
+mod converter;
 mod ephapax_bridge;
+mod parser;
 
-pub use parser::*;
-pub use converter::*;
 pub use attributes::*;
+pub use converter::*;
 pub use ephapax_bridge::*;
+pub use parser::*;
 
 /// Errors that can occur during Rust analysis
 #[derive(Debug, Clone)]
@@ -109,8 +108,7 @@ impl RustAnalyzer {
 
     /// Analyze Rust source code and extract schema
     pub fn analyze_source(&self, source: &str) -> Result<IrSchema, AnalyzerError> {
-        let file = syn::parse_file(source)
-            .map_err(|e| AnalyzerError::ParseError(e.to_string()))?;
+        let file = syn::parse_file(source).map_err(|e| AnalyzerError::ParseError(e.to_string()))?;
 
         let mut schema = IrSchema::new("rust-schema", "rust-serde");
 
@@ -122,21 +120,21 @@ impl RustAnalyzer {
                         schema.add_type(name.clone(), type_def);
                         schema.add_root(name);
                     }
-                }
+                },
                 syn::Item::Enum(item_enum) => {
                     if let Some(type_def) = self.analyze_enum(item_enum)? {
                         let name = item_enum.ident.to_string();
                         schema.add_type(name.clone(), type_def);
                         schema.add_root(name);
                     }
-                }
+                },
                 syn::Item::Type(item_type) => {
                     if let Some(type_def) = self.analyze_type_alias(item_type)? {
                         let name = item_type.ident.to_string();
                         schema.add_type(name, type_def);
                     }
-                }
-                _ => {} // Skip other items
+                },
+                _ => {}, // Skip other items
             }
         }
 
@@ -153,13 +151,16 @@ impl RustAnalyzer {
         }
 
         let fields = match &item.fields {
-            syn::Fields::Named(named) => {
-                self.analyze_named_fields(&named.named, &attrs)?
-            }
+            syn::Fields::Named(named) => self.analyze_named_fields(&named.named, &attrs)?,
             syn::Fields::Unnamed(unnamed) => {
                 // Tuple struct - convert to newtype if single field
                 if unnamed.unnamed.len() == 1 {
-                    let field = unnamed.unnamed.first().unwrap();
+                    let Some(field) = unnamed.unnamed.first() else {
+                        return Err(AnalyzerError::UnsupportedConstruct(
+                            "Tuple struct declared with one field but no field was found"
+                                .to_string(),
+                        ));
+                    };
                     let inner_type = convert_type(&field.ty)?;
                     return Ok(Some(TypeDef::Newtype(protocol_squisher_ir::NewtypeDef {
                         name: item.ident.to_string(),
@@ -172,13 +173,13 @@ impl RustAnalyzer {
                     })));
                 }
                 return Err(AnalyzerError::UnsupportedConstruct(
-                    "Tuple structs with multiple fields not yet supported".to_string()
+                    "Tuple structs with multiple fields not yet supported".to_string(),
                 ));
-            }
+            },
             syn::Fields::Unit => {
                 // Unit struct
                 vec![]
-            }
+            },
         };
 
         Ok(Some(TypeDef::Struct(StructDef {
@@ -216,7 +217,9 @@ impl RustAnalyzer {
                 continue;
             }
 
-            let name = field.ident.as_ref()
+            let name = field
+                .ident
+                .as_ref()
                 .map(|i| i.to_string())
                 .unwrap_or_default();
 
@@ -259,18 +262,22 @@ impl RustAnalyzer {
                 syn::Fields::Named(named) => {
                     let fields = self.analyze_named_fields(&named.named, &attrs)?;
                     Some(VariantPayload::Struct(fields))
-                }
+                },
                 syn::Fields::Unnamed(unnamed) => {
-                    let types: Result<Vec<_>, _> = unnamed.unnamed.iter()
+                    let types: Result<Vec<_>, _> = unnamed
+                        .unnamed
+                        .iter()
                         .map(|f| convert_type(&f.ty))
                         .collect();
                     Some(VariantPayload::Tuple(types?))
-                }
+                },
                 syn::Fields::Unit => None,
             };
 
             variants.push(VariantDef {
-                name: variant_attrs.rename.clone()
+                name: variant_attrs
+                    .rename
+                    .clone()
                     .unwrap_or_else(|| variant.ident.to_string()),
                 payload,
                 metadata: protocol_squisher_ir::VariantMetadata {
@@ -315,10 +322,12 @@ fn has_serde_derive(attrs: &[syn::Attribute]) -> bool {
     for attr in attrs {
         if attr.path().is_ident("derive") {
             if let Ok(nested) = attr.parse_args_with(
-                syn::punctuated::Punctuated::<syn::Path, syn::Token![,]>::parse_terminated
+                syn::punctuated::Punctuated::<syn::Path, syn::Token![,]>::parse_terminated,
             ) {
                 for path in nested {
-                    let ident = path.segments.last()
+                    let ident = path
+                        .segments
+                        .last()
                         .map(|s| s.ident.to_string())
                         .unwrap_or_default();
                     if ident == "Serialize" || ident == "Deserialize" {
@@ -333,11 +342,16 @@ fn has_serde_derive(attrs: &[syn::Attribute]) -> bool {
 
 /// Extract doc comments from attributes
 fn extract_doc_comment(attrs: &[syn::Attribute]) -> Option<String> {
-    let docs: Vec<String> = attrs.iter()
+    let docs: Vec<String> = attrs
+        .iter()
         .filter_map(|attr| {
             if attr.path().is_ident("doc") {
                 if let syn::Meta::NameValue(nv) = &attr.meta {
-                    if let syn::Expr::Lit(syn::ExprLit { lit: syn::Lit::Str(s), .. }) = &nv.value {
+                    if let syn::Expr::Lit(syn::ExprLit {
+                        lit: syn::Lit::Str(s),
+                        ..
+                    }) = &nv.value
+                    {
                         return Some(s.value().trim().to_string());
                     }
                 }
@@ -364,9 +378,84 @@ fn is_option_type(ty: &syn::Type) -> bool {
 }
 
 /// Extract field constraints from attributes (e.g., validator crate)
-fn extract_field_constraints(_attrs: &[syn::Attribute]) -> Vec<Constraint> {
-    // TODO: Parse validator attributes like #[validate(length(min = 1))]
-    vec![]
+fn extract_field_constraints(attrs: &[syn::Attribute]) -> Vec<Constraint> {
+    let mut constraints = Vec::new();
+
+    for attr in attrs {
+        if !attr.path().is_ident("validate") {
+            continue;
+        }
+
+        let _ = attr.parse_nested_meta(|meta| {
+            if meta.path.is_ident("length") {
+                let mut min_len: Option<usize> = None;
+                let mut max_len: Option<usize> = None;
+                let mut exact_len: Option<usize> = None;
+
+                meta.parse_nested_meta(|nested| {
+                    if nested.path.is_ident("min") {
+                        let lit: syn::LitInt = nested.value()?.parse()?;
+                        min_len = lit.base10_parse::<usize>().ok();
+                    } else if nested.path.is_ident("max") {
+                        let lit: syn::LitInt = nested.value()?.parse()?;
+                        max_len = lit.base10_parse::<usize>().ok();
+                    } else if nested.path.is_ident("equal") {
+                        let lit: syn::LitInt = nested.value()?.parse()?;
+                        exact_len = lit.base10_parse::<usize>().ok();
+                    }
+                    Ok(())
+                })?;
+
+                if let Some(v) = min_len {
+                    constraints.push(Constraint::MinLength(v));
+                    if v > 0 {
+                        constraints.push(Constraint::NonEmpty);
+                    }
+                }
+                if let Some(v) = max_len {
+                    constraints.push(Constraint::MaxLength(v));
+                }
+                if let Some(v) = exact_len {
+                    constraints.push(Constraint::ExactLength(v));
+                }
+                return Ok(());
+            }
+
+            if meta.path.is_ident("email") {
+                constraints.push(Constraint::Format(StringFormat::Email));
+                return Ok(());
+            }
+
+            if meta.path.is_ident("url") {
+                constraints.push(Constraint::Format(StringFormat::Uri));
+                return Ok(());
+            }
+
+            if meta.path.is_ident("uuid") {
+                constraints.push(Constraint::Format(StringFormat::Uuid));
+                return Ok(());
+            }
+
+            if meta.path.is_ident("regex") {
+                let mut pattern: Option<String> = None;
+                meta.parse_nested_meta(|nested| {
+                    if nested.path.is_ident("path") {
+                        let lit: syn::LitStr = nested.value()?.parse()?;
+                        pattern = Some(lit.value());
+                    }
+                    Ok(())
+                })?;
+                if let Some(value) = pattern {
+                    constraints.push(Constraint::Pattern(value));
+                }
+                return Ok(());
+            }
+
+            Ok(())
+        });
+    }
+
+    constraints
 }
 
 /// Determine tag style from serde attributes
@@ -423,13 +512,17 @@ mod tests {
         let analyzer = RustAnalyzer::new();
         let schema = analyzer.analyze_source(source).unwrap();
 
-        if let Some(TypeDef::Struct(s)) = schema.types.get("Config") {
-            assert_eq!(s.fields.len(), 2);
-            assert!(!s.fields[0].optional);
-            assert!(s.fields[1].optional);
-        } else {
-            panic!("Expected struct Config");
-        }
+        let config = schema.types.get("Config");
+        assert!(
+            matches!(config, Some(TypeDef::Struct(_))),
+            "Expected struct Config"
+        );
+        let Some(TypeDef::Struct(s)) = config else {
+            unreachable!("asserted struct Config");
+        };
+        assert_eq!(s.fields.len(), 2);
+        assert!(!s.fields[0].optional);
+        assert!(s.fields[1].optional);
     }
 
     #[test]
@@ -446,13 +539,17 @@ mod tests {
         let analyzer = RustAnalyzer::new();
         let schema = analyzer.analyze_source(source).unwrap();
 
-        if let Some(TypeDef::Enum(e)) = schema.types.get("Status") {
-            assert_eq!(e.variants.len(), 3);
-            assert!(e.variants[0].payload.is_none()); // Unit variant
-            assert!(e.variants[2].payload.is_some()); // Struct variant
-        } else {
-            panic!("Expected enum Status");
-        }
+        let status = schema.types.get("Status");
+        assert!(
+            matches!(status, Some(TypeDef::Enum(_))),
+            "Expected enum Status"
+        );
+        let Some(TypeDef::Enum(e)) = status else {
+            unreachable!("asserted enum Status");
+        };
+        assert_eq!(e.variants.len(), 3);
+        assert!(e.variants[0].payload.is_none()); // Unit variant
+        assert!(e.variants[2].payload.is_some()); // Struct variant
     }
 
     #[test]
@@ -474,5 +571,34 @@ mod tests {
         assert_eq!(schema.types.len(), 1);
         assert!(schema.types.contains_key("IsSerde"));
         assert!(!schema.types.contains_key("NotSerde"));
+    }
+
+    #[test]
+    fn test_extract_validator_constraints() {
+        let source = r#"
+            #[derive(Serialize, Deserialize)]
+            struct User {
+                #[validate(length(min = 1, max = 64), email)]
+                email: String,
+            }
+        "#;
+
+        let analyzer = RustAnalyzer::new();
+        let schema = analyzer.analyze_source(source).unwrap();
+
+        let user = schema.types.get("User");
+        assert!(
+            matches!(user, Some(TypeDef::Struct(_))),
+            "Expected struct User"
+        );
+        let Some(TypeDef::Struct(user)) = user else {
+            unreachable!("asserted struct User");
+        };
+        let constraints = &user.fields[0].constraints;
+
+        assert!(constraints.contains(&Constraint::MinLength(1)));
+        assert!(constraints.contains(&Constraint::MaxLength(64)));
+        assert!(constraints.contains(&Constraint::NonEmpty));
+        assert!(constraints.contains(&Constraint::Format(StringFormat::Email)));
     }
 }

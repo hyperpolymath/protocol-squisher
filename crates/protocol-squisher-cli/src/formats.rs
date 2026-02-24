@@ -94,12 +94,8 @@ impl ProtocolFormat {
             _ => {
                 // Try to find similar format
                 let similar = Self::find_similar(&s_lower);
-                Err(anyhow!(
-                    "Unknown protocol format: '{}'. {}",
-                    s,
-                    similar
-                ))
-            }
+                Err(anyhow!("Unknown protocol format: '{}'. {}", s, similar))
+            },
         }
     }
 
@@ -110,7 +106,7 @@ impl ProtocolFormat {
             .map(|f| (jaro_winkler(input, f.name()), f.name()))
             .collect();
 
-        suggestions.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
+        suggestions.sort_by(|a, b| b.0.total_cmp(&a.0));
 
         let best_matches: Vec<&str> = suggestions
             .iter()
@@ -171,100 +167,98 @@ impl ProtocolFormat {
                 let analyzer = protocol_squisher_rust_analyzer::RustAnalyzer::new();
                 let source = std::fs::read_to_string(path)?;
                 Ok(analyzer.analyze_source(&source)?)
-            }
+            },
             Self::Python => {
                 let analyzer = protocol_squisher_python_analyzer::PythonAnalyzer::new();
-                let source = std::fs::read_to_string(path)?;
-                Ok(analyzer.analyze_module(&source)?)
-            }
+                Ok(analyzer.analyze_file(path)?)
+            },
             Self::Bebop => {
                 let analyzer = protocol_squisher_bebop_analyzer::BebopAnalyzer::new();
                 Ok(analyzer.analyze_file(path)?)
-            }
+            },
             Self::FlatBuffers => {
                 let analyzer = protocol_squisher_flatbuffers_analyzer::FlatBuffersAnalyzer::new();
                 Ok(analyzer.analyze_file(path)?)
-            }
+            },
             Self::MessagePack => {
-                let analyzer =
-                    protocol_squisher_messagepack_analyzer::MessagePackAnalyzer::new();
+                let analyzer = protocol_squisher_messagepack_analyzer::MessagePackAnalyzer::new();
                 Ok(analyzer.analyze_file(path)?)
-            }
+            },
             Self::Avro => {
                 let analyzer = protocol_squisher_avro_analyzer::AvroAnalyzer::new();
                 Ok(analyzer.analyze_file(path)?)
-            }
+            },
             Self::Thrift => {
                 let analyzer = protocol_squisher_thrift_analyzer::ThriftAnalyzer::new();
                 Ok(analyzer.analyze_file(path)?)
-            }
+            },
             Self::CapnProto => {
                 let analyzer = protocol_squisher_capnproto_analyzer::CapnProtoAnalyzer::new();
                 Ok(analyzer.analyze_file(path)?)
-            }
+            },
             Self::ReScript => {
                 let analyzer = protocol_squisher_rescript_analyzer::ReScriptAnalyzer::new();
                 Ok(analyzer.analyze_file(path)?)
-            }
+            },
             Self::Protobuf => {
                 let analyzer = protocol_squisher_protobuf_analyzer::ProtobufAnalyzer::new();
                 Ok(analyzer.analyze_file(path)?)
-            }
+            },
             Self::JsonSchema => {
                 let analyzer = protocol_squisher_json_schema_analyzer::JsonSchemaAnalyzer::new();
                 Ok(analyzer.analyze_file(path)?)
-            }
+            },
         }
     }
 
     /// Analyze a string with the appropriate analyzer
+    #[allow(dead_code)]
     pub fn analyze_str(&self, content: &str, name: &str) -> Result<IrSchema> {
         match self {
             Self::Rust => {
                 let analyzer = protocol_squisher_rust_analyzer::RustAnalyzer::new();
                 Ok(analyzer.analyze_source(content)?)
-            }
+            },
             Self::Python => {
                 let analyzer = protocol_squisher_python_analyzer::PythonAnalyzer::new();
-                Ok(analyzer.analyze_module(content)?)
-            }
+                Ok(analyzer.analyze_json(content)?)
+            },
             Self::Bebop => {
                 let analyzer = protocol_squisher_bebop_analyzer::BebopAnalyzer::new();
                 Ok(analyzer.analyze_str(content, name)?)
-            }
+            },
             Self::FlatBuffers => {
                 let analyzer = protocol_squisher_flatbuffers_analyzer::FlatBuffersAnalyzer::new();
                 Ok(analyzer.analyze_str(content, name)?)
-            }
+            },
             Self::MessagePack => {
-                let analyzer =
-                    protocol_squisher_messagepack_analyzer::MessagePackAnalyzer::new();
+                let analyzer = protocol_squisher_messagepack_analyzer::MessagePackAnalyzer::new();
                 Ok(analyzer.analyze_str(content, name)?)
-            }
+            },
             Self::Avro => {
                 let analyzer = protocol_squisher_avro_analyzer::AvroAnalyzer::new();
                 Ok(analyzer.analyze_str(content, name)?)
-            }
+            },
             Self::Thrift => {
                 let analyzer = protocol_squisher_thrift_analyzer::ThriftAnalyzer::new();
                 Ok(analyzer.analyze_str(content, name)?)
-            }
+            },
             Self::CapnProto => {
                 let analyzer = protocol_squisher_capnproto_analyzer::CapnProtoAnalyzer::new();
                 Ok(analyzer.analyze_str(content, name)?)
-            }
+            },
             Self::ReScript => {
                 let analyzer = protocol_squisher_rescript_analyzer::ReScriptAnalyzer::new();
                 Ok(analyzer.analyze_str(content, name)?)
-            }
+            },
             Self::Protobuf => {
                 let analyzer = protocol_squisher_protobuf_analyzer::ProtobufAnalyzer::new();
                 Ok(analyzer.analyze_str(content, name)?)
-            }
+            },
             Self::JsonSchema => {
                 let analyzer = protocol_squisher_json_schema_analyzer::JsonSchemaAnalyzer::new();
                 Ok(analyzer.analyze_str(content, name)?)
-            }
+            },
         }
     }
 }

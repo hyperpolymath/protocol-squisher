@@ -156,10 +156,7 @@ fn generate_repr_method(struct_def: &StructDef) -> String {
     let mut code = String::new();
 
     code.push_str("    fn __repr__(&self) -> String {\n");
-    code.push_str(&format!(
-        "        format!(\"{}({{}})\",\n",
-        struct_def.name
-    ));
+    code.push_str(&format!("        format!(\"{}({{}})\",\n", struct_def.name));
 
     let field_formats: Vec<String> = struct_def
         .fields
@@ -190,7 +187,9 @@ fn generate_to_dict_method(struct_def: &StructDef) -> String {
     let mut code = String::new();
 
     code.push_str("    /// Convert to a Python dictionary\n");
-    code.push_str("    pub fn to_dict(&self, py: pyo3::Python<'_>) -> pyo3::PyResult<pyo3::PyObject> {\n");
+    code.push_str(
+        "    pub fn to_dict(&self, py: pyo3::Python<'_>) -> pyo3::PyResult<pyo3::PyObject> {\n",
+    );
     code.push_str("        let dict = pyo3::types::PyDict::new(py);\n");
 
     for field in &struct_def.fields {
@@ -254,9 +253,9 @@ fn generate_to_json_method(_struct_def: &StructDef) -> String {
 
     code.push_str("    /// Serialize to JSON string\n");
     code.push_str("    pub fn to_json(&self) -> pyo3::PyResult<String> {\n");
-    code.push_str(&format!(
-        "        serde_json::to_string(self).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))\n"
-    ));
+    code.push_str(
+        "        serde_json::to_string(self).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))\n",
+    );
     code.push_str("    }\n\n");
 
     code
@@ -364,11 +363,10 @@ pub fn is_hashable(ir_type: &IrType) -> bool {
             // Mutable containers are not hashable
             _ => false,
         },
-        IrType::Special(s) => match s {
-            protocol_squisher_ir::SpecialType::Unit => true,
-            protocol_squisher_ir::SpecialType::Never => true,
-            _ => false,
-        },
+        IrType::Special(s) => matches!(
+            s,
+            protocol_squisher_ir::SpecialType::Unit | protocol_squisher_ir::SpecialType::Never
+        ),
     }
 }
 

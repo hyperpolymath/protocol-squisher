@@ -4,6 +4,7 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+jq_dir="${repo_root}/scripts/ci/jq"
 with_podman=false
 with_realworld=false
 output_path=""
@@ -88,6 +89,10 @@ if ! command -v jq >/dev/null 2>&1; then
     echo "error: jq is required." >&2
     exit 127
 fi
+if [[ ! -f "${jq_dir}/append-podman-step.jq" || ! -f "${jq_dir}/capture-maintenance-report.jq" ]]; then
+    echo "error: jq filters missing in ${jq_dir}" >&2
+    exit 127
+fi
 if ! command -v git >/dev/null 2>&1; then
     echo "error: git is required." >&2
     exit 127
@@ -163,7 +168,7 @@ append_podman_step() {
         --arg status "${status}" \
         --argjson seconds "${seconds}" \
         --arg log "${log_path}" \
-        '. + [{"name": $name, "status": $status, "seconds": $seconds, "log": $log}]' \
+        -f "${jq_dir}/append-podman-step.jq" \
         <<<"${podman_steps}")"
 }
 
@@ -268,38 +273,7 @@ jq -n \
     --argjson current_panic_sites "${current_panic_sites}" \
     --argjson podman_steps "${podman_steps}" \
     --argjson realworld_totals "${realworld_totals}" \
-    '{
-        generated_at_utc: $generated_at,
-        git_commit: $git_commit,
-        logs_dir: $logs_dir,
-        abi_policy: {
-            status: $abi_status
-        },
-        panic_assail: {
-            tool: $panic_bin,
-            baseline: {
-                weak_points: $baseline_weak_points,
-                unwrap_calls: $baseline_unwrap_calls,
-                panic_sites: $baseline_panic_sites
-            },
-            current: {
-                weak_points: $current_weak_points,
-                unwrap_calls: $current_unwrap_calls,
-                panic_sites: $current_panic_sites
-            }
-        },
-        podman: {
-            status: $podman_status,
-            failure_reason: $podman_failure_reason,
-            steps: $podman_steps
-        },
-        realworld_corpus: {
-            status: $realworld_status,
-            failure_reason: $realworld_failure_reason,
-            report_path: $realworld_report,
-            totals: $realworld_totals
-        }
-    }' >"${output_path}"
+    -f "${jq_dir}/capture-maintenance-report.jq" >"${output_path}"
 
 echo "wrote metrics: ${output_path}"
 echo "logs dir: ${logs_dir}"

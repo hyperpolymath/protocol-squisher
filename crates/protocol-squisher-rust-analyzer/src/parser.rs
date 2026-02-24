@@ -13,13 +13,13 @@ pub fn parse_file(path: impl AsRef<Path>) -> Result<syn::File, AnalyzerError> {
     let source = fs::read_to_string(path)
         .map_err(|e| AnalyzerError::ParseError(format!("Failed to read file: {e}")))?;
 
-    syn::parse_file(&source)
-        .map_err(|e| AnalyzerError::ParseError(format!("Failed to parse: {e}")))
+    syn::parse_file(&source).map_err(|e| AnalyzerError::ParseError(format!("Failed to parse: {e}")))
 }
 
 /// Extract all struct names from a parsed file
 pub fn extract_struct_names(file: &syn::File) -> Vec<String> {
-    file.items.iter()
+    file.items
+        .iter()
         .filter_map(|item| {
             if let syn::Item::Struct(item_struct) = item {
                 Some(item_struct.ident.to_string())
@@ -32,7 +32,8 @@ pub fn extract_struct_names(file: &syn::File) -> Vec<String> {
 
 /// Extract all enum names from a parsed file
 pub fn extract_enum_names(file: &syn::File) -> Vec<String> {
-    file.items.iter()
+    file.items
+        .iter()
         .filter_map(|item| {
             if let syn::Item::Enum(item_enum) = item {
                 Some(item_enum.ident.to_string())
@@ -45,7 +46,8 @@ pub fn extract_enum_names(file: &syn::File) -> Vec<String> {
 
 /// Extract all type alias names from a parsed file
 pub fn extract_type_alias_names(file: &syn::File) -> Vec<String> {
-    file.items.iter()
+    file.items
+        .iter()
         .filter_map(|item| {
             if let syn::Item::Type(item_type) = item {
                 Some(item_type.ident.to_string())
@@ -70,7 +72,7 @@ pub fn find_items_with_derive(file: &syn::File, derive_name: &str) -> Vec<String
         for attr in attrs {
             if attr.path().is_ident("derive") {
                 if let Ok(nested) = attr.parse_args_with(
-                    syn::punctuated::Punctuated::<syn::Path, syn::Token![,]>::parse_terminated
+                    syn::punctuated::Punctuated::<syn::Path, syn::Token![,]>::parse_terminated,
                 ) {
                     for path in nested {
                         if let Some(ident) = path.segments.last() {

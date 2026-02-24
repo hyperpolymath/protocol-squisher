@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: PMPL-1.0-or-later -->
 <!-- TOPOLOGY.md — Project architecture map and completion dashboard -->
-<!-- Last updated: 2026-02-19 -->
+<!-- Last updated: 2026-02-24 -->
 
 # Protocol Squisher — Project Topology
 
@@ -44,8 +44,8 @@
 
                         ┌─────────────────────────────────────────┐
                         │          REPO INFRASTRUCTURE            │
-                        │  Justfile Automation  .machine_readable/  │
-                        │  Formal Proofs (Agda) 0-AI-MANIFEST.a2ml  │
+                        │  Justfile Automation  .machines_readable/ │
+                        │  Formal Proofs (Agda) AI.a2ml             │
                         └─────────────────────────────────────────┘
 ```
 
@@ -67,7 +67,7 @@ PROOF & VERIFICATION
 
 REPO INFRASTRUCTURE
   Justfile Automation               ██████████ 100%    Standard build/check tasks
-  .machine_readable/                ██████████ 100%    STATE tracking active
+  .machines_readable/6scm           ██████████ 100%    STATE/META/PLAYBOOK tracking active
   Benchmark Suite                   ██████████ 100%    Results interpretation verified
 
 ─────────────────────────────────────────────────────────────────────────────

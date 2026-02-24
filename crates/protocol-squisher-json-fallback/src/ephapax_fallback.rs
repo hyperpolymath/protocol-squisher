@@ -18,11 +18,9 @@
 //! - Deserialization failure (data doesn't match target schema)
 //! - Data loss during narrowing (value out of range for target type)
 
-use protocol_squisher_compat::{
-    EphapaxCompatibilityEngine, SchemaCompatibilityResult,
-};
-use protocol_squisher_transport_primitives::TransportClass;
+use protocol_squisher_compat::{EphapaxCompatibilityEngine, SchemaCompatibilityResult};
 use protocol_squisher_ir::IrSchema;
+use protocol_squisher_transport_primitives::TransportClass;
 
 /// Configuration for ephapax-aware JSON fallback
 #[derive(Debug, Clone)]
@@ -173,13 +171,13 @@ impl EphapaxFallbackGenerator {
         let mut code = String::new();
 
         // Header
-        code.push_str(&format!(
+        code.push_str(
             "// SPDX-License-Identifier: PMPL-1.0-or-later\n\
              // Auto-generated JSON fallback conversions\n\
              // DO NOT EDIT - regenerate using protocol-squisher\n\n\
-             use serde::{{Serialize, Deserialize}};\n\
-             use serde_json::{{self, Value}};\n\n"
-        ));
+             use serde::{Serialize, Deserialize};\n\
+             use serde_json::{self, Value};\n\n",
+        );
 
         // Add fallback statistics comment
         if self.config.add_warnings {
@@ -188,22 +186,40 @@ impl EphapaxFallbackGenerator {
                  // - Total fields: {}\n\
                  // - Direct conversion: {}\n\
                  // - JSON fallback: {} ({}%)\n\n",
-                analysis.type_analyses.iter().map(|t| t.field_analyses.len()).sum::<usize>(),
-                analysis.type_analyses.iter()
+                analysis
+                    .type_analyses
+                    .iter()
+                    .map(|t| t.field_analyses.len())
+                    .sum::<usize>(),
+                analysis
+                    .type_analyses
+                    .iter()
                     .flat_map(|t| &t.field_analyses)
                     .filter(|f| !matches!(f.class, TransportClass::Wheelbarrow))
                     .count(),
-                analysis.type_analyses.iter()
+                analysis
+                    .type_analyses
+                    .iter()
                     .flat_map(|t| &t.field_analyses)
                     .filter(|f| matches!(f.class, TransportClass::Wheelbarrow))
                     .count(),
                 if !analysis.type_analyses.is_empty() {
-                    let total: usize = analysis.type_analyses.iter().map(|t| t.field_analyses.len()).sum();
-                    let json: usize = analysis.type_analyses.iter()
+                    let total: usize = analysis
+                        .type_analyses
+                        .iter()
+                        .map(|t| t.field_analyses.len())
+                        .sum();
+                    let json: usize = analysis
+                        .type_analyses
+                        .iter()
                         .flat_map(|t| &t.field_analyses)
                         .filter(|f| matches!(f.class, TransportClass::Wheelbarrow))
                         .count();
-                    if total > 0 { (json as f64 / total as f64) * 100.0 } else { 0.0 }
+                    if total > 0 {
+                        (json as f64 / total as f64) * 100.0
+                    } else {
+                        0.0
+                    }
                 } else {
                     0.0
                 }
@@ -271,12 +287,16 @@ impl std::error::Error for ConversionError {}
 
         code.push_str(&format!(
             "impl {}Conversion for {} {{\n    fn to_{}(&self) -> Result<{}, ConversionError> {{\n",
-            type_analysis.type_name, type_analysis.type_name,
-            type_analysis.type_name, type_analysis.type_name
+            type_analysis.type_name,
+            type_analysis.type_name,
+            type_analysis.type_name,
+            type_analysis.type_name
         ));
 
         // Generate field conversions
-        let has_json_fallback = type_analysis.field_analyses.iter()
+        let has_json_fallback = type_analysis
+            .field_analyses
+            .iter()
             .any(|f| matches!(f.class, TransportClass::Wheelbarrow));
 
         if has_json_fallback {
@@ -290,29 +310,34 @@ impl std::error::Error for ConversionError {}
                         // Direct field copy
                         code.push_str(&format!(
                             "            {}: self.{}, // Direct ({})\n",
-                            field.field_name, field.field_name,
-                            if matches!(field.class, TransportClass::Concorde) { "Concorde" } else { "Business" }
+                            field.field_name,
+                            field.field_name,
+                            if matches!(field.class, TransportClass::Concorde) {
+                                "Concorde"
+                            } else {
+                                "Business"
+                            }
                         ));
-                    }
+                    },
                     TransportClass::Wheelbarrow => {
                         // JSON fallback with warning
                         if self.config.add_warnings {
-                            code.push_str(&format!(
-                                "            // WARNING: JSON fallback (potential data loss)\n"
-                            ));
+                            code.push_str(
+                                "            // WARNING: JSON fallback (potential data loss)\n",
+                            );
                         }
                         code.push_str(&format!(
                             "            {}: serde_json::from_value(\n                serde_json::to_value(&self.{}).map_err(|e| ConversionError::SerializationError(e.to_string()))?\n            ).map_err(|e| ConversionError::DeserializationError(e.to_string()))?,\n",
                             field.field_name, field.field_name
                         ));
-                    }
+                    },
                     TransportClass::Economy => {
                         // Conversion with possible data loss
                         code.push_str(&format!(
                             "            {}: self.{}, // Economy (documented losses)\n",
                             field.field_name, field.field_name
                         ));
-                    }
+                    },
                 }
             }
 
@@ -320,10 +345,7 @@ impl std::error::Error for ConversionError {}
         } else {
             // All direct conversion (no JSON needed)
             code.push_str("        // All fields use direct conversion\n");
-            code.push_str(&format!(
-                "        Ok({} {{\n",
-                type_analysis.type_name
-            ));
+            code.push_str(&format!("        Ok({} {{\n", type_analysis.type_name));
             for field in &type_analysis.field_analyses {
                 code.push_str(&format!(
                     "            {}: self.{},\n",
@@ -353,8 +375,14 @@ impl std::error::Error for ConversionError {}
 
         // Add statistics
         if self.config.add_warnings {
-            let total: usize = analysis.type_analyses.iter().map(|t| t.field_analyses.len()).sum();
-            let json_count: usize = analysis.type_analyses.iter()
+            let total: usize = analysis
+                .type_analyses
+                .iter()
+                .map(|t| t.field_analyses.len())
+                .sum();
+            let json_count: usize = analysis
+                .type_analyses
+                .iter()
                 .flat_map(|t| &t.field_analyses)
                 .filter(|f| matches!(f.class, TransportClass::Wheelbarrow))
                 .count();
@@ -362,8 +390,13 @@ impl std::error::Error for ConversionError {}
                 "# Fallback Statistics:\n\
                  # - Total fields: {}\n\
                  # - JSON fallback: {} ({}%)\n\n",
-                total, json_count,
-                if total > 0 { (json_count as f64 / total as f64) * 100.0 } else { 0.0 }
+                total,
+                json_count,
+                if total > 0 {
+                    (json_count as f64 / total as f64) * 100.0
+                } else {
+                    0.0
+                }
             ));
         }
 
@@ -382,7 +415,7 @@ impl std::error::Error for ConversionError {}
                             "    result['{}'] = source['{}']  # Direct\n",
                             field.field_name, field.field_name
                         ));
-                    }
+                    },
                     TransportClass::Wheelbarrow => {
                         if self.config.add_warnings {
                             code.push_str("    # WARNING: JSON fallback (potential data loss)\n");
@@ -391,13 +424,13 @@ impl std::error::Error for ConversionError {}
                             "    result['{}'] = json.loads(json.dumps(source['{}']))\n",
                             field.field_name, field.field_name
                         ));
-                    }
+                    },
                     TransportClass::Economy => {
                         code.push_str(&format!(
                             "    result['{}'] = source['{}']  # Economy\n",
                             field.field_name, field.field_name
                         ));
-                    }
+                    },
                 }
             }
 
@@ -411,7 +444,9 @@ impl std::error::Error for ConversionError {}
 #[cfg(test)]
 mod tests {
     use super::*;
-    use protocol_squisher_ir::{FieldDef, FieldMetadata, PrimitiveType, StructDef, TypeDef, TypeMetadata, IrType};
+    use protocol_squisher_ir::{
+        FieldDef, FieldMetadata, IrType, PrimitiveType, StructDef, TypeDef, TypeMetadata,
+    };
 
     fn make_test_schemas() -> (IrSchema, IrSchema) {
         // Source schema with i64
@@ -534,7 +569,9 @@ mod tests {
         // Should have zero JSON fallback
         assert_eq!(result.stats.json_fallback_fields, 0);
         assert_eq!(result.stats.fallback_percentage, 0.0);
-        assert!(result.rust_code.contains("All fields use direct conversion"));
+        assert!(result
+            .rust_code
+            .contains("All fields use direct conversion"));
     }
 
     #[test]

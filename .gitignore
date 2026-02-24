@@ -60,6 +60,10 @@ htmlcov/
 *.tmp
 *.bak
 
+# Local tooling artifacts
+/ffi/zig/.zig-cache/
+/tools/ephapax-cli
+
 # PyO3 integration test venv
 tests/pyo3-integration/.venv/
 tests/pyo3-integration/target/

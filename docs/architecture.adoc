@@ -1243,15 +1243,17 @@ fn main() {
 === As CLI Tool
 ```bash
 # One-time generation
-$ protocol-squish generate \
-    --source python:models.py \
-    --target rust:types.rs \
+$ protocol-squisher generate \
+    --rust src/lib.rs \
+    --python models.py \
     --output ./generated/
 
-# Watch mode (regenerate on change)
-$ protocol-squish watch \
-    --source python:models.py \
-    --target rust:types.rs
+# Cross-format compilation
+$ protocol-squisher compile \
+    --from protobuf \
+    --to rust \
+    --input schema.proto \
+    --output ./generated/
 ```
 
 === As Service (Future)

@@ -65,24 +65,24 @@ validate-rsr:
     @test -f .gitattributes || (echo "Missing .gitattributes" && exit 1)
     @test -f .editorconfig || (echo "Missing .editorconfig" && exit 1)
     @test -f .tool-versions || (echo "Missing .tool-versions" && exit 1)
-    @test -f META.scm || (echo "Missing META.scm" && exit 1)
-    @test -f STATE.scm || (echo "Missing STATE.scm" && exit 1)
-    @test -f ECOSYSTEM.scm || (echo "Missing ECOSYSTEM.scm" && exit 1)
-    @test -f PLAYBOOK.scm || (echo "Missing PLAYBOOK.scm" && exit 1)
-    @test -f AGENTIC.scm || (echo "Missing AGENTIC.scm" && exit 1)
-    @test -f NEUROSYM.scm || (echo "Missing NEUROSYM.scm" && exit 1)
+    @test -f .machines_readable/6scm/META.scm || (echo "Missing .machines_readable/6scm/META.scm" && exit 1)
+    @test -f .machines_readable/6scm/STATE.scm || (echo "Missing .machines_readable/6scm/STATE.scm" && exit 1)
+    @test -f .machines_readable/6scm/ECOSYSTEM.scm || (echo "Missing .machines_readable/6scm/ECOSYSTEM.scm" && exit 1)
+    @test -f .machines_readable/6scm/PLAYBOOK.scm || (echo "Missing .machines_readable/6scm/PLAYBOOK.scm" && exit 1)
+    @test -f .machines_readable/6scm/AGENTIC.scm || (echo "Missing .machines_readable/6scm/AGENTIC.scm" && exit 1)
+    @test -f .machines_readable/6scm/NEUROSYM.scm || (echo "Missing .machines_readable/6scm/NEUROSYM.scm" && exit 1)
     @test ! -f Makefile || (echo "Makefile forbidden - use justfile" && exit 1)
     @echo "RSR validation passed!"
 
 # Validate STATE.scm syntax
 validate-state:
-    @echo "Validating STATE.scm..."
-    @test -f STATE.scm && echo "STATE.scm exists" || echo "STATE.scm missing"
+    @echo "Validating .machines_readable/6scm/STATE.scm..."
+    @test -f .machines_readable/6scm/STATE.scm && echo "STATE.scm exists" || echo "STATE.scm missing"
 
 # Update STATE.scm timestamp
 state-touch:
     @echo "Updating STATE.scm timestamp..."
-    @[ -f STATE.scm ] && sed -i 's/(updated . "[^"]*")/(updated . "'$(date +%Y-%m-%d)'")/' STATE.scm || true
+    @[ -f .machines_readable/6scm/STATE.scm ] && sed -i 's/(updated . "[^"]*")/(updated . "'$(date +%Y-%m-%d)'")/' .machines_readable/6scm/STATE.scm || true
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CI

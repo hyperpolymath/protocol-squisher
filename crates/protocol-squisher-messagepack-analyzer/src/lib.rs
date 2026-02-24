@@ -67,12 +67,12 @@
 //! schema-less end, contrasting with Bebop/FlatBuffers' schema-based approach.
 
 mod converter;
-mod parser;
 mod ephapax_bridge;
+mod parser;
 
 pub use converter::MessagePackConverter;
+pub use ephapax_bridge::{analyze_transport_compatibility, TransportAnalysis};
 pub use parser::MessagePackParser;
-pub use ephapax_bridge::{TransportAnalysis, analyze_transport_compatibility};
 
 use protocol_squisher_ir::IrSchema;
 use std::path::Path;
@@ -231,11 +231,14 @@ mod tests {
         let ir = result.unwrap();
         let all_types = ir.types.get("Alltypes").unwrap();
 
-        if let protocol_squisher_ir::TypeDef::Struct(s) = all_types {
-            assert_eq!(s.fields.len(), 5);
-        } else {
-            panic!("Expected struct type");
-        }
+        assert!(
+            matches!(all_types, protocol_squisher_ir::TypeDef::Struct(_)),
+            "Expected struct type"
+        );
+        let protocol_squisher_ir::TypeDef::Struct(s) = all_types else {
+            unreachable!("asserted struct");
+        };
+        assert_eq!(s.fields.len(), 5);
     }
 
     #[test]

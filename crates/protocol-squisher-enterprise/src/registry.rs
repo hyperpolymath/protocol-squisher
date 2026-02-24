@@ -192,8 +192,12 @@ mod tests {
         let root = temp_registry_dir();
         let registry = SchemaRegistry::new(&root);
 
-        registry
-            .publish("billing.events", "1.2.0", "json-schema", sample_schema("Billing"))?;
+        registry.publish(
+            "billing.events",
+            "1.2.0",
+            "json-schema",
+            sample_schema("Billing"),
+        )?;
         let fetched = registry.fetch("billing.events", "1.2.0")?;
         assert_eq!(fetched.name, "billing.events");
         assert_eq!(fetched.version, "1.2.0");
@@ -208,10 +212,13 @@ mod tests {
         let root = temp_registry_dir();
         let registry = SchemaRegistry::new(&root);
 
-        registry
-            .publish("billing.events", "1.9.0", "json-schema", sample_schema("A"))?;
-        registry
-            .publish("billing.events", "1.10.0", "json-schema", sample_schema("B"))?;
+        registry.publish("billing.events", "1.9.0", "json-schema", sample_schema("A"))?;
+        registry.publish(
+            "billing.events",
+            "1.10.0",
+            "json-schema",
+            sample_schema("B"),
+        )?;
 
         let latest = registry
             .latest("billing.events")?

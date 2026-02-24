@@ -115,8 +115,8 @@ EOF
 
       - name: Setup ECHIDNA
         run: |
-          echo "Installing ECHIDNA..."
-          # TODO: Add ECHIDNA installation steps
+          echo "ECHIDNA integration remains disabled (job has if:false)."
+          echo "Enable this job and add a pinned ECHIDNA installer before turning synthesis on."
 
       - name: Neural proof synthesis
         run: |

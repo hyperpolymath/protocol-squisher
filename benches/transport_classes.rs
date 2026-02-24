@@ -9,7 +9,7 @@
 //! - Economy: 50-100ns (allocation, safe conversion)
 //! - Wheelbarrow: 100-1000ns (JSON serialization fallback)
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use serde::{Deserialize, Serialize};
 
 // ============================================================================
@@ -18,6 +18,7 @@ use serde::{Deserialize, Serialize};
 
 /// Identical types - pointer passing only
 #[derive(Clone, Copy)]
+#[allow(dead_code)]
 struct ConcordeI64 {
     value: i64,
 }
@@ -67,6 +68,7 @@ struct BusinessSource {
 }
 
 #[derive(Clone)]
+#[allow(dead_code)]
 struct BusinessTarget {
     id: i64,
     value: f64,
@@ -85,7 +87,7 @@ fn business_struct_widen(input: &BusinessSource) -> BusinessTarget {
 // ============================================================================
 
 /// Vec conversion with allocation
-fn economy_vec_i32_to_i64(input: &Vec<i32>) -> Vec<i64> {
+fn economy_vec_i32_to_i64(input: &[i32]) -> Vec<i64> {
     input.iter().map(|&x| x as i64).collect()
 }
 
@@ -95,8 +97,8 @@ fn economy_option_unwrap(input: Option<i64>, default: i64) -> i64 {
 }
 
 /// String cloning (allocation required)
-fn economy_string_clone(input: &String) -> String {
-    input.clone()
+fn economy_string_clone(input: &str) -> String {
+    input.to_owned()
 }
 
 /// Struct with optional fields
@@ -181,7 +183,7 @@ fn bench_concorde(c: &mut Criterion) {
     // f64 identity
     group.bench_function("f64_identity", |b| {
         b.iter(|| {
-            let result = concorde_f64_identity(black_box(3.14159));
+            let result = concorde_f64_identity(black_box(std::f64::consts::PI));
             black_box(result)
         })
     });
@@ -202,7 +204,7 @@ fn bench_business_class(c: &mut Criterion) {
 
     group.bench_function("f32_to_f64", |b| {
         b.iter(|| {
-            let result = business_f32_to_f64(black_box(3.14_f32));
+            let result = business_f32_to_f64(black_box(std::f32::consts::PI));
             black_box(result)
         })
     });
@@ -217,7 +219,7 @@ fn bench_business_class(c: &mut Criterion) {
     // Struct widening
     let source = BusinessSource {
         id: 42,
-        value: 3.14,
+        value: std::f32::consts::PI,
     };
     group.bench_function("struct_widen", |b| {
         b.iter(|| {

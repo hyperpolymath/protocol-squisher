@@ -54,17 +54,19 @@ fn main() {
                         println!("  Kind: Struct");
                         println!("  Fields: {}", s.fields.len());
                         for field in &s.fields {
-                            println!("    - {} : {:?} (optional: {})",
-                                field.name, field.ty, field.optional);
+                            println!(
+                                "    - {} : {:?} (optional: {})",
+                                field.name, field.ty, field.optional
+                            );
                         }
-                    }
+                    },
                     protocol_squisher_ir::TypeDef::Enum(e) => {
                         println!("  Kind: Enum");
                         println!("  Variants: {}", e.variants.len());
                         for variant in &e.variants {
                             println!("    - {}", variant.name);
                         }
-                    }
+                    },
                     _ => println!("  Kind: Other"),
                 }
                 println!();
@@ -74,9 +76,9 @@ fn main() {
             println!("Summary:");
             println!("  Total types: {}", schema.types.len());
             println!("  Root types: {}", schema.roots.len());
-        }
+        },
         Err(e) => {
             eprintln!("Error analyzing protobuf: {}", e);
-        }
+        },
     }
 }

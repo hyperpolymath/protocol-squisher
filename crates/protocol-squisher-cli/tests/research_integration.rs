@@ -119,7 +119,9 @@ fn distributed_squish_runs_manifest() {
 
     let json = parse_json(&output.stdout, "parse distributed json");
     assert_eq!(json["task_count"], 1);
-    assert!(json["results"].as_array().is_some_and(|rows| rows.len() == 1));
+    assert!(json["results"]
+        .as_array()
+        .is_some_and(|rows| rows.len() == 1));
 
     remove_file_if_exists(manifest_path);
 }

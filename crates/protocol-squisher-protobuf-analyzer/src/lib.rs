@@ -23,7 +23,7 @@
 //! let analyzer = ProtobufAnalyzer::new();
 //!
 //! // Analyze from file
-//! let schema = analyzer.analyze_file(Path::new("schema.proto")).unwrap();
+//! let schema = analyzer.analyze_file(Path::new("schema.proto"));
 //!
 //! // Analyze from string
 //! let proto = r#"
@@ -33,11 +33,13 @@
 //!         string name = 2;
 //!     }
 //! "#;
-//! let schema = analyzer.analyze_str(proto, "user").unwrap();
+//! let schema = analyzer.analyze_str(proto, "user");
 //!
 //! // Access types
-//! for (name, type_def) in &schema.types {
-//!     println!("Found type: {}", name);
+//! if let Ok(schema) = schema {
+//!     for (name, _type_def) in &schema.types {
+//!         println!("Found type: {}", name);
+//!     }
 //! }
 //! ```
 //!
@@ -54,12 +56,12 @@
 //! let source_type = IrType::Primitive(PrimitiveType::I32);
 //! let target_type = IrType::Primitive(PrimitiveType::I64);
 //!
-//! let analysis = TransportAnalysis::new(&ctx, &source_type, &target_type).unwrap();
-//!
-//! if analysis.is_zero_copy() {
-//!     println!("Zero-copy path available!");
-//! } else if analysis.is_safe() {
-//!     println!("Safe widening (i32 -> i64)");
+//! if let Ok(analysis) = TransportAnalysis::new(&ctx, &source_type, &target_type) {
+//!     if analysis.is_zero_copy() {
+//!         println!("Zero-copy path available!");
+//!     } else if analysis.is_safe() {
+//!         println!("Safe widening (i32 -> i64)");
+//!     }
 //! }
 //! ```
 //!
@@ -81,12 +83,14 @@
 //! - `complex_schema` - Nested types, oneofs, maps
 
 mod converter;
-mod parser;
 mod ephapax_bridge;
+mod parser;
 
 pub use converter::ProtoConverter;
+pub use ephapax_bridge::{
+    analyze_transport_compatibility, to_ephapax_primitive, TransportAnalysis,
+};
 pub use parser::ProtoParser;
-pub use ephapax_bridge::{TransportAnalysis, analyze_transport_compatibility, to_ephapax_primitive};
 
 use protocol_squisher_ir::IrSchema;
 use std::path::Path;
@@ -372,11 +376,14 @@ mod tests {
         let ir = result.unwrap();
         let all_types = ir.types.get("AllTypes").unwrap();
 
-        if let protocol_squisher_ir::TypeDef::Struct(s) = all_types {
-            assert_eq!(s.fields.len(), 15);
-        } else {
-            panic!("Expected struct type");
-        }
+        assert!(
+            matches!(all_types, protocol_squisher_ir::TypeDef::Struct(_)),
+            "Expected struct type"
+        );
+        let protocol_squisher_ir::TypeDef::Struct(s) = all_types else {
+            unreachable!("asserted struct");
+        };
+        assert_eq!(s.fields.len(), 15);
     }
 
     #[test]
@@ -458,21 +465,27 @@ mod tests {
         let ir = result.unwrap();
         let prefs = ir.types.get("UserPreferences").unwrap();
 
-        if let protocol_squisher_ir::TypeDef::Struct(s) = prefs {
-            assert_eq!(s.fields.len(), 3);
+        assert!(
+            matches!(prefs, protocol_squisher_ir::TypeDef::Struct(_)),
+            "Expected struct type"
+        );
+        let protocol_squisher_ir::TypeDef::Struct(s) = prefs else {
+            unreachable!("asserted struct");
+        };
+        assert_eq!(s.fields.len(), 3);
 
-            // Check that all fields are map types
-            for field in &s.fields {
-                if let protocol_squisher_ir::IrType::Container(
-                    protocol_squisher_ir::ContainerType::Map(_, _)
-                ) = &field.ty {
-                    // OK
-                } else {
-                    panic!("Expected map type for field {}", field.name);
-                }
-            }
-        } else {
-            panic!("Expected struct type");
+        // Check that all fields are map types
+        for field in &s.fields {
+            assert!(
+                matches!(
+                    &field.ty,
+                    protocol_squisher_ir::IrType::Container(
+                        protocol_squisher_ir::ContainerType::Map(_, _)
+                    )
+                ),
+                "Expected map type for field {}",
+                field.name
+            );
         }
     }
 
@@ -550,8 +563,8 @@ mod tests {
     #[test]
     fn test_transport_analysis_integration() {
         use crate::ephapax_bridge::TransportAnalysis;
-        use protocol_squisher_transport_primitives::IRContext;
         use protocol_squisher_ir::{IrType, PrimitiveType};
+        use protocol_squisher_transport_primitives::IRContext;
 
         let proto = r#"
             syntax = "proto3";
@@ -578,9 +591,13 @@ mod tests {
             let analysis = TransportAnalysis::new(&ctx, &field.ty, &target_type).unwrap();
 
             // Should be zero-copy for I32 -> I32
-            assert!(analysis.is_zero_copy(),
+            assert!(
+                analysis.is_zero_copy(),
                 "Expected zero-copy but got class {:?} for types {:?} -> {:?}",
-                analysis.class, field.ty, target_type);
+                analysis.class,
+                field.ty,
+                target_type
+            );
             assert!(analysis.is_safe());
         }
     }

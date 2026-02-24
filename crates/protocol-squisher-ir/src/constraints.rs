@@ -168,7 +168,7 @@ impl Constraint {
             // Composite constraints depend on their children
             Constraint::AllOf(cs) | Constraint::AnyOf(cs) | Constraint::OneOfConstraints(cs) => {
                 cs.iter().all(|c| c.is_preservable())
-            }
+            },
             Constraint::Not(c) => c.is_preservable(),
 
             // Other constraints

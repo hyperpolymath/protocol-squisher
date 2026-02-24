@@ -6,6 +6,7 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ["v*"]
   pull_request:
     branches: [main]
 
@@ -33,6 +34,12 @@ jobs:
 
       - name: Clippy
         run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Enforce no unwrap/expect in production targets
+        run: cargo clippy --workspace --all-features --lib --bins -- -D clippy::unwrap_used -D clippy::expect_used
+
+      - name: Enforce ABI/FFI policy
+        run: ./scripts/ci/check-abi-policy.sh
 
       - name: Build
         run: cargo build --all-targets
@@ -72,3 +79,116 @@ jobs:
 
       - name: Run benchmarks (dry run)
         run: cargo bench --no-run
+
+  panic-assail-regression:
+    name: Panic-Attack Regression (Static)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@6d9817901c499d6b02debbb57edb38d33daa680b # stable
+        with:
+          toolchain: stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@ad397744b0d591a723ab90405b7247fac0e6b8db # v2
+
+      - name: Install panic-attack
+        run: cargo install panic-attack --locked
+
+      - name: Gate panic-assail regressions
+        run: ./scripts/ci/panic-assail-regression.sh
+
+  backend-stub:
+    name: Backend Mode (Stub)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@6d9817901c499d6b02debbb57edb38d33daa680b # stable
+        with:
+          toolchain: stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@ad397744b0d591a723ab90405b7247fac0e6b8db # v2
+
+      - name: Verify stub backend mode
+        run: ./scripts/ci/check-backend-mode.sh stub
+
+  backend-verified-simulated:
+    name: Backend Mode (Verified, Simulated)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@6d9817901c499d6b02debbb57edb38d33daa680b # stable
+        with:
+          toolchain: stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@ad397744b0d591a723ab90405b7247fac0e6b8db # v2
+
+      - name: Verify simulated verified backend mode
+        run: |
+          EPHAPAX_CLI="${GITHUB_WORKSPACE}/scripts/ci/mock-ephapax-cli.sh" \
+            ./scripts/ci/check-backend-mode.sh verified
+
+      - name: Compile smoke check in simulated verified mode
+        run: |
+          EPHAPAX_CLI="${GITHUB_WORKSPACE}/scripts/ci/mock-ephapax-cli.sh" \
+            cargo run -p protocol-squisher-cli -- compile \
+              --from rust \
+              --to rust \
+              --input examples/zero-copy-demo/src/lib.rs \
+              --output /tmp/protocol-squisher-ci-smoke | tee /tmp/compile.log
+          grep -q "ephapax-verified" /tmp/compile.log
+
+      - name: Clippy in simulated verified mode
+        run: |
+          EPHAPAX_CLI="${GITHUB_WORKSPACE}/scripts/ci/mock-ephapax-cli.sh" \
+            cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Tests in simulated verified mode
+        run: |
+          EPHAPAX_CLI="${GITHUB_WORKSPACE}/scripts/ci/mock-ephapax-cli.sh" \
+            cargo test --all-features
+
+  release-verified-gate:
+    name: Release Gate (Real Verified Backend Required)
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [check, test, bench, panic-assail-regression, backend-stub, backend-verified-simulated]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@6d9817901c499d6b02debbb57edb38d33daa680b # stable
+        with:
+          toolchain: stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@ad397744b0d591a723ab90405b7247fac0e6b8db # v2
+
+      - name: Ensure real ephapax-cli is available
+        run: |
+          if ! command -v ephapax-cli >/dev/null 2>&1; then
+            echo "::error::Release tags require a real ephapax-cli in PATH; stub mode is not allowed for release builds."
+            exit 1
+          fi
+          ephapax-cli --version || true
+
+      - name: Require verified backend mode
+        run: ./scripts/ci/check-backend-mode.sh verified
+
+      - name: Clippy with real verified backend
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Tests with real verified backend
+        run: cargo test --all-features

@@ -202,19 +202,19 @@ fn print_schema_summary(schema: &protocol_squisher_ir::IrSchema) {
                     let opt = if field.optional { "?" } else { "" };
                     println!("      - {}{}: {:?}", field.name, opt, field.ty);
                 }
-            }
+            },
             TypeDef::Enum(e) => {
                 println!("    enum {} ({} variants)", name, e.variants.len());
-            }
+            },
             TypeDef::Newtype(n) => {
                 println!("    newtype {}: {:?}", name, n.inner);
-            }
+            },
             TypeDef::Alias(a) => {
                 println!("    alias {}: {:?}", name, a.target);
-            }
+            },
             TypeDef::Union(u) => {
                 println!("    union {} ({} variants)", name, u.variants.len());
-            }
+            },
         }
     }
 }

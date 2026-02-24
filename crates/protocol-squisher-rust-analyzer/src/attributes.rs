@@ -59,7 +59,9 @@ impl SerdeAttributes {
             }
 
             let _ = attr.parse_nested_meta(|meta| {
-                let ident = meta.path.get_ident()
+                let ident = meta
+                    .path
+                    .get_ident()
                     .map(|i| i.to_string())
                     .unwrap_or_default();
 
@@ -70,37 +72,37 @@ impl SerdeAttributes {
                                 result.rename = Some(lit.value());
                             }
                         }
-                    }
+                    },
                     "rename_all" => {
                         if let Ok(value) = meta.value() {
                             if let Ok(lit) = value.parse::<syn::LitStr>() {
                                 result.rename_all = Some(lit.value());
                             }
                         }
-                    }
+                    },
                     "alias" => {
                         if let Ok(value) = meta.value() {
                             if let Ok(lit) = value.parse::<syn::LitStr>() {
                                 result.aliases.push(lit.value());
                             }
                         }
-                    }
+                    },
                     "skip" => {
                         result.skip = true;
-                    }
+                    },
                     "skip_serializing" => {
                         result.skip_serializing = true;
-                    }
+                    },
                     "skip_deserializing" => {
                         result.skip_deserializing = true;
-                    }
+                    },
                     "skip_serializing_if" => {
                         if let Ok(value) = meta.value() {
                             if let Ok(lit) = value.parse::<syn::LitStr>() {
                                 result.skip_serializing_if = Some(lit.value());
                             }
                         }
-                    }
+                    },
                     "default" => {
                         result.default = true;
                         // Try to get default value if specified
@@ -109,55 +111,55 @@ impl SerdeAttributes {
                                 result.default_value = Some(serde_json::Value::String(lit.value()));
                             }
                         }
-                    }
+                    },
                     "flatten" => {
                         result.flatten = true;
-                    }
+                    },
                     "tag" => {
                         if let Ok(value) = meta.value() {
                             if let Ok(lit) = value.parse::<syn::LitStr>() {
                                 result.tag = Some(lit.value());
                             }
                         }
-                    }
+                    },
                     "content" => {
                         if let Ok(value) = meta.value() {
                             if let Ok(lit) = value.parse::<syn::LitStr>() {
                                 result.content = Some(lit.value());
                             }
                         }
-                    }
+                    },
                     "untagged" => {
                         result.untagged = true;
-                    }
+                    },
                     "deny_unknown_fields" => {
                         result.deny_unknown_fields = true;
-                    }
+                    },
                     "transparent" => {
                         result.transparent = true;
-                    }
+                    },
                     "serialize_with" => {
                         if let Ok(value) = meta.value() {
                             if let Ok(lit) = value.parse::<syn::LitStr>() {
                                 result.serialize_with = Some(lit.value());
                             }
                         }
-                    }
+                    },
                     "deserialize_with" => {
                         if let Ok(value) = meta.value() {
                             if let Ok(lit) = value.parse::<syn::LitStr>() {
                                 result.deserialize_with = Some(lit.value());
                             }
                         }
-                    }
+                    },
                     "bound" => {
                         if let Ok(value) = meta.value() {
                             if let Ok(lit) = value.parse::<syn::LitStr>() {
                                 result.bound = Some(lit.value());
                             }
                         }
-                    }
-                    _ => {}
+                    },
+                    _ => {},
                 }
 
                 Ok(())
@@ -212,7 +214,8 @@ mod tests {
         let item: syn::ItemStruct = syn::parse2(quote! {
             #tokens
             struct Dummy {}
-        }).unwrap();
+        })
+        .unwrap();
         item.attrs
     }
 
@@ -246,9 +249,11 @@ mod tests {
 
     #[test]
     fn test_to_hints() {
-        let mut attrs = SerdeAttributes::default();
-        attrs.rename = Some("new_name".to_string());
-        attrs.flatten = true;
+        let attrs = SerdeAttributes {
+            rename: Some("new_name".to_string()),
+            flatten: true,
+            ..Default::default()
+        };
 
         let hints = attrs.to_hints();
         assert_eq!(hints.get("rename"), Some(&"new_name".to_string()));
