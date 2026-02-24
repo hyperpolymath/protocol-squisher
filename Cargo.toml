@@ -8,8 +8,8 @@ description = "Universal protocol interoperability through automatic adapter syn
 repository = "https://github.com/hyperpolymath/protocol-squisher"
 keywords = ["serialization", "interop", "adapter", "protocol", "codegen"]
 categories = ["development-tools", "encoding", "parser-implementations"]
-rust-version = "1.83"
-default-run = "protocol-squish"
+rust-version = "1.86"
+autobins = false
 
 [dependencies]
 # Phase 0: Core dependencies
@@ -26,10 +26,6 @@ protocol-squisher-thrift-analyzer = { path = "crates/protocol-squisher-thrift-an
 proptest = "1.4.0"
 # Benchmarking
 criterion = { version = "0.5", features = ["html_reports"] }
-
-[[bin]]
-name = "protocol-squish"
-path = "src/main.rs"
 
 [lib]
 name = "protocol_squisher"

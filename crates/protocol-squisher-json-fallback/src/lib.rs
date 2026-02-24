@@ -17,15 +17,15 @@ use protocol_squisher_ir::{
 };
 use std::collections::HashSet;
 
-mod rust_codegen;
-mod python_codegen;
 pub mod ephapax_fallback;
+mod python_codegen;
+mod rust_codegen;
 
-pub use rust_codegen::*;
-pub use python_codegen::*;
 pub use ephapax_fallback::{
-    EphapaxFallbackGenerator, EphapaxFallbackConfig, EphapaxFallbackResult, FallbackStats,
+    EphapaxFallbackConfig, EphapaxFallbackGenerator, EphapaxFallbackResult, FallbackStats,
 };
+pub use python_codegen::*;
+pub use rust_codegen::*;
 
 /// Configuration for JSON fallback code generation
 #[derive(Debug, Clone)]
@@ -137,28 +137,26 @@ fn can_generate_fallback_recursive(
 
     match schema.types.get(type_id) {
         Some(type_def) => match type_def {
-            TypeDef::Struct(s) => {
-                s.fields.iter().all(|f| can_serialize_type(schema, &f.ty, visited))
-            }
-            TypeDef::Enum(e) => {
-                e.variants.iter().all(|v| {
-                    v.payload.as_ref().map_or(true, |p| {
-                        match p {
-                            protocol_squisher_ir::VariantPayload::Tuple(types) => {
-                                types.iter().all(|t| can_serialize_type(schema, t, visited))
-                            }
-                            protocol_squisher_ir::VariantPayload::Struct(fields) => {
-                                fields.iter().all(|f| can_serialize_type(schema, &f.ty, visited))
-                            }
-                        }
-                    })
+            TypeDef::Struct(s) => s
+                .fields
+                .iter()
+                .all(|f| can_serialize_type(schema, &f.ty, visited)),
+            TypeDef::Enum(e) => e.variants.iter().all(|v| {
+                v.payload.as_ref().is_none_or(|p| match p {
+                    protocol_squisher_ir::VariantPayload::Tuple(types) => {
+                        types.iter().all(|t| can_serialize_type(schema, t, visited))
+                    },
+                    protocol_squisher_ir::VariantPayload::Struct(fields) => fields
+                        .iter()
+                        .all(|f| can_serialize_type(schema, &f.ty, visited)),
                 })
-            }
+            }),
             TypeDef::Alias(a) => can_serialize_type(schema, &a.target, visited),
             TypeDef::Newtype(n) => can_serialize_type(schema, &n.inner, visited),
-            TypeDef::Union(u) => {
-                u.variants.iter().all(|v| can_serialize_type(schema, v, visited))
-            }
+            TypeDef::Union(u) => u
+                .variants
+                .iter()
+                .all(|v| can_serialize_type(schema, v, visited)),
         },
         None => false,
     }
@@ -176,13 +174,13 @@ fn can_serialize_type(schema: &IrSchema, ir_type: &IrType, visited: &mut HashSet
                 // JSON only supports string keys
                 matches!(key.as_ref(), IrType::Primitive(PrimitiveType::String))
                     && can_serialize_type(schema, value, visited)
-            }
-            ContainerType::Tuple(elements) => {
-                elements.iter().all(|e| can_serialize_type(schema, e, visited))
-            }
+            },
+            ContainerType::Tuple(elements) => elements
+                .iter()
+                .all(|e| can_serialize_type(schema, e, visited)),
             ContainerType::Result(ok, err) => {
                 can_serialize_type(schema, ok, visited) && can_serialize_type(schema, err, visited)
-            }
+            },
         },
         IrType::Reference(type_id) => can_generate_fallback_recursive(schema, type_id, visited),
         IrType::Special(s) => match s {
@@ -223,9 +221,9 @@ mod tests {
                     },
                     FieldDef {
                         name: "email".to_string(),
-                        ty: IrType::Container(ContainerType::Option(Box::new(
-                            IrType::Primitive(PrimitiveType::String),
-                        ))),
+                        ty: IrType::Container(ContainerType::Option(Box::new(IrType::Primitive(
+                            PrimitiveType::String,
+                        )))),
                         optional: true,
                         constraints: vec![],
                         metadata: FieldMetadata::default(),
