@@ -80,6 +80,7 @@ members = [
   "crates/protocol-squisher-json-fallback",
   "crates/protocol-squisher-integration-tests",
   "crates/protocol-squisher-optimizer",
+  "crates/protocol-squisher-minikanren",
   "crates/protocol-squisher-cli",
   "crates/protocol-squisher-json-schema-analyzer",
   "crates/protocol-squisher-protobuf-analyzer",

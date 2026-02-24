@@ -198,7 +198,7 @@ toc::[]
 - [x] Correctness proofs (Agda + Lean)
 - [x] Exhaustive property testing
 - [x] Fuzzing infrastructure
-- [ ] miniKanren adapter synthesis
+- [x] miniKanren adapter synthesis
 
 **Status:** 🚧 **IN PROGRESS** - ECHIDNA integration complete with 4 core theorems proven in Agda/Lean, property tests (288/540 tests), ClusterFuzzLite configured
 

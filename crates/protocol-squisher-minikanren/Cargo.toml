@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+
+[package]
+name = "protocol-squisher-minikanren"
+version = "0.1.0"
+edition = "2021"
+license = "PMPL-1.0-or-later"
+description = "Constraint-based adapter synthesis (miniKanren-style search)"
+repository = "https://github.com/hyperpolymath/protocol-squisher"
+keywords = ["synthesis", "minikanren", "constraints", "interoperability"]
+categories = ["development-tools"]
+
+[dependencies]
+protocol-squisher-ir = { path = "../protocol-squisher-ir" }
+protocol-squisher-compat = { path = "../protocol-squisher-compat" }
+serde = { version = "1.0", features = ["derive"] }

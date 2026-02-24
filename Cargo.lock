@@ -1291,6 +1291,7 @@ dependencies = [
  "protocol-squisher-json-schema-analyzer",
  "protocol-squisher-messagepack-analyzer",
  "protocol-squisher-meta-analysis",
+ "protocol-squisher-minikanren",
  "protocol-squisher-optimizer",
  "protocol-squisher-protobuf-analyzer",
  "protocol-squisher-pyo3-codegen",
@@ -1397,6 +1398,15 @@ dependencies = [
  "criterion",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "protocol-squisher-minikanren"
+version = "0.1.0"
+dependencies = [
+ "protocol-squisher-compat",
+ "protocol-squisher-ir",
+ "serde",
 ]
 
 [[package]]

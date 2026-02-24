@@ -123,6 +123,29 @@ enum Commands {
         output: PathBuf,
     },
 
+    /// Synthesize an adapter plan with miniKanren-style constraint search
+    Synthesize {
+        /// Source protocol format (rust, protobuf, thrift, etc.)
+        #[arg(long = "from-format")]
+        from_format: String,
+
+        /// Target protocol format (rust, python, protobuf, etc.)
+        #[arg(long = "to-format")]
+        to_format: String,
+
+        /// Source schema file
+        #[arg(long = "from")]
+        from_path: PathBuf,
+
+        /// Target schema file
+        #[arg(long = "to")]
+        to_path: PathBuf,
+
+        /// Output format (text, json)
+        #[arg(short, long, default_value = "text")]
+        format: String,
+    },
+
     /// Analyze any protocol schema
     AnalyzeSchema {
         /// Protocol format
@@ -198,6 +221,14 @@ fn main() -> Result<()> {
             input,
             output,
         } => compile_universal(from, to, input, output),
+
+        Commands::Synthesize {
+            from_format,
+            to_format,
+            from_path,
+            to_path,
+            format,
+        } => synthesize_command(from_format, to_format, from_path, to_path, format),
 
         Commands::AnalyzeSchema {
             protocol,
@@ -435,6 +466,89 @@ fn compile_universal(from: String, to: String, input: PathBuf, output: PathBuf) 
             "{}",
             "Ephapax backend: ⚠ stub mode (heuristic fallback; ephapax-cli not active)".yellow()
         );
+    }
+
+    Ok(())
+}
+
+fn synthesize_command(
+    from_format: String,
+    to_format: String,
+    from_path: PathBuf,
+    to_path: PathBuf,
+    format: String,
+) -> Result<()> {
+    use crate::formats::ProtocolFormat;
+    use protocol_squisher_minikanren::synthesize_adapter;
+
+    let source_format = ProtocolFormat::from_str(&from_format)?;
+    let target_format = ProtocolFormat::from_str(&to_format)?;
+
+    let source_schema = source_format.analyze_file(&from_path).with_context(|| {
+        format!(
+            "Failed to analyze source {} as {}",
+            from_path.display(),
+            source_format.name()
+        )
+    })?;
+    let target_schema = target_format.analyze_file(&to_path).with_context(|| {
+        format!(
+            "Failed to analyze target {} as {}",
+            to_path.display(),
+            target_format.name()
+        )
+    })?;
+
+    let plan = synthesize_adapter(&source_schema, &target_schema);
+
+    match format.as_str() {
+        "json" => {
+            println!("{}", serde_json::to_string_pretty(&plan)?);
+        },
+        "text" => {
+            println!("{}", "miniKanren Synthesis Plan".bright_green().bold());
+            println!(
+                "  Source: {} ({})",
+                source_schema.name.bright_cyan(),
+                source_format.name()
+            );
+            println!(
+                "  Target: {} ({})",
+                target_schema.name.bright_cyan(),
+                target_format.name()
+            );
+            println!(
+                "  Satisfiable: {}",
+                if plan.satisfiable {
+                    "yes".green()
+                } else {
+                    "no".red()
+                }
+            );
+            println!("  Overall Class: {:?}", plan.overall_class);
+            println!(
+                "  JSON Fallback Needed: {}",
+                if plan.requires_json_fallback {
+                    "yes".yellow()
+                } else {
+                    "no".green()
+                }
+            );
+
+            println!("\n{}", "Steps:".bold());
+            for (idx, step) in plan.steps.iter().enumerate() {
+                println!(
+                    "  {}. {} [{}] {}",
+                    idx + 1,
+                    step.path,
+                    format!("{:?}", step.action),
+                    step.rationale
+                );
+            }
+        },
+        other => {
+            anyhow::bail!("Unsupported output format: '{other}' (expected 'text' or 'json')")
+        },
     }
 
     Ok(())
