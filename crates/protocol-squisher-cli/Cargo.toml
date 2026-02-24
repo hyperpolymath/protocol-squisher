@@ -33,6 +33,8 @@ protocol-squisher-optimizer = { path = "../protocol-squisher-optimizer" }
 protocol-squisher-minikanren = { path = "../protocol-squisher-minikanren" }
 protocol-squisher-security-bridge = { path = "../protocol-squisher-security-bridge" }
 protocol-squisher-performance = { path = "../protocol-squisher-performance" }
+protocol-squisher-enterprise = { path = "../protocol-squisher-enterprise" }
+protocol-squisher-distributed = { path = "../protocol-squisher-distributed" }
 protocol-squisher-pyo3-codegen = { path = "../protocol-squisher-pyo3-codegen" }
 protocol-squisher-json-fallback = { path = "../protocol-squisher-json-fallback" }
 protocol-squisher-meta-analysis = { path = "../protocol-squisher-meta-analysis" }

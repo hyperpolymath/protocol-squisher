@@ -9,6 +9,7 @@
 //! - Streaming transformation pipelines
 
 pub mod lazy;
+pub mod hardware;
 pub mod simd;
 pub mod streaming;
 pub mod zero_copy;

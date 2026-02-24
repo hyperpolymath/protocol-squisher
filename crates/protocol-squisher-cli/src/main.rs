@@ -74,6 +74,25 @@ enum Commands {
         synthesis_hints: Option<PathBuf>,
     },
 
+    /// AI-assisted optimization using empirical hint weighting
+    OptimizeAi {
+        /// Path to Rust source file
+        #[arg(short, long)]
+        rust: PathBuf,
+
+        /// Path to Python source file
+        #[arg(short, long)]
+        python: PathBuf,
+
+        /// Optional synthesis hints JSON
+        #[arg(long)]
+        synthesis_hints: Option<PathBuf>,
+
+        /// Output format (text, json)
+        #[arg(short, long, default_value = "text")]
+        format: String,
+    },
+
     /// Generate PyO3 bindings with transport-class optimization
     Generate {
         /// Path to Rust source file
@@ -189,6 +208,178 @@ enum Commands {
         sample_size: usize,
     },
 
+    /// Distributed protocol squishing across a manifest of schema pairs
+    DistributedSquish {
+        /// JSON manifest path with pair definitions
+        #[arg(long)]
+        manifest: PathBuf,
+
+        /// Worker threads to use
+        #[arg(long, default_value = "4")]
+        workers: usize,
+
+        /// Output format (text, json)
+        #[arg(short, long, default_value = "text")]
+        format: String,
+    },
+
+    /// Hardware-acceleration probe across scalar/SIMD/parallel backends
+    HardwareAccel {
+        /// Payload sample size in bytes
+        #[arg(long, default_value = "1048576")]
+        sample_size: usize,
+
+        /// Backend: auto, scalar, simd, parallel
+        #[arg(long, default_value = "auto")]
+        backend: String,
+
+        /// Output format (text, json)
+        #[arg(short, long, default_value = "text")]
+        format: String,
+    },
+
+    /// Schema registry integration: publish/fetch/list versioned schemas
+    SchemaRegistry {
+        #[command(subcommand)]
+        command: SchemaRegistryCommand,
+
+        /// Registry storage directory
+        #[arg(long, default_value = "target/schema-registry")]
+        registry_dir: PathBuf,
+
+        /// Output format (text, json)
+        #[arg(short, long, default_value = "text")]
+        format: String,
+    },
+
+    /// Generate a migration plan between two schema versions
+    Migrate {
+        /// Source protocol format
+        #[arg(long = "from-format")]
+        from_format: String,
+
+        /// Target protocol format
+        #[arg(long = "to-format")]
+        to_format: String,
+
+        /// Source schema path
+        #[arg(long = "from")]
+        from_path: PathBuf,
+
+        /// Target schema path
+        #[arg(long = "to")]
+        to_path: PathBuf,
+
+        /// Output format (text, json)
+        #[arg(short, long, default_value = "text")]
+        format: String,
+    },
+
+    /// Enforce governance policy against a migration plan
+    GovernanceCheck {
+        /// Source protocol format
+        #[arg(long = "from-format")]
+        from_format: String,
+
+        /// Target protocol format
+        #[arg(long = "to-format")]
+        to_format: String,
+
+        /// Source schema path
+        #[arg(long = "from")]
+        from_path: PathBuf,
+
+        /// Target schema path
+        #[arg(long = "to")]
+        to_path: PathBuf,
+
+        /// Maximum allowed breaking changes
+        #[arg(long, default_value = "0")]
+        max_breaking_changes: usize,
+
+        /// Minimum acceptable transport class (concorde,business,economy,wheelbarrow)
+        #[arg(long, default_value = "economy")]
+        minimum_class: String,
+
+        /// Output format (text, json)
+        #[arg(short, long, default_value = "text")]
+        format: String,
+    },
+
+    /// Read audit log entries
+    AuditLog {
+        /// Audit log path
+        #[arg(long, default_value = "target/audit/audit-log.jsonl")]
+        log: PathBuf,
+
+        /// Max entries to print (latest-first in text mode)
+        #[arg(long, default_value = "100")]
+        limit: usize,
+
+        /// Output format (text, json)
+        #[arg(short, long, default_value = "text")]
+        format: String,
+    },
+
+    /// Adapter marketplace catalog operations
+    Marketplace {
+        #[command(subcommand)]
+        command: MarketplaceCommand,
+
+        /// Marketplace storage directory
+        #[arg(long, default_value = "target/marketplace")]
+        marketplace_dir: PathBuf,
+
+        /// Output format (text, json)
+        #[arg(short, long, default_value = "text")]
+        format: String,
+    },
+
+    /// Interactive compatibility explorer
+    Explore {
+        /// Source protocol format
+        #[arg(long = "from-format")]
+        from_format: String,
+
+        /// Target protocol format
+        #[arg(long = "to-format")]
+        to_format: String,
+
+        /// Source schema path
+        #[arg(long = "from")]
+        from_path: PathBuf,
+
+        /// Target schema path
+        #[arg(long = "to")]
+        to_path: PathBuf,
+
+        /// Output format (text, json)
+        #[arg(short, long, default_value = "text")]
+        format: String,
+    },
+
+    /// Start local web playground (or print static page)
+    Playground {
+        /// Listen host
+        #[arg(long, default_value = "127.0.0.1")]
+        host: String,
+
+        /// Listen port
+        #[arg(long, default_value = "7878")]
+        port: u16,
+
+        /// Print the playground HTML and exit
+        #[arg(long)]
+        dump_html: bool,
+    },
+
+    /// Run LSP adapter-preview server over stdio
+    Lsp {
+        /// Process a single request and exit (for smoke tests)
+        #[arg(long)]
+        once: bool,
+    },
+
     /// Analyze any protocol schema
     AnalyzeSchema {
         /// Protocol format
@@ -231,6 +422,84 @@ enum Commands {
     },
 }
 
+#[derive(Subcommand)]
+enum SchemaRegistryCommand {
+    /// Publish a versioned schema into the registry
+    Publish {
+        /// Schema logical name
+        #[arg(long)]
+        name: String,
+
+        /// Semantic version
+        #[arg(long)]
+        version: String,
+
+        /// Protocol format for input schema
+        #[arg(long = "protocol")]
+        protocol: String,
+
+        /// Input schema file
+        #[arg(short, long)]
+        input: PathBuf,
+    },
+
+    /// Fetch a schema by name/version (latest when omitted)
+    Fetch {
+        /// Schema logical name
+        #[arg(long)]
+        name: String,
+
+        /// Schema version (optional; defaults to latest)
+        #[arg(long)]
+        version: Option<String>,
+    },
+
+    /// List registry entries (optionally by name)
+    List {
+        /// Optional schema name filter
+        #[arg(long)]
+        name: Option<String>,
+    },
+}
+
+#[derive(Subcommand)]
+enum MarketplaceCommand {
+    /// Publish an adapter listing
+    Publish {
+        #[arg(long)]
+        id: String,
+        #[arg(long)]
+        name: String,
+        #[arg(long = "from-format")]
+        from_format: String,
+        #[arg(long = "to-format")]
+        to_format: String,
+        #[arg(long)]
+        version: String,
+        #[arg(long)]
+        description: String,
+        /// Comma-separated tags
+        #[arg(long, value_delimiter = ',')]
+        tags: Vec<String>,
+    },
+
+    /// Get one listing by id
+    Get {
+        #[arg(long)]
+        id: String,
+    },
+
+    /// List marketplace entries
+    List {
+        #[arg(long = "from-format")]
+        from_format: Option<String>,
+        #[arg(long = "to-format")]
+        to_format: Option<String>,
+        #[arg(long)]
+        tag: Option<String>,
+    },
+}
+
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
@@ -248,6 +517,13 @@ fn main() -> Result<()> {
             threshold,
             synthesis_hints,
         } => optimize(rust, python, threshold, synthesis_hints),
+
+        Commands::OptimizeAi {
+            rust,
+            python,
+            synthesis_hints,
+            format,
+        } => optimize_ai(rust, python, synthesis_hints, format),
 
         Commands::Generate {
             rust,
@@ -295,6 +571,74 @@ fn main() -> Result<()> {
             format,
             sample_size,
         } => performance_command(format, sample_size),
+
+        Commands::DistributedSquish {
+            manifest,
+            workers,
+            format,
+        } => distributed_squish_command(manifest, workers, format),
+
+        Commands::HardwareAccel {
+            sample_size,
+            backend,
+            format,
+        } => hardware_accel_command(sample_size, backend, format),
+
+        Commands::SchemaRegistry {
+            command,
+            registry_dir,
+            format,
+        } => schema_registry_command(command, registry_dir, format),
+
+        Commands::Migrate {
+            from_format,
+            to_format,
+            from_path,
+            to_path,
+            format,
+        } => migrate_command(from_format, to_format, from_path, to_path, format),
+
+        Commands::GovernanceCheck {
+            from_format,
+            to_format,
+            from_path,
+            to_path,
+            max_breaking_changes,
+            minimum_class,
+            format,
+        } => governance_check_command(
+            from_format,
+            to_format,
+            from_path,
+            to_path,
+            max_breaking_changes,
+            minimum_class,
+            format,
+        ),
+
+        Commands::AuditLog { log, limit, format } => audit_log_command(log, limit, format),
+
+        Commands::Marketplace {
+            command,
+            marketplace_dir,
+            format,
+        } => marketplace_command(command, marketplace_dir, format),
+
+        Commands::Explore {
+            from_format,
+            to_format,
+            from_path,
+            to_path,
+            format,
+        } => explore_command(from_format, to_format, from_path, to_path, format),
+
+        Commands::Playground {
+            host,
+            port,
+            dump_html,
+        } => playground_command(host, port, dump_html),
+
+        Commands::Lsp { once } => lsp_command(once),
 
         Commands::AnalyzeSchema {
             protocol,
@@ -847,6 +1191,723 @@ fn performance_command(format: String, sample_size: usize) -> Result<()> {
     Ok(())
 }
 
+fn default_audit_log_path() -> PathBuf {
+    PathBuf::from("target/audit/audit-log.jsonl")
+}
+
+fn current_actor() -> String {
+    std::env::var("USER")
+        .or_else(|_| std::env::var("USERNAME"))
+        .unwrap_or_else(|_| "protocol-squisher-cli".to_string())
+}
+
+fn safe_record_audit(action: &str, outcome: &str, details: serde_json::Value) {
+    use protocol_squisher_enterprise::audit::AuditLogger;
+
+    let logger = AuditLogger::new(default_audit_log_path());
+    if let Err(err) = logger.record(current_actor(), action, outcome, details) {
+        eprintln!("audit warning: {}", err);
+    }
+}
+
+fn schema_registry_command(
+    command: SchemaRegistryCommand,
+    registry_dir: PathBuf,
+    format: String,
+) -> Result<()> {
+    use crate::formats::ProtocolFormat;
+    use protocol_squisher_enterprise::registry::SchemaRegistry;
+
+    let registry = SchemaRegistry::new(registry_dir);
+    match command {
+        SchemaRegistryCommand::Publish {
+            name,
+            version,
+            protocol,
+            input,
+        } => {
+            let protocol = ProtocolFormat::from_str(&protocol)?;
+            let schema = protocol.analyze_file(&input).with_context(|| {
+                format!(
+                    "Failed to analyze schema {} as {}",
+                    input.display(),
+                    protocol.name()
+                )
+            })?;
+            let entry = registry.publish(&name, &version, protocol.name(), schema)?;
+
+            safe_record_audit(
+                "schema_registry.publish",
+                "success",
+                serde_json::json!({
+                    "name": entry.name,
+                    "version": entry.version,
+                    "format": entry.format
+                }),
+            );
+
+            match format.as_str() {
+                "json" => println!("{}", serde_json::to_string_pretty(&entry)?),
+                "text" => {
+                    println!("{}", "Schema Registry: PUBLISH".bright_green().bold());
+                    println!("  Name: {}", entry.name);
+                    println!("  Version: {}", entry.version);
+                    println!("  Format: {}", entry.format);
+                },
+                other => anyhow::bail!("Unsupported output format: '{other}'"),
+            }
+        },
+        SchemaRegistryCommand::Fetch { name, version } => {
+            let entry = if let Some(version) = version {
+                registry.fetch(&name, &version)?
+            } else {
+                registry
+                    .latest(&name)?
+                    .with_context(|| format!("No registry entries for '{name}'"))?
+            };
+
+            safe_record_audit(
+                "schema_registry.fetch",
+                "success",
+                serde_json::json!({
+                    "name": entry.name,
+                    "version": entry.version
+                }),
+            );
+
+            match format.as_str() {
+                "json" => println!("{}", serde_json::to_string_pretty(&entry)?),
+                "text" => {
+                    println!("{}", "Schema Registry: FETCH".bright_green().bold());
+                    println!("  Name: {}", entry.name);
+                    println!("  Version: {}", entry.version);
+                    println!("  Format: {}", entry.format);
+                    println!("  Schema: {}", entry.schema.name);
+                },
+                other => anyhow::bail!("Unsupported output format: '{other}'"),
+            }
+        },
+        SchemaRegistryCommand::List { name } => {
+            let entries = registry.list(name.as_deref())?;
+            safe_record_audit(
+                "schema_registry.list",
+                "success",
+                serde_json::json!({
+                    "count": entries.len(),
+                    "filter_name": name
+                }),
+            );
+
+            match format.as_str() {
+                "json" => println!("{}", serde_json::to_string_pretty(&entries)?),
+                "text" => {
+                    println!("{}", "Schema Registry: LIST".bright_green().bold());
+                    for (idx, entry) in entries.iter().enumerate() {
+                        println!(
+                            "  {}. {}@{} ({})",
+                            idx + 1,
+                            entry.name,
+                            entry.version,
+                            entry.format
+                        );
+                    }
+                    if entries.is_empty() {
+                        println!("  (empty)");
+                    }
+                },
+                other => anyhow::bail!("Unsupported output format: '{other}'"),
+            }
+        },
+    }
+
+    Ok(())
+}
+
+fn migrate_command(
+    from_format: String,
+    to_format: String,
+    from_path: PathBuf,
+    to_path: PathBuf,
+    format: String,
+) -> Result<()> {
+    use crate::formats::ProtocolFormat;
+    use protocol_squisher_enterprise::migration::plan_migration;
+
+    let source_format = ProtocolFormat::from_str(&from_format)?;
+    let target_format = ProtocolFormat::from_str(&to_format)?;
+    let source_schema = source_format.analyze_file(&from_path)?;
+    let target_schema = target_format.analyze_file(&to_path)?;
+    let plan = plan_migration(&source_schema, &target_schema);
+
+    safe_record_audit(
+        "migration.plan",
+        "success",
+        serde_json::json!({
+            "source": source_schema.name,
+            "target": target_schema.name,
+            "overall_class": format!("{:?}", plan.overall_class),
+            "breaking_changes": plan.breaking_changes
+        }),
+    );
+
+    match format.as_str() {
+        "json" => println!("{}", serde_json::to_string_pretty(&plan)?),
+        "text" => {
+            println!("{}", "Migration Plan".bright_green().bold());
+            println!("  Source: {} ({})", source_schema.name, source_format.name());
+            println!("  Target: {} ({})", target_schema.name, target_format.name());
+            println!("  Overall Class: {:?}", plan.overall_class);
+            println!("  Breaking Changes: {}", plan.breaking_changes);
+            println!("  Steps:");
+            for (idx, step) in plan.steps.iter().enumerate() {
+                println!(
+                    "    {}. {} [{:?}] breaking={} {}",
+                    idx + 1,
+                    step.path,
+                    step.action,
+                    step.breaking,
+                    step.rationale
+                );
+            }
+        },
+        other => anyhow::bail!("Unsupported output format: '{other}'"),
+    }
+
+    Ok(())
+}
+
+fn parse_transport_class(input: &str) -> Result<protocol_squisher_compat::TransportClass> {
+    use protocol_squisher_compat::TransportClass;
+
+    match input.to_ascii_lowercase().as_str() {
+        "concorde" => Ok(TransportClass::Concorde),
+        "business" | "businessclass" | "business_class" => Ok(TransportClass::BusinessClass),
+        "economy" => Ok(TransportClass::Economy),
+        "wheelbarrow" => Ok(TransportClass::Wheelbarrow),
+        "incompatible" => Ok(TransportClass::Incompatible),
+        other => anyhow::bail!("Unsupported transport class: '{other}'"),
+    }
+}
+
+fn governance_check_command(
+    from_format: String,
+    to_format: String,
+    from_path: PathBuf,
+    to_path: PathBuf,
+    max_breaking_changes: usize,
+    minimum_class: String,
+    format: String,
+) -> Result<()> {
+    use crate::formats::ProtocolFormat;
+    use protocol_squisher_enterprise::governance::{evaluate_policy, GovernancePolicy};
+    use protocol_squisher_enterprise::migration::plan_migration;
+
+    let source_format = ProtocolFormat::from_str(&from_format)?;
+    let target_format = ProtocolFormat::from_str(&to_format)?;
+    let source_schema = source_format.analyze_file(&from_path)?;
+    let target_schema = target_format.analyze_file(&to_path)?;
+    let plan = plan_migration(&source_schema, &target_schema);
+
+    let policy = GovernancePolicy {
+        max_breaking_changes,
+        minimum_transport_class: parse_transport_class(&minimum_class)?,
+        require_audit_log: true,
+        allowed_formats: vec![source_format.name().to_string(), target_format.name().to_string()],
+        ..GovernancePolicy::default()
+    };
+    let decision = evaluate_policy(
+        &policy,
+        &plan,
+        source_format.name(),
+        target_format.name(),
+        default_audit_log_path().exists(),
+    );
+
+    safe_record_audit(
+        "governance.check",
+        if decision.allowed { "allow" } else { "reject" },
+        serde_json::json!({
+            "source": source_schema.name,
+            "target": target_schema.name,
+            "allowed": decision.allowed,
+            "reasons": decision.reasons,
+            "breaking_changes": plan.breaking_changes
+        }),
+    );
+
+    match format.as_str() {
+        "json" => println!("{}", serde_json::to_string_pretty(&decision)?),
+        "text" => {
+            println!(
+                "{}",
+                if decision.allowed {
+                    "Governance Decision: ALLOW".bright_green().bold()
+                } else {
+                    "Governance Decision: REJECT".bright_red().bold()
+                }
+            );
+            println!("  Overall Class: {:?}", plan.overall_class);
+            println!("  Breaking Changes: {}", plan.breaking_changes);
+            if !decision.reasons.is_empty() {
+                println!("  Reasons:");
+                for reason in &decision.reasons {
+                    println!("    - {}", reason);
+                }
+            }
+        },
+        other => anyhow::bail!("Unsupported output format: '{other}'"),
+    }
+
+    Ok(())
+}
+
+fn audit_log_command(log: PathBuf, limit: usize, format: String) -> Result<()> {
+    use protocol_squisher_enterprise::audit::AuditLogger;
+
+    let logger = AuditLogger::new(log);
+    let events = logger.read_all()?;
+    let start = events.len().saturating_sub(limit);
+    let slice = &events[start..];
+
+    match format.as_str() {
+        "json" => println!("{}", serde_json::to_string_pretty(&slice)?),
+        "text" => {
+            println!("{}", "Audit Log".bright_green().bold());
+            println!("  Entries shown: {}", slice.len());
+            for event in slice.iter().rev() {
+                println!(
+                    "  [{}] {} {} ({})",
+                    event.timestamp_utc, event.actor, event.action, event.outcome
+                );
+            }
+        },
+        other => anyhow::bail!("Unsupported output format: '{other}'"),
+    }
+
+    Ok(())
+}
+
+fn marketplace_command(
+    command: MarketplaceCommand,
+    marketplace_dir: PathBuf,
+    format: String,
+) -> Result<()> {
+    use protocol_squisher_enterprise::marketplace::{AdapterMarketplace, ListingFilter};
+
+    let marketplace = AdapterMarketplace::new(marketplace_dir);
+    match command {
+        MarketplaceCommand::Publish {
+            id,
+            name,
+            from_format,
+            to_format,
+            version,
+            description,
+            tags,
+        } => {
+            let listing = marketplace.publish(
+                &id,
+                &name,
+                &from_format,
+                &to_format,
+                &version,
+                &description,
+                tags,
+            )?;
+            safe_record_audit(
+                "marketplace.publish",
+                "success",
+                serde_json::json!({"id": listing.id, "from": listing.from_format, "to": listing.to_format}),
+            );
+
+            match format.as_str() {
+                "json" => println!("{}", serde_json::to_string_pretty(&listing)?),
+                "text" => {
+                    println!("{}", "Marketplace: PUBLISH".bright_green().bold());
+                    println!("  Id: {}", listing.id);
+                    println!("  Name: {}", listing.name);
+                    println!("  Route: {} -> {}", listing.from_format, listing.to_format);
+                    println!("  Version: {}", listing.version);
+                },
+                other => anyhow::bail!("Unsupported output format: '{other}'"),
+            }
+        },
+        MarketplaceCommand::Get { id } => {
+            let listing = marketplace.get(&id)?;
+            match format.as_str() {
+                "json" => println!("{}", serde_json::to_string_pretty(&listing)?),
+                "text" => {
+                    println!("{}", "Marketplace: GET".bright_green().bold());
+                    println!("  Id: {}", listing.id);
+                    println!("  Name: {}", listing.name);
+                    println!("  Route: {} -> {}", listing.from_format, listing.to_format);
+                    println!("  Description: {}", listing.description);
+                },
+                other => anyhow::bail!("Unsupported output format: '{other}'"),
+            }
+        },
+        MarketplaceCommand::List {
+            from_format,
+            to_format,
+            tag,
+        } => {
+            let listings = marketplace.list(&ListingFilter {
+                from_format,
+                to_format,
+                tag,
+            })?;
+            match format.as_str() {
+                "json" => println!("{}", serde_json::to_string_pretty(&listings)?),
+                "text" => {
+                    println!("{}", "Marketplace: LIST".bright_green().bold());
+                    for (idx, listing) in listings.iter().enumerate() {
+                        println!(
+                            "  {}. {} {} -> {} @{}",
+                            idx + 1,
+                            listing.id,
+                            listing.from_format,
+                            listing.to_format,
+                            listing.version
+                        );
+                    }
+                    if listings.is_empty() {
+                        println!("  (empty)");
+                    }
+                },
+                other => anyhow::bail!("Unsupported output format: '{other}'"),
+            }
+        },
+    }
+
+    Ok(())
+}
+
+fn explore_command(
+    from_format: String,
+    to_format: String,
+    from_path: PathBuf,
+    to_path: PathBuf,
+    format: String,
+) -> Result<()> {
+    use crate::formats::ProtocolFormat;
+    use protocol_squisher_compat::compare_schemas;
+    use serde::Serialize;
+
+    #[derive(Serialize)]
+    struct ExploreRow {
+        path: String,
+        class: String,
+        losses: Vec<String>,
+    }
+
+    let source_format = ProtocolFormat::from_str(&from_format)?;
+    let target_format = ProtocolFormat::from_str(&to_format)?;
+    let source_schema = source_format.analyze_file(&from_path)?;
+    let target_schema = target_format.analyze_file(&to_path)?;
+    let comparison = compare_schemas(&source_schema, &target_schema);
+
+    let mut rows = Vec::new();
+    for type_cmp in comparison.type_comparisons.values() {
+        for field_cmp in &type_cmp.field_comparisons {
+            rows.push(ExploreRow {
+                path: format!("{}.{}", type_cmp.name, field_cmp.name),
+                class: format!("{:?}", field_cmp.class),
+                losses: field_cmp
+                    .losses
+                    .iter()
+                    .map(|loss| format!("{:?}: {}", loss.kind, loss.description))
+                    .collect(),
+            });
+        }
+    }
+
+    match format.as_str() {
+        "json" => {
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&serde_json::json!({
+                    "source": source_schema.name,
+                    "target": target_schema.name,
+                    "overall_class": format!("{:?}", comparison.class),
+                    "rows": rows,
+                }))?
+            );
+        },
+        "text" => {
+            println!("{}", "Compatibility Explorer".bright_green().bold());
+            println!("  Source: {} ({})", source_schema.name, source_format.name());
+            println!("  Target: {} ({})", target_schema.name, target_format.name());
+            println!("  Overall Class: {:?}", comparison.class);
+            println!("  Paths:");
+            for row in rows {
+                println!("    - {} => {}", row.path, row.class);
+                for loss in row.losses {
+                    println!("      loss: {}", loss);
+                }
+            }
+        },
+        other => anyhow::bail!("Unsupported output format: '{other}'"),
+    }
+
+    Ok(())
+}
+
+fn playground_html() -> &'static str {
+    r#"<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Protocol Squisher Playground</title>
+  <style>
+    :root { --bg:#f6efe4; --ink:#1b1a19; --accent:#005f73; --card:#fffaf2; }
+    body { margin:0; background:linear-gradient(180deg,#f6efe4,#f2e8d5); color:var(--ink); font-family: "IBM Plex Sans", "Source Sans 3", sans-serif; }
+    main { max-width:860px; margin:0 auto; padding:2rem 1rem 4rem; }
+    h1 { font-family:"Space Grotesk", "Avenir Next", sans-serif; letter-spacing:0.02em; }
+    .card { background:var(--card); border:1px solid #d4c9b1; border-radius:12px; padding:1rem; box-shadow:0 8px 22px rgba(0,0,0,0.06); }
+    code { background:#ece3d2; padding:0.1rem 0.3rem; border-radius:4px; }
+    button { background:var(--accent); color:white; border:none; padding:0.6rem 1rem; border-radius:8px; cursor:pointer; }
+    pre { white-space:pre-wrap; background:#111; color:#d8f3dc; padding:1rem; border-radius:8px; min-height:5rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Protocol Squisher Playground</h1>
+    <div class="card">
+      <p>This playground runs locally. Use <code>protocol-squisher explore</code> for schema diffs and <code>protocol-squisher migrate</code> for migration plans.</p>
+      <p>Health endpoint: <code>/health</code></p>
+      <button id="healthBtn">Check Server Health</button>
+      <pre id="out">Click the button to call /health</pre>
+    </div>
+  </main>
+  <script>
+    const out = document.getElementById('out');
+    document.getElementById('healthBtn').addEventListener('click', async () => {
+      try {
+        const res = await fetch('/health');
+        out.textContent = await res.text();
+      } catch (err) {
+        out.textContent = String(err);
+      }
+    });
+  </script>
+</body>
+</html>
+"#
+}
+
+fn playground_command(host: String, port: u16, dump_html: bool) -> Result<()> {
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
+
+    if dump_html {
+        println!("{}", playground_html());
+        return Ok(());
+    }
+
+    let addr = format!("{host}:{port}");
+    let listener =
+        TcpListener::bind(&addr).with_context(|| format!("Failed to bind playground to {addr}"))?;
+    println!(
+        "{}",
+        format!("Playground listening on http://{addr}").bright_green()
+    );
+
+    for stream in listener.incoming() {
+        let mut stream = stream?;
+        let mut buffer = [0u8; 8192];
+        let bytes = stream.read(&mut buffer)?;
+        let request = String::from_utf8_lossy(&buffer[..bytes]);
+        let first_line = request.lines().next().unwrap_or("");
+
+        let (status, content_type, body) = if first_line.starts_with("GET /health ") {
+            ("200 OK", "application/json", r#"{"status":"ok"}"#.to_string())
+        } else if first_line.starts_with("GET / ") {
+            (
+                "200 OK",
+                "text/html; charset=utf-8",
+                playground_html().to_string(),
+            )
+        } else {
+            (
+                "404 Not Found",
+                "text/plain; charset=utf-8",
+                "not found".to_string(),
+            )
+        };
+
+        let response = format!(
+            "HTTP/1.1 {status}\r\nContent-Type: {content_type}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+            body.len(),
+            body
+        );
+        stream.write_all(response.as_bytes())?;
+        stream.flush()?;
+    }
+
+    Ok(())
+}
+
+fn read_lsp_message<R: std::io::BufRead + std::io::Read>(reader: &mut R) -> Result<Option<String>> {
+    let mut content_length: Option<usize> = None;
+    loop {
+        let mut line = String::new();
+        let n = reader.read_line(&mut line)?;
+        if n == 0 {
+            return Ok(None);
+        }
+
+        let trimmed = line.trim_end_matches(['\r', '\n']);
+        if trimmed.is_empty() {
+            break;
+        }
+
+        if let Some(value) = trimmed.strip_prefix("Content-Length:") {
+            content_length = Some(value.trim().parse().context("Invalid Content-Length header")?);
+        }
+    }
+
+    let Some(content_length) = content_length else {
+        return Ok(None);
+    };
+    let mut buffer = vec![0u8; content_length];
+    reader.read_exact(&mut buffer)?;
+    let payload = String::from_utf8(buffer).context("LSP payload was not valid UTF-8")?;
+    Ok(Some(payload))
+}
+
+fn write_lsp_message<W: std::io::Write>(writer: &mut W, payload: &serde_json::Value) -> Result<()> {
+    let serialized = serde_json::to_string(payload).context("Failed to serialize LSP response")?;
+    write!(
+        writer,
+        "Content-Length: {}\r\n\r\n{}",
+        serialized.len(),
+        serialized
+    )?;
+    writer.flush()?;
+    Ok(())
+}
+
+fn handle_lsp_request(request: &serde_json::Value) -> Result<Option<serde_json::Value>> {
+    use crate::formats::ProtocolFormat;
+    use protocol_squisher_enterprise::migration::plan_migration;
+
+    let method = request.get("method").and_then(|m| m.as_str());
+    let id = request.get("id").cloned();
+
+    let Some(method) = method else {
+        return Ok(None);
+    };
+
+    let response = match method {
+        "initialize" => id.map(|id| {
+            serde_json::json!({
+                "jsonrpc": "2.0",
+                "id": id,
+                "result": {
+                    "capabilities": {
+                        "textDocumentSync": 1,
+                        "experimental": {
+                            "adapterPreview": true
+                        }
+                    },
+                    "serverInfo": {
+                        "name": "protocol-squisher-lsp",
+                        "version": env!("CARGO_PKG_VERSION")
+                    }
+                }
+            })
+        }),
+        "shutdown" => id.map(|id| serde_json::json!({"jsonrpc":"2.0","id": id, "result": null})),
+        "protocolSquisher/previewAdapter" => {
+            let Some(id) = id else { return Ok(None) };
+            let params = request
+                .get("params")
+                .and_then(|p| p.as_object())
+                .with_context(|| "Missing params for protocolSquisher/previewAdapter")?;
+
+            let from_format = params
+                .get("from_format")
+                .and_then(|v| v.as_str())
+                .with_context(|| "Missing params.from_format")?;
+            let to_format = params
+                .get("to_format")
+                .and_then(|v| v.as_str())
+                .with_context(|| "Missing params.to_format")?;
+            let from_path = params
+                .get("from_path")
+                .and_then(|v| v.as_str())
+                .with_context(|| "Missing params.from_path")?;
+            let to_path = params
+                .get("to_path")
+                .and_then(|v| v.as_str())
+                .with_context(|| "Missing params.to_path")?;
+
+            let src_format = ProtocolFormat::from_str(from_format)?;
+            let dst_format = ProtocolFormat::from_str(to_format)?;
+            let source_schema = src_format.analyze_file(Path::new(from_path))?;
+            let target_schema = dst_format.analyze_file(Path::new(to_path))?;
+            let plan = plan_migration(&source_schema, &target_schema);
+
+            Some(serde_json::json!({
+                "jsonrpc":"2.0",
+                "id": id,
+                "result": {
+                    "source": source_schema.name,
+                    "target": target_schema.name,
+                    "overall_class": format!("{:?}", plan.overall_class),
+                    "breaking_changes": plan.breaking_changes,
+                    "steps": plan.steps.len()
+                }
+            }))
+        },
+        _ => id.map(|id| {
+            serde_json::json!({
+                "jsonrpc": "2.0",
+                "id": id,
+                "error": {"code": -32601, "message": format!("Method not found: {method}")}
+            })
+        }),
+    };
+
+    Ok(response)
+}
+
+fn lsp_command(once: bool) -> Result<()> {
+    use std::io::BufReader;
+
+    let stdin = std::io::stdin();
+    let stdout = std::io::stdout();
+    let mut reader = BufReader::new(stdin.lock());
+    let mut writer = stdout.lock();
+
+    loop {
+        let Some(payload) = read_lsp_message(&mut reader)? else {
+            break;
+        };
+        let request: serde_json::Value =
+            serde_json::from_str(&payload).context("Failed to parse LSP request")?;
+
+        if request
+            .get("method")
+            .and_then(|m| m.as_str())
+            .is_some_and(|m| m == "exit")
+        {
+            break;
+        }
+
+        if let Some(response) = handle_lsp_request(&request)? {
+            write_lsp_message(&mut writer, &response)?;
+        }
+
+        if once {
+            break;
+        }
+    }
+
+    Ok(())
+}
+
 fn analyze_schema(protocol: String, input: PathBuf, detailed: bool) -> Result<()> {
     use crate::formats::ProtocolFormat;
 
@@ -1065,6 +2126,224 @@ fn optimize(
             "No (need >90% safe)".yellow()
         }
     );
+
+    Ok(())
+}
+
+fn optimize_ai(
+    rust_path: PathBuf,
+    python_path: PathBuf,
+    synthesis_hints: Option<PathBuf>,
+    format: String,
+) -> Result<()> {
+    use protocol_squisher_optimizer::{ai_assisted_optimize, EmpiricalSynthesisHints};
+    use serde::Serialize;
+
+    #[derive(Serialize)]
+    struct AiOutput {
+        source: String,
+        target: String,
+        summary: protocol_squisher_optimizer::AiAssistedOptimizationSummary,
+    }
+
+    let rust_schema = analyze_rust_schema(&rust_path)?;
+    let target_schema = analyze_python_schema(&python_path)?;
+    let hints = if let Some(path) = synthesis_hints {
+        Some(EmpiricalSynthesisHints::from_path(&path).map_err(anyhow::Error::msg)?)
+    } else {
+        None
+    };
+
+    let summary = ai_assisted_optimize(&rust_schema, &target_schema, hints);
+    let out = AiOutput {
+        source: rust_schema.name.clone(),
+        target: target_schema.name.clone(),
+        summary,
+    };
+
+    safe_record_audit(
+        "optimize.ai",
+        "success",
+        serde_json::json!({
+            "source": out.source,
+            "target": out.target,
+            "confidence": out.summary.recommendation_confidence,
+            "potential_zero_copy_percentage": out.summary.potential_zero_copy_percentage
+        }),
+    );
+
+    match format.as_str() {
+        "json" => println!("{}", serde_json::to_string_pretty(&out)?),
+        "text" => {
+            println!("{}", "AI-Assisted Optimization".bright_green().bold());
+            println!("  Source: {}", out.source);
+            println!("  Target: {}", out.target);
+            println!(
+                "  Confidence: {:.2}",
+                out.summary.recommendation_confidence
+            );
+            println!(
+                "  Potential Zero-Copy: {:.1}%",
+                out.summary.potential_zero_copy_percentage
+            );
+            println!(
+                "  Production Ready: {}",
+                if out.summary.production_ready {
+                    "yes".green()
+                } else {
+                    "no".yellow()
+                }
+            );
+            if !out.summary.top_suggestions.is_empty() {
+                println!("  Top Suggestions:");
+                for (idx, suggestion) in out.summary.top_suggestions.iter().enumerate() {
+                    println!("    {}. {}", idx + 1, suggestion);
+                }
+            }
+        },
+        other => anyhow::bail!("Unsupported output format: '{other}'"),
+    }
+
+    Ok(())
+}
+
+fn distributed_squish_command(manifest: PathBuf, workers: usize, format: String) -> Result<()> {
+    use crate::formats::ProtocolFormat;
+    use protocol_squisher_distributed::{run_distributed, DistributedSquishTask};
+    use serde::{Deserialize, Serialize};
+
+    #[derive(Debug, Deserialize)]
+    struct ManifestPair {
+        id: String,
+        from_format: String,
+        to_format: String,
+        from: PathBuf,
+        to: PathBuf,
+    }
+
+    #[derive(Debug, Serialize)]
+    struct DistributedOutput {
+        workers: usize,
+        task_count: usize,
+        results: Vec<protocol_squisher_distributed::DistributedSquishResult>,
+    }
+
+    let pairs_raw = fs::read_to_string(&manifest)
+        .with_context(|| format!("Failed to read manifest {}", manifest.display()))?;
+    let pairs: Vec<ManifestPair> = serde_json::from_str(&pairs_raw)
+        .with_context(|| format!("Failed to parse manifest {}", manifest.display()))?;
+
+    let mut tasks = Vec::with_capacity(pairs.len());
+    for pair in pairs {
+        let from_format = ProtocolFormat::from_str(&pair.from_format)?;
+        let to_format = ProtocolFormat::from_str(&pair.to_format)?;
+        let source = from_format.analyze_file(&pair.from)?;
+        let target = to_format.analyze_file(&pair.to)?;
+        tasks.push(DistributedSquishTask {
+            id: pair.id,
+            source,
+            target,
+        });
+    }
+
+    let results = run_distributed(&tasks, Some(workers)).map_err(anyhow::Error::msg)?;
+    let output = DistributedOutput {
+        workers,
+        task_count: tasks.len(),
+        results,
+    };
+
+    safe_record_audit(
+        "distributed.squish",
+        "success",
+        serde_json::json!({
+            "workers": workers,
+            "task_count": output.task_count
+        }),
+    );
+
+    match format.as_str() {
+        "json" => println!("{}", serde_json::to_string_pretty(&output)?),
+        "text" => {
+            println!("{}", "Distributed Squish".bright_green().bold());
+            println!("  Workers: {}", output.workers);
+            println!("  Tasks: {}", output.task_count);
+            for result in &output.results {
+                println!(
+                    "  - {}: {:?} (losses={})",
+                    result.id, result.class, result.loss_count
+                );
+            }
+        },
+        other => anyhow::bail!("Unsupported output format: '{other}'"),
+    }
+
+    Ok(())
+}
+
+fn parse_hardware_backend(
+    backend: &str,
+) -> Result<protocol_squisher_performance::hardware::HardwareBackend> {
+    use protocol_squisher_performance::hardware::HardwareBackend;
+    match backend.to_ascii_lowercase().as_str() {
+        "auto" => Ok(protocol_squisher_performance::hardware::recommended_backend()),
+        "scalar" => Ok(HardwareBackend::Scalar),
+        "simd" => Ok(HardwareBackend::Simd),
+        "parallel" => Ok(HardwareBackend::Parallel),
+        other => anyhow::bail!("Unsupported hardware backend: '{other}'"),
+    }
+}
+
+fn hardware_accel_command(sample_size: usize, backend: String, format: String) -> Result<()> {
+    use protocol_squisher_performance::hardware::checksum_with_backend;
+    use serde::Serialize;
+    use std::time::Instant;
+
+    #[derive(Debug, Serialize)]
+    struct HardwareReport {
+        sample_size: usize,
+        backend: String,
+        checksum: u8,
+        elapsed_ns: u128,
+    }
+
+    let selected = parse_hardware_backend(&backend)?;
+    let payload: Vec<u8> = (0..sample_size.max(1_024))
+        .map(|i| (i % 251) as u8)
+        .collect();
+
+    let start = Instant::now();
+    let checksum = checksum_with_backend(&payload, selected);
+    let elapsed_ns = start.elapsed().as_nanos();
+
+    let report = HardwareReport {
+        sample_size: payload.len(),
+        backend: format!("{:?}", selected),
+        checksum,
+        elapsed_ns,
+    };
+
+    safe_record_audit(
+        "hardware.accel",
+        "success",
+        serde_json::json!({
+            "backend": report.backend,
+            "sample_size": report.sample_size,
+            "elapsed_ns": report.elapsed_ns
+        }),
+    );
+
+    match format.as_str() {
+        "json" => println!("{}", serde_json::to_string_pretty(&report)?),
+        "text" => {
+            println!("{}", "Hardware Acceleration Probe".bright_green().bold());
+            println!("  Backend: {}", report.backend);
+            println!("  Sample Size: {}", report.sample_size);
+            println!("  Checksum: {}", report.checksum);
+            println!("  Elapsed: {} ns", report.elapsed_ns);
+        },
+        other => anyhow::bail!("Unsupported output format: '{other}'"),
+    }
 
     Ok(())
 }

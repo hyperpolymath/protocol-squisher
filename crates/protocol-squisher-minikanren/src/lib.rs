@@ -21,6 +21,9 @@ pub enum SynthesisAction {
     StructuralMap,
     WidenType,
     RelaxOptional,
+    Cut,
+    Splice,
+    Reify,
     JsonFallback,
 }
 
@@ -143,6 +146,14 @@ fn build_type_goals(type_cmp: &TypeDefComparison, goals: &mut Vec<Goal>) {
                         .to_string(),
                     utility: utility(TransportClass::BusinessClass),
                 });
+                candidates.push(Candidate {
+                    action: SynthesisAction::Splice,
+                    class: TransportClass::BusinessClass,
+                    rationale:
+                        "Splice transformation can reshape records without changing semantics."
+                            .to_string(),
+                    utility: utility(TransportClass::BusinessClass) + 1,
+                });
             },
             TransportClass::Economy => {
                 let has_precision_loss = field
@@ -168,6 +179,14 @@ fn build_type_goals(type_cmp: &TypeDefComparison, goals: &mut Vec<Goal>) {
                         .to_string(),
                     utility: utility(TransportClass::Economy),
                 });
+                candidates.push(Candidate {
+                    action: SynthesisAction::Reify,
+                    class: TransportClass::Economy,
+                    rationale:
+                        "Reify transformation can preserve intent via tagged representation."
+                            .to_string(),
+                    utility: utility(TransportClass::Economy) - 1,
+                });
             },
             TransportClass::Wheelbarrow => {
                 let has_missing_field = field
@@ -185,8 +204,25 @@ fn build_type_goals(type_cmp: &TypeDefComparison, goals: &mut Vec<Goal>) {
                         utility: utility(TransportClass::BusinessClass),
                     });
                 }
+                candidates.push(Candidate {
+                    action: SynthesisAction::Cut,
+                    class: TransportClass::Economy,
+                    rationale:
+                        "Cut transformation explicitly trims incompatible payload fragments."
+                            .to_string(),
+                    utility: utility(TransportClass::Economy) - 5,
+                });
             },
-            TransportClass::Incompatible => {},
+            TransportClass::Incompatible => {
+                candidates.push(Candidate {
+                    action: SynthesisAction::Reify,
+                    class: TransportClass::Wheelbarrow,
+                    rationale:
+                        "Reify transformation preserves value meaning in encoded representation."
+                            .to_string(),
+                    utility: utility(TransportClass::Wheelbarrow) + 1,
+                });
+            },
         }
 
         goals.push(Goal {
@@ -311,13 +347,19 @@ mod tests {
     }
 
     #[test]
-    fn incompatible_paths_still_have_fallback() {
+    fn incompatible_paths_select_reify_or_fallback() {
         let source = schema_with_field("source", PrimitiveType::String);
         let target = schema_with_field("target", PrimitiveType::Bool);
         let plan = synthesize_adapter(&source, &target);
 
         assert!(plan.satisfiable);
-        assert!(plan.requires_json_fallback);
+        assert!(
+            plan.requires_json_fallback
+                || plan
+                    .steps
+                    .iter()
+                    .any(|s| matches!(s.action, SynthesisAction::Reify))
+        );
         assert_eq!(plan.overall_class, TransportClass::Wheelbarrow);
     }
 }

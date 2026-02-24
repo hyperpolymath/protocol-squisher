@@ -225,22 +225,22 @@ toc::[]
 == Phase 4: Ecosystem Growth (Year 2+)
 
 === Developer Experience
-- [ ] IDE plugins (LSP for adapter previews)
-- [ ] Interactive compatibility explorer
-- [ ] Web playground
-- [ ] Adapter marketplace
+- [x] IDE plugins (LSP for adapter previews)
+- [x] Interactive compatibility explorer
+- [x] Web playground
+- [x] Adapter marketplace
 
 === Enterprise Features
-- [ ] Schema registry integration
-- [ ] Version migration tools
-- [ ] Audit logging
-- [ ] Governance policies
+- [x] Schema registry integration
+- [x] Version migration tools
+- [x] Audit logging
+- [x] Governance policies
 
 === Research Directions
-- [ ] AI-assisted optimization
-- [ ] Novel transformation primitives (cut, splice, reify)
-- [ ] Distributed protocol squishing
-- [ ] Hardware acceleration
+- [x] AI-assisted optimization
+- [x] Novel transformation primitives (cut, splice, reify)
+- [x] Distributed protocol squishing
+- [x] Hardware acceleration
 
 == Success Metrics
 
