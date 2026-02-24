@@ -146,6 +146,38 @@ enum Commands {
         format: String,
     },
 
+    /// Bridge TLS profile to Noise pattern with safety verification
+    SecurityBridge {
+        /// TLS version (1.0, 1.1, 1.2, 1.3)
+        #[arg(long, default_value = "1.3")]
+        tls_version: String,
+
+        /// Key exchange (rsa, dhe, ecdhe, psk)
+        #[arg(long, default_value = "ecdhe")]
+        key_exchange: String,
+
+        /// Require mutual authentication (mTLS)
+        #[arg(long)]
+        mutual_auth: bool,
+
+        /// Disable certificate validation (unsafe; usually rejected)
+        #[arg(long)]
+        no_cert_validation: bool,
+
+        /// Enable session resumption
+        #[arg(long)]
+        session_resumption: bool,
+
+        /// Required security properties (comma-separated):
+        /// forward_secrecy, mutual_authentication, identity_hiding, replay_resistance
+        #[arg(long, value_delimiter = ',')]
+        require: Vec<String>,
+
+        /// Output format (text, json)
+        #[arg(short, long, default_value = "text")]
+        format: String,
+    },
+
     /// Analyze any protocol schema
     AnalyzeSchema {
         /// Protocol format
@@ -229,6 +261,24 @@ fn main() -> Result<()> {
             to_path,
             format,
         } => synthesize_command(from_format, to_format, from_path, to_path, format),
+
+        Commands::SecurityBridge {
+            tls_version,
+            key_exchange,
+            mutual_auth,
+            no_cert_validation,
+            session_resumption,
+            require,
+            format,
+        } => security_bridge_command(
+            tls_version,
+            key_exchange,
+            mutual_auth,
+            no_cert_validation,
+            session_resumption,
+            require,
+            format,
+        ),
 
         Commands::AnalyzeSchema {
             protocol,
@@ -545,6 +595,97 @@ fn synthesize_command(
                     step.rationale
                 );
             }
+        },
+        other => {
+            anyhow::bail!("Unsupported output format: '{other}' (expected 'text' or 'json')")
+        },
+    }
+
+    Ok(())
+}
+
+fn security_bridge_command(
+    tls_version: String,
+    key_exchange: String,
+    mutual_auth: bool,
+    no_cert_validation: bool,
+    session_resumption: bool,
+    require: Vec<String>,
+    format: String,
+) -> Result<()> {
+    use protocol_squisher_security_bridge::{
+        translate_tls_to_noise, verify_security_properties, BridgeDecision, KeyExchange,
+        SecurityProperty, TlsProfile, TlsVersion,
+    };
+
+    fn parse_tls_version(input: &str) -> Result<TlsVersion> {
+        match input {
+            "1.0" | "tls1.0" | "tls10" => Ok(TlsVersion::Tls10),
+            "1.1" | "tls1.1" | "tls11" => Ok(TlsVersion::Tls11),
+            "1.2" | "tls1.2" | "tls12" => Ok(TlsVersion::Tls12),
+            "1.3" | "tls1.3" | "tls13" => Ok(TlsVersion::Tls13),
+            other => anyhow::bail!("Unsupported TLS version: '{other}'"),
+        }
+    }
+
+    fn parse_key_exchange(input: &str) -> Result<KeyExchange> {
+        match input.to_ascii_lowercase().as_str() {
+            "rsa" | "rsa_key_exchange" => Ok(KeyExchange::RsaKeyExchange),
+            "dhe" => Ok(KeyExchange::Dhe),
+            "ecdhe" => Ok(KeyExchange::Ecdhe),
+            "psk" | "psk_only" => Ok(KeyExchange::PskOnly),
+            other => anyhow::bail!("Unsupported key exchange: '{other}'"),
+        }
+    }
+
+    fn parse_property(input: &str) -> Result<SecurityProperty> {
+        match input.to_ascii_lowercase().as_str() {
+            "forward_secrecy" | "pfs" => Ok(SecurityProperty::ForwardSecrecy),
+            "mutual_authentication" | "mutual_auth" | "mtls" => {
+                Ok(SecurityProperty::MutualAuthentication)
+            },
+            "identity_hiding" => Ok(SecurityProperty::IdentityHiding),
+            "replay_resistance" | "replay_protection" => Ok(SecurityProperty::ReplayResistance),
+            other => anyhow::bail!("Unsupported security property: '{other}'"),
+        }
+    }
+
+    let profile = TlsProfile {
+        version: parse_tls_version(&tls_version)?,
+        key_exchange: parse_key_exchange(&key_exchange)?,
+        mutual_authentication: mutual_auth,
+        cert_validation: !no_cert_validation,
+        session_resumption,
+    };
+
+    let required: Vec<SecurityProperty> = require
+        .iter()
+        .map(|value| parse_property(value))
+        .collect::<Result<Vec<_>>>()?;
+
+    let decision = if required.is_empty() {
+        translate_tls_to_noise(&profile)
+    } else {
+        verify_security_properties(&profile, &required)
+    };
+
+    match format.as_str() {
+        "json" => {
+            println!("{}", serde_json::to_string_pretty(&decision)?);
+        },
+        "text" => match decision {
+            BridgeDecision::Accept(bridge) => {
+                println!("{}", "Security Bridge: ACCEPT".bright_green().bold());
+                println!("  Noise Pattern: {:?}", bridge.noise_pattern);
+                println!("  Properties: {:?}", bridge.properties);
+                for note in bridge.notes {
+                    println!("  Note: {}", note);
+                }
+            },
+            BridgeDecision::Reject { reason } => {
+                println!("{}", "Security Bridge: REJECT".bright_red().bold());
+                println!("  Reason: {}", reason);
+            },
         },
         other => {
             anyhow::bail!("Unsupported output format: '{other}' (expected 'text' or 'json')")

@@ -31,6 +31,7 @@ protocol-squisher-json-schema-analyzer = { path = "../protocol-squisher-json-sch
 protocol-squisher-compat = { path = "../protocol-squisher-compat" }
 protocol-squisher-optimizer = { path = "../protocol-squisher-optimizer" }
 protocol-squisher-minikanren = { path = "../protocol-squisher-minikanren" }
+protocol-squisher-security-bridge = { path = "../protocol-squisher-security-bridge" }
 protocol-squisher-pyo3-codegen = { path = "../protocol-squisher-pyo3-codegen" }
 protocol-squisher-json-fallback = { path = "../protocol-squisher-json-fallback" }
 protocol-squisher-meta-analysis = { path = "../protocol-squisher-meta-analysis" }

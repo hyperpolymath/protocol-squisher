@@ -203,10 +203,10 @@ toc::[]
 **Status:** 🚧 **IN PROGRESS** - ECHIDNA integration complete with 4 core theorems proven in Agda/Lean, property tests (288/540 tests), ClusterFuzzLite configured
 
 === Security Protocol Support
-- [ ] TLS version bridging
-- [ ] Protocol family translation (TLS ↔ Noise)
-- [ ] Security property verification
-- [ ] Rejection of unsafe combinations
+- [x] TLS version bridging
+- [x] Protocol family translation (TLS ↔ Noise)
+- [x] Security property verification
+- [x] Rejection of unsafe combinations
 
 === FFI Replacement
 - [ ] Function call bridging

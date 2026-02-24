@@ -1298,6 +1298,7 @@ dependencies = [
  "protocol-squisher-python-analyzer",
  "protocol-squisher-rescript-analyzer",
  "protocol-squisher-rust-analyzer",
+ "protocol-squisher-security-bridge",
  "protocol-squisher-thrift-analyzer",
  "protocol-squisher-transport-primitives",
  "serde",
@@ -1490,6 +1491,13 @@ dependencies = [
  "serde",
  "serde_json",
  "syn",
+]
+
+[[package]]
+name = "protocol-squisher-security-bridge"
+version = "0.1.0"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
