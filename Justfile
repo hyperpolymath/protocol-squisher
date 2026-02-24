@@ -129,6 +129,11 @@ maint-corrective:
     ./scripts/podman-dev.sh backend-verified-real
     ./scripts/podman-dev.sh compile-smoke-verified-real
 
+# Validate real-world schema coverage and invariant health.
+# Defaults enforce roadmap gates: >=100 successful analyses and 0 invariant violations.
+maint-realworld:
+    ./scripts/ci/validate-realworld-corpus.sh --output /tmp/protocol-squisher-realworld-gate.json
+
 # Capture maintenance metrics snapshot (JSON in /tmp by default)
 maint-metrics:
     ./scripts/ci/capture-maintenance-metrics.sh
@@ -136,6 +141,10 @@ maint-metrics:
 # Capture maintenance metrics including timed podman checks
 maint-metrics-podman:
     ./scripts/ci/capture-maintenance-metrics.sh --with-podman
+
+# Capture maintenance metrics including real-world schema gate
+maint-metrics-realworld:
+    ./scripts/ci/capture-maintenance-metrics.sh --with-realworld
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONTAINER (PODMAN)

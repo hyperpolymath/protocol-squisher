@@ -247,8 +247,8 @@ toc::[]
 === MVP Success (Month 3)
 - [ ] 1,000+ GitHub stars
 - [ ] 10+ external contributors
-- [ ] 100+ real-world schemas tested
-- [ ] 0 invariant violations found
+- [x] 100+ real-world schemas tested
+- [x] 0 invariant violations found
 
 === Inflection Point (Month 12)
 - [ ] 10,000+ GitHub stars

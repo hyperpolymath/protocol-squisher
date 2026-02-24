@@ -5,23 +5,29 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 with_podman=false
+with_realworld=false
 output_path=""
 logs_dir=""
 panic_attack_bin="${PANIC_ATTACK_BIN:-}"
 baseline_file="${repo_root}/scripts/ci/panic-assail-baseline.json"
 timestamp_utc="$(date -u +%Y%m%dT%H%M%SZ)"
+realworld_min_success=100
+realworld_max_files=220
 
 usage() {
     cat <<USAGE
-usage: $0 [--with-podman] [--output <path>] [--logs-dir <path>] [--panic-bin <path>]
+usage: $0 [--with-podman] [--with-realworld] [--output <path>] [--logs-dir <path>] [--panic-bin <path>]
 
 Capture maintenance metrics as JSON.
 
 Options:
   --with-podman       Include timed podman maintenance steps
+  --with-realworld    Include real-world schema gate (>=100 success, 0 invariant violations)
   --output <path>     Output JSON path (default: /tmp/protocol-squisher-maint-<timestamp>.json)
   --logs-dir <path>   Directory for step logs (default: /tmp/protocol-squisher-maint-logs-<timestamp>)
   --panic-bin <path>  panic-attack binary path
+  --realworld-min-success <n>   Override minimum successful analyses for real-world gate
+  --realworld-max-files <n>     Override max attempted files for real-world gate
 USAGE
 }
 
@@ -29,6 +35,10 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --with-podman)
             with_podman=true
+            shift
+            ;;
+        --with-realworld)
+            with_realworld=true
             shift
             ;;
         --output)
@@ -41,6 +51,14 @@ while [[ $# -gt 0 ]]; do
             ;;
         --panic-bin)
             panic_attack_bin="${2:-}"
+            shift 2
+            ;;
+        --realworld-min-success)
+            realworld_min_success="${2:-}"
+            shift 2
+            ;;
+        --realworld-max-files)
+            realworld_max_files="${2:-}"
             shift 2
             ;;
         -h|--help)
@@ -73,6 +91,14 @@ fi
 if ! command -v git >/dev/null 2>&1; then
     echo "error: git is required." >&2
     exit 127
+fi
+if ! [[ "${realworld_min_success}" =~ ^[0-9]+$ ]]; then
+    echo "error: --realworld-min-success must be an integer." >&2
+    exit 2
+fi
+if ! [[ "${realworld_max_files}" =~ ^[0-9]+$ ]] || [[ "${realworld_max_files}" -le 0 ]]; then
+    echo "error: --realworld-max-files must be a positive integer." >&2
+    exit 2
 fi
 
 if [[ -z "${output_path}" ]]; then
@@ -122,6 +148,10 @@ fi
 podman_status="skipped"
 podman_failure_reason=""
 podman_steps='[]'
+realworld_status="skipped"
+realworld_failure_reason=""
+realworld_report=""
+realworld_totals='{}'
 
 append_podman_step() {
     local name="$1"
@@ -195,6 +225,25 @@ if [[ "${with_podman}" == true ]]; then
     fi
 fi
 
+if [[ "${with_realworld}" == true ]]; then
+    realworld_report="${logs_dir}/realworld-report.json"
+    realworld_log="${logs_dir}/realworld-gate.log"
+
+    if "${repo_root}/scripts/ci/validate-realworld-corpus.sh" \
+        --min-success "${realworld_min_success}" \
+        --max-files "${realworld_max_files}" \
+        --output "${realworld_report}" >"${realworld_log}" 2>&1; then
+        realworld_status="pass"
+    else
+        realworld_status="fail"
+        realworld_failure_reason="validate-realworld-corpus.sh failed (see realworld-gate.log)"
+    fi
+
+    if [[ -f "${realworld_report}" ]] && jq -e '.totals' "${realworld_report}" >/dev/null 2>&1; then
+        realworld_totals="$(jq -c '.totals' "${realworld_report}")"
+    fi
+fi
+
 git_commit="$(git -C "${repo_root}" rev-parse HEAD)"
 generated_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
@@ -208,6 +257,9 @@ jq -n \
     --arg abi_status "${abi_status}" \
     --arg podman_status "${podman_status}" \
     --arg podman_failure_reason "${podman_failure_reason}" \
+    --arg realworld_status "${realworld_status}" \
+    --arg realworld_failure_reason "${realworld_failure_reason}" \
+    --arg realworld_report "${realworld_report}" \
     --argjson baseline_weak_points "${baseline_weak_points}" \
     --argjson baseline_unwrap_calls "${baseline_unwrap_calls}" \
     --argjson baseline_panic_sites "${baseline_panic_sites}" \
@@ -215,6 +267,7 @@ jq -n \
     --argjson current_unwrap_calls "${current_unwrap_calls}" \
     --argjson current_panic_sites "${current_panic_sites}" \
     --argjson podman_steps "${podman_steps}" \
+    --argjson realworld_totals "${realworld_totals}" \
     '{
         generated_at_utc: $generated_at,
         git_commit: $git_commit,
@@ -239,6 +292,12 @@ jq -n \
             status: $podman_status,
             failure_reason: $podman_failure_reason,
             steps: $podman_steps
+        },
+        realworld_corpus: {
+            status: $realworld_status,
+            failure_reason: $realworld_failure_reason,
+            report_path: $realworld_report,
+            totals: $realworld_totals
         }
     }' >"${output_path}"
 
@@ -246,6 +305,6 @@ echo "wrote metrics: ${output_path}"
 echo "logs dir: ${logs_dir}"
 
 # Non-zero if any gate failed.
-if [[ "${abi_status}" != "pass" || "${podman_status}" == "fail" ]]; then
+if [[ "${abi_status}" != "pass" || "${podman_status}" == "fail" || "${realworld_status}" == "fail" ]]; then
     exit 1
 fi
