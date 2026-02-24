@@ -5,10 +5,16 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 install_path="${1:-${repo_root}/tools/ephapax-cli}"
+install_meta_path="${install_path}.meta"
 
 # Pinned to a concrete commit for reproducibility.
 ephapax_repo="${EPHAPAX_REPO_URL:-https://github.com/hyperpolymath/ephapax.git}"
 ephapax_commit="${EPHAPAX_COMMIT:-74c7235f7861419c43dce9133341ba66e15f41b2}"
+build_toolchain="${EPHAPAX_BUILD_TOOLCHAIN:-1.89.0}"
+force_reinstall="${EPHAPAX_INSTALL_FORCE:-0}"
+install_meta="repo=${ephapax_repo}
+commit=${ephapax_commit}
+toolchain=${build_toolchain}"
 
 if ! command -v git >/dev/null 2>&1; then
     echo "error: git is required to install ephapax-cli." >&2
@@ -17,6 +23,15 @@ fi
 if ! command -v cargo >/dev/null 2>&1; then
     echo "error: cargo is required to build ephapax-cli." >&2
     exit 127
+fi
+
+if [[ "${force_reinstall}" != "1" && -x "${install_path}" && -f "${install_meta_path}" ]]; then
+    existing_meta="$(cat "${install_meta_path}")"
+    if [[ "${existing_meta}" == "${install_meta}" ]]; then
+        echo "ephapax-cli already installed at ${install_path} (cache hit: ${ephapax_commit})"
+        "${install_path}" --version || true
+        exit 0
+    fi
 fi
 
 tmp_dir="$(mktemp -d)"
@@ -40,7 +55,6 @@ if [[ "${checked_out_commit}" != "${ephapax_commit}" ]]; then
     exit 1
 fi
 
-build_toolchain="${EPHAPAX_BUILD_TOOLCHAIN:-1.89.0}"
 cargo_cmd=(cargo)
 if command -v rustup >/dev/null 2>&1; then
     echo "Ensuring Rust toolchain ${build_toolchain} is available..."
@@ -57,6 +71,7 @@ echo "Building ephapax-cli (locked) ..."
 mkdir -p "$(dirname "${install_path}")"
 cp "${src_dir}/target/release/ephapax" "${install_path}"
 chmod 0755 "${install_path}"
+printf '%s\n' "${install_meta}" >"${install_meta_path}"
 
 echo "Installed ephapax-cli wrapper binary to ${install_path}"
 "${install_path}" --version || true

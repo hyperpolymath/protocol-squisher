@@ -27,6 +27,10 @@ Protocol Squisher now includes a Podman-native developer container for reproduci
 # Validate benchmarks compile
 ./scripts/podman-dev.sh bench
 
+# Run tests/bench with real ephapax-cli backend (after install)
+./scripts/podman-dev.sh test-verified-real
+./scripts/podman-dev.sh bench-verified-real
+
 # Compile smoke test (Rust -> Protobuf)
 ./scripts/podman-dev.sh compile-smoke
 
@@ -63,9 +67,14 @@ Use the bundled mock CLI to exercise the verified backend path:
 ./scripts/podman-dev.sh install-ephapax-cli
 ```
 
+The installer is cached. Re-running the same pinned commit/toolchain is a no-op unless
+`EPHAPAX_INSTALL_FORCE=1` is set.
+
 2. Run verified checks in container:
 
 ```bash
+./scripts/podman-dev.sh test-verified-real
+./scripts/podman-dev.sh bench-verified-real
 ./scripts/podman-dev.sh backend-verified-real
 ./scripts/podman-dev.sh compile-smoke-verified-real
 ```
@@ -86,6 +95,12 @@ To override installer build toolchain:
 
 ```bash
 EPHAPAX_BUILD_TOOLCHAIN=1.89.0 ./scripts/podman-dev.sh install-ephapax-cli
+```
+
+To force reinstall even when cache metadata matches:
+
+```bash
+EPHAPAX_INSTALL_FORCE=1 ./scripts/podman-dev.sh install-ephapax-cli
 ```
 
 ## Notes

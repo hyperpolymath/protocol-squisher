@@ -33,6 +33,23 @@ run_compose() {
     "${COMPOSE_CMD[@]}" -f "${COMPOSE_FILE}" "$@"
 }
 
+is_truthy() {
+    case "${1:-}" in
+        1|true|TRUE|yes|YES|on|ON)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+require_real_ephapax_cli() {
+    REAL_EPHAPAX_CLI_PATH="${EPHAPAX_CLI_CONTAINER_PATH:-/workspace/tools/ephapax-cli}"
+    run_compose run --rm dev sh -c \
+        "if [ ! -x \"${REAL_EPHAPAX_CLI_PATH}\" ]; then echo \"error: ephapax-cli not found or not executable at ${REAL_EPHAPAX_CLI_PATH}\" >&2; exit 127; fi" || exit $?
+}
+
 usage() {
     cat <<'EOF'
 Usage: scripts/podman-dev.sh <command>
@@ -43,6 +60,10 @@ Commands:
   shell          Open interactive shell inside dev service
   test           Run full workspace tests in container
   bench          Run benchmark dry-run in container
+  test-verified-real
+                 Run tests with real verified backend (EPHAPAX_CLI mounted)
+  bench-verified-real
+                 Run benchmark dry-run with real verified backend (EPHAPAX_CLI mounted)
   install-ephapax-cli
                  Build/install pinned real ephapax-cli to /workspace/tools/ephapax-cli
   backend-stub   Verify stub backend mode in container
@@ -67,6 +88,8 @@ Environment:
   EPHAPAX_CLI_CONTAINER_PATH
       Path inside container to real ephapax-cli
       Default: /workspace/tools/ephapax-cli
+  EPHAPAX_USE_REAL_CLI
+      When truthy, `test` and `bench` run with EPHAPAX_CLI set to EPHAPAX_CLI_CONTAINER_PATH.
 EOF
 }
 
@@ -82,10 +105,32 @@ case "${cmd}" in
         run_compose exec dev bash
         ;;
     test)
-        run_compose run --rm dev cargo test --all --no-fail-fast
+        if is_truthy "${EPHAPAX_USE_REAL_CLI:-0}"; then
+            require_real_ephapax_cli
+            run_compose run --rm -e EPHAPAX_CLI="${REAL_EPHAPAX_CLI_PATH}" \
+                dev cargo test --all --no-fail-fast
+        else
+            run_compose run --rm dev cargo test --all --no-fail-fast
+        fi
         ;;
     bench)
-        run_compose run --rm dev cargo bench --no-run
+        if is_truthy "${EPHAPAX_USE_REAL_CLI:-0}"; then
+            require_real_ephapax_cli
+            run_compose run --rm -e EPHAPAX_CLI="${REAL_EPHAPAX_CLI_PATH}" \
+                dev cargo bench --no-run
+        else
+            run_compose run --rm dev cargo bench --no-run
+        fi
+        ;;
+    test-verified-real)
+        require_real_ephapax_cli
+        run_compose run --rm -e EPHAPAX_CLI="${REAL_EPHAPAX_CLI_PATH}" \
+            dev cargo test --all --no-fail-fast
+        ;;
+    bench-verified-real)
+        require_real_ephapax_cli
+        run_compose run --rm -e EPHAPAX_CLI="${REAL_EPHAPAX_CLI_PATH}" \
+            dev cargo bench --no-run
         ;;
     install-ephapax-cli)
         run_compose run --rm \
@@ -102,10 +147,8 @@ case "${cmd}" in
             dev ./scripts/ci/check-backend-mode.sh verified
         ;;
     backend-verified-real)
-        ephapax_cli_path="${EPHAPAX_CLI_CONTAINER_PATH:-/workspace/tools/ephapax-cli}"
-        run_compose run --rm dev sh -c \
-            "if [ ! -x \"${ephapax_cli_path}\" ]; then echo \"error: ephapax-cli not found or not executable at ${ephapax_cli_path}\" >&2; exit 127; fi" || exit $?
-        run_compose run --rm -e EPHAPAX_CLI="${ephapax_cli_path}" \
+        require_real_ephapax_cli
+        run_compose run --rm -e EPHAPAX_CLI="${REAL_EPHAPAX_CLI_PATH}" \
             dev ./scripts/ci/check-backend-mode.sh verified
         ;;
     compile-smoke)
@@ -124,10 +167,8 @@ case "${cmd}" in
             --output /tmp/protocol-squisher-compile-smoke-verified-sim
         ;;
     compile-smoke-verified-real)
-        ephapax_cli_path="${EPHAPAX_CLI_CONTAINER_PATH:-/workspace/tools/ephapax-cli}"
-        run_compose run --rm dev sh -c \
-            "if [ ! -x \"${ephapax_cli_path}\" ]; then echo \"error: ephapax-cli not found or not executable at ${ephapax_cli_path}\" >&2; exit 127; fi" || exit $?
-        run_compose run --rm -e EPHAPAX_CLI="${ephapax_cli_path}" \
+        require_real_ephapax_cli
+        run_compose run --rm -e EPHAPAX_CLI="${REAL_EPHAPAX_CLI_PATH}" \
             dev cargo run -p protocol-squisher-cli -- compile \
             --from rust \
             --to protobuf \

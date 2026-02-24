@@ -157,9 +157,17 @@ container-shell:
 container-test:
     ./scripts/podman-dev.sh test
 
+# Run full tests in Podman with real verified ephapax-cli
+container-test-verified-real:
+    ./scripts/podman-dev.sh test-verified-real
+
 # Run benchmark dry-run in Podman dev container
 container-bench:
     ./scripts/podman-dev.sh bench
+
+# Run benchmark dry-run in Podman with real verified ephapax-cli
+container-bench-verified-real:
+    ./scripts/podman-dev.sh bench-verified-real
 
 # Install pinned real ephapax-cli in Podman dev container
 container-install-ephapax-cli:

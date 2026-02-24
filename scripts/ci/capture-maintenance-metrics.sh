@@ -166,24 +166,24 @@ if [[ "${with_podman}" == true ]]; then
         printf '%s\n' "${podman_failure_reason}" >"${preflight_log}"
         append_podman_step "podman_prereq" "fail" 0 "${preflight_log}"
     fi
-    if [[ "${podman_status}" == "pass" ]] && ! command -v podman-compose >/dev/null 2>&1; then
+    if [[ "${podman_status}" == "pass" ]] && ! podman compose version >/dev/null 2>&1 && ! command -v podman-compose >/dev/null 2>&1; then
         podman_status="fail"
-        podman_failure_reason="podman-compose binary not found in PATH"
+        podman_failure_reason="neither podman compose plugin nor podman-compose binary is available"
         preflight_log="${logs_dir}/podman_prereq.log"
         printf '%s\n' "${podman_failure_reason}" >"${preflight_log}"
         append_podman_step "podman_prereq" "fail" 0 "${preflight_log}"
     fi
-    if ! run_timed_step "podman_test" "${repo_root}/scripts/podman-dev.sh" test; then
-        podman_status="fail"
-        podman_failure_reason="podman_test failed (see podman_test.log)"
-    fi
-    if [[ "${podman_status}" == "pass" ]] && ! run_timed_step "podman_bench" "${repo_root}/scripts/podman-dev.sh" bench; then
-        podman_status="fail"
-        podman_failure_reason="podman_bench failed (see podman_bench.log)"
-    fi
     if [[ "${podman_status}" == "pass" ]] && ! run_timed_step "install_ephapax_cli" "${repo_root}/scripts/podman-dev.sh" install-ephapax-cli; then
         podman_status="fail"
         podman_failure_reason="install_ephapax_cli failed (see install_ephapax_cli.log)"
+    fi
+    if [[ "${podman_status}" == "pass" ]] && ! run_timed_step "podman_test_verified_real" "${repo_root}/scripts/podman-dev.sh" test-verified-real; then
+        podman_status="fail"
+        podman_failure_reason="podman_test_verified_real failed (see podman_test_verified_real.log)"
+    fi
+    if [[ "${podman_status}" == "pass" ]] && ! run_timed_step "podman_bench_verified_real" "${repo_root}/scripts/podman-dev.sh" bench-verified-real; then
+        podman_status="fail"
+        podman_failure_reason="podman_bench_verified_real failed (see podman_bench_verified_real.log)"
     fi
     if [[ "${podman_status}" == "pass" ]] && ! run_timed_step "backend_verified_real" "${repo_root}/scripts/podman-dev.sh" backend-verified-real; then
         podman_status="fail"
