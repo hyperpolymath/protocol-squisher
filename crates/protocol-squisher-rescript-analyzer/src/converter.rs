@@ -3,7 +3,10 @@
 
 //! Converter from parsed ReScript to protocol-squisher IR
 
-use crate::parser::{ParsedReScript, ReScriptConstructor, ReScriptField, ReScriptRecord, ReScriptTypeAlias, ReScriptVariant};
+use crate::parser::{
+    ParsedReScript, ReScriptConstructor, ReScriptField, ReScriptRecord, ReScriptTypeAlias,
+    ReScriptVariant,
+};
 use crate::AnalyzerError;
 use protocol_squisher_ir::{
     ContainerType, EnumDef, FieldDef, FieldMetadata, IrSchema, IrType, PrimitiveType, StructDef,
@@ -113,6 +116,7 @@ impl ReScriptConverter {
     }
 
     /// Convert a ReScript type string to IR type
+    #[allow(clippy::only_used_in_recursion)]
     fn rescript_type_to_ir(&self, type_str: &str) -> Result<IrType, AnalyzerError> {
         let type_str = type_str.trim();
 
@@ -124,14 +128,16 @@ impl ReScriptConverter {
             "bool" => return Ok(IrType::Primitive(PrimitiveType::Bool)),
             "unit" => return Ok(IrType::Special(protocol_squisher_ir::SpecialType::Unit)),
             "char" => return Ok(IrType::Primitive(PrimitiveType::Char)),
-            _ => {}
+            _ => {},
         }
 
         // Handle option<T>
         if type_str.starts_with("option<") && type_str.ends_with('>') {
             let inner = &type_str[7..type_str.len() - 1];
             let inner_type = self.rescript_type_to_ir(inner)?;
-            return Ok(IrType::Container(ContainerType::Option(Box::new(inner_type))));
+            return Ok(IrType::Container(ContainerType::Option(Box::new(
+                inner_type,
+            ))));
         }
 
         // Handle array<T>
@@ -192,7 +198,10 @@ impl ReScriptConverter {
     }
 
     /// Convert a ReScript constructor to IR variant
-    fn convert_constructor(&self, constructor: &ReScriptConstructor) -> Result<VariantDef, AnalyzerError> {
+    fn convert_constructor(
+        &self,
+        constructor: &ReScriptConstructor,
+    ) -> Result<VariantDef, AnalyzerError> {
         let payload = if let Some(payload_str) = &constructor.payload {
             let payload_type = self.rescript_type_to_ir(payload_str)?;
             // ReScript variant payloads are always tuple-style (single value)
@@ -220,15 +229,15 @@ fn split_by_comma(s: &str) -> Vec<String> {
             '<' | '(' => {
                 depth += 1;
                 current.push(c);
-            }
+            },
             '>' | ')' => {
                 depth -= 1;
                 current.push(c);
-            }
+            },
             ',' if depth == 0 => {
                 parts.push(current.trim().to_string());
                 current.clear();
-            }
+            },
             _ => current.push(c),
         }
     }
@@ -271,12 +280,10 @@ mod tests {
         let converter = ReScriptConverter::new();
         let result = converter.rescript_type_to_ir("option<string>").unwrap();
 
-        match result {
-            IrType::Container(ContainerType::Option(inner)) => {
-                assert!(matches!(*inner, IrType::Primitive(PrimitiveType::String)));
-            }
-            _ => panic!("Expected Option type"),
-        }
+        let IrType::Container(ContainerType::Option(inner)) = result else {
+            unreachable!("option<string> should map to Option");
+        };
+        assert!(matches!(*inner, IrType::Primitive(PrimitiveType::String)));
     }
 
     #[test]
@@ -284,12 +291,10 @@ mod tests {
         let converter = ReScriptConverter::new();
         let result = converter.rescript_type_to_ir("array<int>").unwrap();
 
-        match result {
-            IrType::Container(ContainerType::Vec(inner)) => {
-                assert!(matches!(*inner, IrType::Primitive(PrimitiveType::I64)));
-            }
-            _ => panic!("Expected Vec type"),
-        }
+        let IrType::Container(ContainerType::Vec(inner)) = result else {
+            unreachable!("array<int> should map to Vec");
+        };
+        assert!(matches!(*inner, IrType::Primitive(PrimitiveType::I64)));
     }
 
     #[test]
@@ -297,13 +302,11 @@ mod tests {
         let converter = ReScriptConverter::new();
         let result = converter.rescript_type_to_ir("Js.Dict.t<string>").unwrap();
 
-        match result {
-            IrType::Container(ContainerType::Map(key, value)) => {
-                assert!(matches!(*key, IrType::Primitive(PrimitiveType::String)));
-                assert!(matches!(*value, IrType::Primitive(PrimitiveType::String)));
-            }
-            _ => panic!("Expected Map type"),
-        }
+        let IrType::Container(ContainerType::Map(key, value)) = result else {
+            unreachable!("Js.Dict.t<T> should map to Map");
+        };
+        assert!(matches!(*key, IrType::Primitive(PrimitiveType::String)));
+        assert!(matches!(*value, IrType::Primitive(PrimitiveType::String)));
     }
 
     #[test]
@@ -311,14 +314,15 @@ mod tests {
         let converter = ReScriptConverter::new();
         let result = converter.rescript_type_to_ir("(int, string)").unwrap();
 
-        match result {
-            IrType::Container(ContainerType::Tuple(elements)) => {
-                assert_eq!(elements.len(), 2);
-                assert!(matches!(elements[0], IrType::Primitive(PrimitiveType::I64)));
-                assert!(matches!(elements[1], IrType::Primitive(PrimitiveType::String)));
-            }
-            _ => panic!("Expected Tuple type"),
-        }
+        let IrType::Container(ContainerType::Tuple(elements)) = result else {
+            unreachable!("tuple should map to Tuple container");
+        };
+        assert_eq!(elements.len(), 2);
+        assert!(matches!(elements[0], IrType::Primitive(PrimitiveType::I64)));
+        assert!(matches!(
+            elements[1],
+            IrType::Primitive(PrimitiveType::String)
+        ));
     }
 
     #[test]
@@ -326,12 +330,10 @@ mod tests {
         let converter = ReScriptConverter::new();
         let result = converter.rescript_type_to_ir("CustomType").unwrap();
 
-        match result {
-            IrType::Reference(name) => {
-                assert_eq!(name, "CustomType");
-            }
-            _ => panic!("Expected Reference type"),
-        }
+        let IrType::Reference(name) = result else {
+            unreachable!("CustomType should map to reference");
+        };
+        assert_eq!(name, "CustomType");
     }
 
     #[test]
@@ -339,12 +341,10 @@ mod tests {
         let converter = ReScriptConverter::new();
         let result = converter.rescript_type_to_ir("'a").unwrap();
 
-        match result {
-            IrType::Reference(name) => {
-                assert_eq!(name, "'a");
-            }
-            _ => panic!("Expected Reference type for type parameter"),
-        }
+        let IrType::Reference(name) = result else {
+            unreachable!("type parameter should map to reference");
+        };
+        assert_eq!(name, "'a");
     }
 
     #[test]
@@ -359,19 +359,17 @@ mod tests {
     #[test]
     fn test_nested_containers() {
         let converter = ReScriptConverter::new();
-        let result = converter.rescript_type_to_ir("option<array<string>>").unwrap();
+        let result = converter
+            .rescript_type_to_ir("option<array<string>>")
+            .unwrap();
 
-        match result {
-            IrType::Container(ContainerType::Option(inner)) => {
-                match *inner {
-                    IrType::Container(ContainerType::Vec(inner2)) => {
-                        assert!(matches!(*inner2, IrType::Primitive(PrimitiveType::String)));
-                    }
-                    _ => panic!("Expected Vec inside Option"),
-                }
-            }
-            _ => panic!("Expected Option type"),
-        }
+        let IrType::Container(ContainerType::Option(inner)) = result else {
+            unreachable!("outer type should be Option");
+        };
+        let IrType::Container(ContainerType::Vec(inner2)) = *inner else {
+            unreachable!("inner option type should be Vec");
+        };
+        assert!(matches!(*inner2, IrType::Primitive(PrimitiveType::String)));
     }
 
     #[test]

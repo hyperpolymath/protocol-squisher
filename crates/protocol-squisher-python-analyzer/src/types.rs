@@ -32,10 +32,7 @@ pub enum PydanticType {
     Enum(PydanticEnum),
     /// Error extracting this type
     #[serde(rename = "error")]
-    Error {
-        name: String,
-        error: String,
-    },
+    Error { name: String, error: String },
 }
 
 /// A Pydantic BaseModel definition
@@ -153,24 +150,16 @@ pub enum PythonType {
     Any,
     /// Optional[T]
     #[serde(rename = "optional")]
-    Optional {
-        inner: Box<PythonType>,
-    },
+    Optional { inner: Box<PythonType> },
     /// Union[A, B, ...]
     #[serde(rename = "union")]
-    Union {
-        variants: Vec<PythonType>,
-    },
+    Union { variants: Vec<PythonType> },
     /// List[T]
     #[serde(rename = "list")]
-    List {
-        inner: Box<PythonType>,
-    },
+    List { inner: Box<PythonType> },
     /// Set[T]
     #[serde(rename = "set")]
-    Set {
-        inner: Box<PythonType>,
-    },
+    Set { inner: Box<PythonType> },
     /// Dict[K, V]
     #[serde(rename = "map")]
     Map {
@@ -179,9 +168,7 @@ pub enum PythonType {
     },
     /// Tuple[A, B, ...]
     #[serde(rename = "tuple")]
-    Tuple {
-        elements: Vec<PythonType>,
-    },
+    Tuple { elements: Vec<PythonType> },
     /// Enum reference
     #[serde(rename = "enum")]
     Enum {
@@ -220,11 +207,10 @@ mod tests {
     fn test_parse_optional() {
         let json = r#"{"kind": "optional", "inner": {"kind": "primitive", "type": "int"}}"#;
         let ty: PythonType = serde_json::from_str(json).unwrap();
-        if let PythonType::Optional { inner } = ty {
-            assert!(matches!(*inner, PythonType::Primitive { prim_type } if prim_type == "int"));
-        } else {
-            panic!("Expected Optional");
-        }
+        let PythonType::Optional { inner } = ty else {
+            unreachable!("type should deserialize as Optional");
+        };
+        assert!(matches!(*inner, PythonType::Primitive { prim_type } if prim_type == "int"));
     }
 
     #[test]
@@ -249,12 +235,11 @@ mod tests {
             "config": {}
         }"#;
         let ty: PydanticType = serde_json::from_str(json).unwrap();
-        if let PydanticType::Model(model) = ty {
-            assert_eq!(model.name, "User");
-            assert_eq!(model.fields.len(), 2);
-        } else {
-            panic!("Expected Model");
-        }
+        let PydanticType::Model(model) = ty else {
+            unreachable!("type should deserialize as Pydantic model");
+        };
+        assert_eq!(model.name, "User");
+        assert_eq!(model.fields.len(), 2);
     }
 
     #[test]

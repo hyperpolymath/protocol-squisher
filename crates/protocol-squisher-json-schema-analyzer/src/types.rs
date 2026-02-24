@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 /// A parsed JSON Schema document
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct JsonSchema {
     /// Schema version URI
     #[serde(rename = "$schema", default)]
@@ -210,63 +210,6 @@ pub struct JsonSchema {
     pub max_contains: Option<u64>,
 }
 
-impl Default for JsonSchema {
-    fn default() -> Self {
-        Self {
-            schema: None,
-            id: None,
-            title: None,
-            description: None,
-            schema_type: None,
-            properties: BTreeMap::new(),
-            additional_properties: None,
-            required: Vec::new(),
-            items: None,
-            prefix_items: None,
-            min_items: None,
-            max_items: None,
-            unique_items: None,
-            enum_values: None,
-            const_value: None,
-            minimum: None,
-            maximum: None,
-            exclusive_minimum: None,
-            exclusive_maximum: None,
-            multiple_of: None,
-            min_length: None,
-            max_length: None,
-            pattern: None,
-            format: None,
-            content_encoding: None,
-            content_media_type: None,
-            ref_uri: None,
-            definitions: BTreeMap::new(),
-            defs: BTreeMap::new(),
-            all_of: None,
-            any_of: None,
-            one_of: None,
-            not: None,
-            if_schema: None,
-            then_schema: None,
-            else_schema: None,
-            default: None,
-            examples: None,
-            read_only: None,
-            write_only: None,
-            deprecated: None,
-            property_names: None,
-            min_properties: None,
-            max_properties: None,
-            pattern_properties: BTreeMap::new(),
-            dependent_required: BTreeMap::new(),
-            dependent_schemas: BTreeMap::new(),
-            contains: None,
-            min_contains: None,
-            max_contains: None,
-        }
-    }
-}
-
 /// JSON Schema type constraint
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(untagged)]
@@ -315,7 +258,10 @@ mod tests {
         }"#;
 
         let schema: JsonSchema = serde_json::from_str(json).unwrap();
-        assert_eq!(schema.schema_type, Some(SchemaType::Single(SingleType::Object)));
+        assert_eq!(
+            schema.schema_type,
+            Some(SchemaType::Single(SingleType::Object))
+        );
         assert!(schema.properties.contains_key("name"));
         assert_eq!(schema.required, vec!["name"]);
     }
@@ -327,14 +273,12 @@ mod tests {
         }"#;
 
         let schema: JsonSchema = serde_json::from_str(json).unwrap();
-        match schema.schema_type {
-            Some(SchemaType::Multiple(types)) => {
-                assert_eq!(types.len(), 2);
-                assert!(types.contains(&SingleType::String));
-                assert!(types.contains(&SingleType::Null));
-            }
-            _ => panic!("Expected multiple types"),
-        }
+        let Some(SchemaType::Multiple(types)) = schema.schema_type else {
+            unreachable!("schema type should be a multi-type union");
+        };
+        assert_eq!(types.len(), 2);
+        assert!(types.contains(&SingleType::String));
+        assert!(types.contains(&SingleType::Null));
     }
 
     #[test]

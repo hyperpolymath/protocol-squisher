@@ -6,10 +6,13 @@
 use crate::parser::{AvroComplexSchema, AvroField, AvroSchema, AvroType, ParsedAvro};
 use crate::AnalyzerError;
 use protocol_squisher_ir::{
-    ContainerType, EnumDef, FieldDef, FieldMetadata, IrSchema, IrType, PrimitiveType, StructDef,
-    TagStyle, TypeDef, TypeMetadata, VariantDef, VariantMetadata,
+    Constraint, ContainerType, EnumDef, FieldDef, FieldMetadata, IrSchema, IrType, PrimitiveType,
+    StructDef, TagStyle, TypeDef, TypeMetadata, VariantDef, VariantMetadata,
 };
 use std::collections::BTreeMap;
+
+type NestedTypeDefs = Vec<(String, TypeDef)>;
+type SchemaConversion = (IrType, bool, NestedTypeDefs);
 
 /// Converter from parsed Avro to IR
 #[derive(Debug, Default)]
@@ -35,16 +38,16 @@ impl AvroConverter {
                     let (struct_def, mut nested) = self.convert_record_with_nested(avro_type)?;
                     types.insert(name.clone(), TypeDef::Struct(struct_def));
                     nested_types.append(&mut nested);
-                }
+                },
                 AvroType::Enum { name, .. } => {
                     let enum_def = self.convert_enum(avro_type)?;
                     types.insert(name.clone(), TypeDef::Enum(enum_def));
-                }
+                },
                 AvroType::Fixed { name, size, .. } => {
                     // Fixed types are represented as byte arrays
                     let fixed_def = self.convert_fixed(name, *size)?;
                     types.insert(name.clone(), TypeDef::Struct(fixed_def));
-                }
+                },
             }
         }
 
@@ -147,10 +150,7 @@ impl AvroConverter {
 
             let mut extra = BTreeMap::new();
             if !aliases.is_empty() {
-                extra.insert(
-                    "avro_aliases".to_string(),
-                    format!("{:?}", aliases),
-                );
+                extra.insert("avro_aliases".to_string(), format!("{:?}", aliases));
             }
 
             Ok(EnumDef {
@@ -180,7 +180,7 @@ impl AvroConverter {
                 PrimitiveType::U8,
             )))),
             optional: false,
-            constraints: vec![], // TODO: Add length constraint when Constraint type supports it
+            constraints: vec![Constraint::ExactLength(size)],
             metadata: FieldMetadata {
                 doc: Some(format!("Fixed-size byte array of {} bytes", size)),
                 default: None,
@@ -217,7 +217,8 @@ impl AvroConverter {
         &self,
         field: &AvroField,
     ) -> Result<(FieldDef, Vec<(String, TypeDef)>), AnalyzerError> {
-        let (base_type, is_optional, nested_types) = self.convert_schema_with_nested(&field.schema)?;
+        let (base_type, is_optional, nested_types) =
+            self.convert_schema_with_nested(&field.schema)?;
 
         // Apply optional wrapper if needed
         let ty = if is_optional {
@@ -261,7 +262,7 @@ impl AvroConverter {
     fn convert_schema_with_nested(
         &self,
         schema: &AvroSchema,
-    ) -> Result<(IrType, bool, Vec<(String, TypeDef)>), AnalyzerError> {
+    ) -> Result<SchemaConversion, AnalyzerError> {
         match schema {
             // Handle optional unions (["null", "T"])
             AvroSchema::Union(_) if schema.is_optional() => {
@@ -273,7 +274,7 @@ impl AvroConverter {
                         "Invalid optional union".to_string(),
                     ))
                 }
-            }
+            },
 
             // Handle multi-variant unions (create enum)
             AvroSchema::Union(variants) => {
@@ -287,26 +288,26 @@ impl AvroConverter {
                     })
                     .collect::<Result<Vec<_>, AnalyzerError>>()?;
 
-                // For now, treat as an untagged enum (TODO: improve this)
-                // We could create a synthetic enum type here
+                // Multi-branch Avro unions are represented as dynamic values until
+                // full tagged-union synthesis is available in the shared IR pipeline.
                 Ok((
                     IrType::Special(protocol_squisher_ir::SpecialType::Any),
                     false,
                     all_nested,
                 ))
-            }
+            },
 
             // Type name reference
             AvroSchema::Name(name) => {
                 let ir_type = self.avro_type_to_ir(name)?;
                 Ok((ir_type, false, vec![]))
-            }
+            },
 
             // Complex schemas
             AvroSchema::Complex(complex) => {
                 let (ir_type, nested) = self.convert_complex_schema_with_nested(complex)?;
                 Ok((ir_type, false, nested))
-            }
+            },
         }
     }
 
@@ -331,10 +332,7 @@ impl AvroConverter {
     }
 
     /// Convert a complex Avro schema to IR type
-    fn convert_complex_schema(
-        &self,
-        complex: &AvroComplexSchema,
-    ) -> Result<IrType, AnalyzerError> {
+    fn convert_complex_schema(&self, complex: &AvroComplexSchema) -> Result<IrType, AnalyzerError> {
         let (ty, _) = self.convert_complex_schema_with_nested(complex)?;
         Ok(ty)
     }
@@ -351,7 +349,7 @@ impl AvroConverter {
                     IrType::Container(ContainerType::Vec(Box::new(element_type))),
                     nested,
                 ))
-            }
+            },
 
             AvroComplexSchema::Map { values } => {
                 let (value_type, _, nested) = self.convert_schema_with_nested(values)?;
@@ -363,7 +361,7 @@ impl AvroConverter {
                     )),
                     nested,
                 ))
-            }
+            },
 
             AvroComplexSchema::Record {
                 name,
@@ -400,7 +398,7 @@ impl AvroConverter {
 
                 nested_types.push((name.clone(), TypeDef::Struct(struct_def)));
                 Ok((IrType::Reference(name.clone()), nested_types))
-            }
+            },
 
             AvroComplexSchema::Enum {
                 name,
@@ -453,7 +451,7 @@ impl AvroConverter {
                     IrType::Reference(name.clone()),
                     vec![(name.clone(), TypeDef::Enum(enum_def))],
                 ))
-            }
+            },
 
             AvroComplexSchema::Fixed { name, size, .. } => {
                 // Inline fixed definition - convert and add to nested types
@@ -462,7 +460,7 @@ impl AvroConverter {
                     IrType::Reference(name.clone()),
                     vec![(name.clone(), TypeDef::Struct(fixed_def))],
                 ))
-            }
+            },
         }
     }
 }
@@ -521,13 +519,12 @@ mod tests {
         let ir = result.unwrap();
         assert!(ir.types.contains_key("Person"));
 
-        if let Some(TypeDef::Struct(s)) = ir.types.get("Person") {
-            assert_eq!(s.fields.len(), 2);
-            assert_eq!(s.fields[0].name, "name");
-            assert_eq!(s.fields[1].name, "age");
-        } else {
-            panic!("Expected struct type");
-        }
+        let Some(TypeDef::Struct(s)) = ir.types.get("Person") else {
+            unreachable!("Person should convert to a struct type");
+        };
+        assert_eq!(s.fields.len(), 2);
+        assert_eq!(s.fields[0].name, "name");
+        assert_eq!(s.fields[1].name, "age");
     }
 
     #[test]
@@ -633,14 +630,13 @@ mod tests {
         assert!(result.is_ok());
 
         let ir = result.unwrap();
-        if let Some(TypeDef::Enum(e)) = ir.types.get("Status") {
-            assert_eq!(e.variants.len(), 3);
-            assert_eq!(e.variants[0].name, "Unknown");
-            assert_eq!(e.variants[1].name, "Active");
-            assert_eq!(e.variants[2].name, "Inactive");
-        } else {
-            panic!("Expected enum type");
-        }
+        let Some(TypeDef::Enum(e)) = ir.types.get("Status") else {
+            unreachable!("Status should convert to an enum type");
+        };
+        assert_eq!(e.variants.len(), 3);
+        assert_eq!(e.variants[0].name, "Unknown");
+        assert_eq!(e.variants[1].name, "Active");
+        assert_eq!(e.variants[2].name, "Inactive");
     }
 
     #[test]
