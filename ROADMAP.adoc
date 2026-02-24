@@ -209,10 +209,10 @@ toc::[]
 - [x] Rejection of unsafe combinations
 
 === FFI Replacement
-- [ ] Function call bridging
-- [ ] Memory ownership semantics
-- [ ] Callback support
-- [ ] Performance competitive with manual FFI
+- [x] Function call bridging
+- [x] Memory ownership semantics
+- [x] Callback support
+- [x] Performance competitive with manual FFI
 
 === Performance Optimization
 - [ ] Zero-copy where possible
