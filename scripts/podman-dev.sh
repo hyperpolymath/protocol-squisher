@@ -33,6 +33,11 @@ run_compose() {
     "${COMPOSE_CMD[@]}" -f "${COMPOSE_FILE}" "$@"
 }
 
+smoke_output_path() {
+    local label="${1}"
+    printf "/workspace/target/protocol-squisher-%s-%s-%s" "${label}" "$(date +%Y%m%d-%H%M%S)" "$$"
+}
+
 is_truthy() {
     case "${1:-}" in
         1|true|TRUE|yes|YES|on|ON)
@@ -152,28 +157,31 @@ case "${cmd}" in
             dev ./scripts/ci/check-backend-mode.sh verified
         ;;
     compile-smoke)
+        COMPILE_OUTPUT="$(smoke_output_path "compile-smoke")"
         run_compose run --rm dev cargo run -p protocol-squisher-cli -- compile \
             --from rust \
             --to protobuf \
             --input examples/zero-copy-demo/src/lib.rs \
-            --output /tmp/protocol-squisher-compile-smoke
+            --output "${COMPILE_OUTPUT}"
         ;;
     compile-smoke-verified-sim)
+        COMPILE_OUTPUT="$(smoke_output_path "compile-smoke-verified-sim")"
         run_compose run --rm -e EPHAPAX_CLI=/workspace/scripts/ci/mock-ephapax-cli.sh \
             dev cargo run -p protocol-squisher-cli -- compile \
             --from rust \
             --to protobuf \
             --input examples/zero-copy-demo/src/lib.rs \
-            --output /tmp/protocol-squisher-compile-smoke-verified-sim
+            --output "${COMPILE_OUTPUT}"
         ;;
     compile-smoke-verified-real)
         require_real_ephapax_cli
+        COMPILE_OUTPUT="$(smoke_output_path "compile-smoke-verified-real")"
         run_compose run --rm -e EPHAPAX_CLI="${REAL_EPHAPAX_CLI_PATH}" \
             dev cargo run -p protocol-squisher-cli -- compile \
             --from rust \
             --to protobuf \
             --input examples/zero-copy-demo/src/lib.rs \
-            --output /tmp/protocol-squisher-compile-smoke-verified-real
+            --output "${COMPILE_OUTPUT}"
         ;;
     down)
         run_compose down --remove-orphans
