@@ -37,11 +37,11 @@ Extract synthesis hints:
 mix crawler.pattern.extract --database-path ../../target/explorer/database
 ```
 
-Apply hints during optimization:
+Apply hints during optimization API:
 
 ```bash
-protocol-squisher optimize \
-  --rust path/to/source.rs \
-  --python path/to/target.py \
-  --synthesis-hints ../../target/explorer/database/synthesis-hints.json
+# Rust (inside application code):
+# EphapaxOptimizer::new(engine)
+#   .with_empirical_hints_from_file("../../target/explorer/database/synthesis-hints.json")
+#   .expect("valid hints")
 ```

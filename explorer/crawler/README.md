@@ -62,7 +62,7 @@ Generated files:
   `mix crawler.db.report --database-path ../../target/explorer/database`
 - Extract synthesis hints with:
   `mix crawler.pattern.extract --database-path ../../target/explorer/database`
-- Feed hints into optimizer:
-  `protocol-squisher optimize --rust source.rs --python target.py --synthesis-hints ../../target/explorer/database/synthesis-hints.json`
+- Feed hints into optimizer API:
+  `EphapaxOptimizer::with_empirical_hints_from_file(".../synthesis-hints.json")`
 - Supported extension mapping currently includes:
   `rs, py, proto, thrift, avsc, avdl, capnp, fbs, bop, msgpack, res, resi, json`.
