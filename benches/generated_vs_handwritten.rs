@@ -8,7 +8,8 @@
 //! - Hand-written PyO3 FFI code (baseline)
 //! - Raw Rust functions (theoretical maximum)
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use std::hint::black_box;
 use serde::{Deserialize, Serialize};
 
 // ============================================================================
