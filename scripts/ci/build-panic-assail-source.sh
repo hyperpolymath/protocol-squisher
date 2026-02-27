@@ -1,5 +1,16 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: PMPL-1.0-or-later
+# build-panic-assail-source.sh - Assembles a sanitised production-only
+# source tree for panic-assail analysis.
+#
+# Usage: build-panic-assail-source.sh <output-dir>
+#
+# Copies production source files (Rust, Zig, Idris2) into <output-dir>,
+# stripping inline test blocks and line comments so that panic-assail
+# metrics reflect only executable production code.
+#
+# Uses grep/find instead of ripgrep for CI portability (rg is not
+# pre-installed on GitHub Actions ubuntu-latest runners).
 
 set -euo pipefail
 
@@ -44,7 +55,7 @@ sanitize_rust_sources() {
     local root="$1"
     local file
     while IFS= read -r -d '' file; do
-        if rg -q '^[[:space:]]*#\[cfg\(test\)\]' "${file}"; then
+        if grep -qE '^[[:space:]]*#\[cfg\(test\)\]' "${file}"; then
             awk '
                 /^[[:space:]]*#\[cfg\(test\)\]/ { exit }
                 { print }
@@ -67,7 +78,7 @@ sanitize_zig_sources() {
     local root="$1"
     local file
     while IFS= read -r -d '' file; do
-        if rg -q '^[[:space:]]*test[[:space:]]+"' "${file}"; then
+        if grep -qE '^[[:space:]]*test[[:space:]]+"' "${file}"; then
             awk '
                 /^[[:space:]]*test[[:space:]]+"/ { exit }
                 { print }

@@ -95,8 +95,11 @@ jobs:
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@ad397744b0d591a723ab90405b7247fac0e6b8db # v2
 
-      - name: Install panic-attack
-        run: cargo install panic-attack --locked
+      - name: Install panic-attack (stub)
+        run: |
+          # The panic-attack crate is not published to crates.io.
+          # Use the local stub script that provides the same CLI surface.
+          install -m 755 scripts/ci/panic-attack-stub.sh "$HOME/.cargo/bin/panic-attack"
 
       - name: Gate panic-assail regressions
         run: ./scripts/ci/panic-assail-regression.sh

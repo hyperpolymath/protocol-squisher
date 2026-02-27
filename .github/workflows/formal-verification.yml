@@ -40,7 +40,7 @@ jobs:
           agda CarriesInvariant.agda
 
       - name: Upload Agda artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: agda-proof-artifacts
           path: proofs/agda/*.agdai
@@ -52,7 +52,7 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
       - name: Setup Lean
-        uses: leanprover/lean-action@v1
+        uses: leanprover/lean-action@c544e89643240c6b398f14a431bcdc6309e36b3e # v1
         with:
           lean-version: 'leanprover/lean4:latest'
 
@@ -81,7 +81,7 @@ EOF
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
       - name: Download Agda artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: agda-proof-artifacts
           path: proofs/agda/
@@ -101,7 +101,7 @@ EOF
           cat CROSS-VALIDATION.md
 
       - name: Upload cross-validation report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: cross-validation-report
           path: CROSS-VALIDATION.md
