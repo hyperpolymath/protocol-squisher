@@ -134,14 +134,21 @@ adapter-composition : ∀ {A B C : Schema} →
   Adapter A B →
   Adapter B C →
   Adapter A C
-adapter-composition {A} {B} {C} ab bc = mkAdapter
-  (λ x → case Adapter.convert ab x of λ {
-    (just y) → Adapter.convert bc y ;
-    nothing → nothing })
-  (λ x valid-x → {!!})  -- Proof omitted for brevity
+adapter-composition {A} {B} {C} ab bc = mkAdapter compose-fn compose-valid
   where
-    case_of_ : ∀ {a b} {A : Set a} {B : Set b} → A → (A → B) → B
-    case x of f = f x
+    compose-fn : Schema.types A → Maybe (Schema.types C)
+    compose-fn x with Adapter.convert ab x
+    ... | nothing = nothing
+    ... | just y = Adapter.convert bc y
+
+    compose-valid : ∀ x →
+      Schema.valid A x →
+      ∃ (λ y → compose-fn x ≡ just y × Schema.valid C y)
+    compose-valid x valid-x
+      with Adapter.convert ab x | Adapter.preserves-validity ab x valid-x
+    ... | .(just y₁) | (y₁ , refl , valid-y₁)
+      with Adapter.convert bc y₁ | Adapter.preserves-validity bc y₁ valid-y₁
+    ... | .(just y₂) | (y₂ , refl , valid-y₂) = y₂ , refl , valid-y₂
 
 -- COROLLARY: Transitive transport
 -- If A can transport to B, and B to C, then A can transport to C

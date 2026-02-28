@@ -30,17 +30,25 @@ Lossless {A} {B} f = ∀ (x y : A) → f x ≡ f y → x ≡ y
 narrowing-not-lossless : ∀ {s t : PrimitiveType} →
   sizeof t < sizeof s →
   ¬ (Lossless {Value s} {Value t} (λ _ → mkValue 0 (Data.Nat.z≤n)))
-narrowing-not-lossless {s} {t} size-proof lossless-claim =
-  -- Counterexample: two values that fit in source but not target
-  -- Value 1: bits = sizeof t (fits in source, max for target)
-  -- Value 2: bits = sizeof t + 1 (fits in source, overflow in target)
-  -- Both map to same target value → contradiction with lossless
-  ⊥-elim impossible
+narrowing-not-lossless {s} {t} size-proof lossless-claim = 0≢1 0≡1
   where
-    -- This would require constructing actual values, which is complex in Agda
-    -- The key insight: sizeof t < sizeof s means there exist values in s
-    -- that cannot be represented in t without loss
-    postulate impossible : ⊥  -- Placeholder for full proof
+    -- sizeof t < sizeof s means suc (sizeof t) ≤ sizeof s, so 1 ≤ sizeof s
+    one≤s : 1 Data.Nat.≤ sizeof s
+    one≤s = ≤-trans (Data.Nat.s≤s Data.Nat.z≤n) size-proof
+    -- Two distinct values that both fit in Value s
+    v1 : Value s
+    v1 = mkValue 0 Data.Nat.z≤n
+    v2 : Value s
+    v2 = mkValue 1 one≤s
+    -- Constant function maps both to mkValue 0 z≤n, so lossless gives v1 ≡ v2
+    v1≡v2 : v1 ≡ v2
+    v1≡v2 = lossless-claim v1 v2 refl
+    -- Extract 0 ≡ 1 from v1 ≡ v2 via record projection
+    0≡1 : 0 ≡ 1
+    0≡1 = cong Value.bits v1≡v2
+    -- 0 ≡ 1 is absurd on ℕ
+    0≢1 : 0 ≡ 1 → ⊥
+    0≢1 ()
 
 -- THEOREM 2: Narrowing is classified as Wheelbarrow
 -- For all narrowing conversions, transport class must be Wheelbarrow
@@ -85,11 +93,32 @@ wheelbarrow-lossy : ∀ {s t : PrimitiveType} →
         if false then A else B = B
 
 wheelbarrow-lossy {s} {t} prf (false , safe-widen) =
-  -- If it's Wheelbarrow, it can't be safe widening
-  ⊥-elim (wheelbarrow≢business safe-widen prf)
+  -- If it's Wheelbarrow, it can't be safe widening (each widening gives Business)
+  ⊥-elim (safe-widen-not-wheelbarrow safe-widen prf)
   where
-    postulate wheelbarrow≢business : ∀ {s t} → SafeWidening s t →
+    safe-widen-not-wheelbarrow : ∀ {s t} → SafeWidening s t →
       primitive-transport-class s t ≡ Wheelbarrow → ⊥
+    safe-widen-not-wheelbarrow I8→I16 ()
+    safe-widen-not-wheelbarrow I8→I32 ()
+    safe-widen-not-wheelbarrow I8→I64 ()
+    safe-widen-not-wheelbarrow I8→I128 ()
+    safe-widen-not-wheelbarrow I16→I32 ()
+    safe-widen-not-wheelbarrow I16→I64 ()
+    safe-widen-not-wheelbarrow I16→I128 ()
+    safe-widen-not-wheelbarrow I32→I64 ()
+    safe-widen-not-wheelbarrow I32→I128 ()
+    safe-widen-not-wheelbarrow I64→I128 ()
+    safe-widen-not-wheelbarrow U8→U16 ()
+    safe-widen-not-wheelbarrow U8→U32 ()
+    safe-widen-not-wheelbarrow U8→U64 ()
+    safe-widen-not-wheelbarrow U8→U128 ()
+    safe-widen-not-wheelbarrow U16→U32 ()
+    safe-widen-not-wheelbarrow U16→U64 ()
+    safe-widen-not-wheelbarrow U16→U128 ()
+    safe-widen-not-wheelbarrow U32→U64 ()
+    safe-widen-not-wheelbarrow U32→U128 ()
+    safe-widen-not-wheelbarrow U64→U128 ()
+    safe-widen-not-wheelbarrow F32→F64 ()
 
 wheelbarrow-lossy {s} {t} prf (true , identical) =
   -- If it's Wheelbarrow, types can't be identical

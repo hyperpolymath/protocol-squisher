@@ -1,0 +1,67 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+#
+# RSR Anti-Pattern CI Check
+# Enforces: No TypeScript, No Go, No npm
+# NOTE: Python is allowed in this repo — protocol-squisher bridges Rust ↔ Python
+
+name: RSR Anti-Pattern Check
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+permissions: read-all
+
+jobs:
+  antipattern-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Check for TypeScript
+        run: |
+          TS_FILES=$(find . \( -name "*.ts" -o -name "*.tsx" \) | grep -v node_modules | grep -v 'bindings/deno' | grep -v '\.d\.ts$' || true)
+          if [ -n "$TS_FILES" ]; then
+            echo "❌ TypeScript files detected - use ReScript instead"
+            echo "$TS_FILES"
+            exit 1
+          fi
+          echo "✅ No TypeScript files"
+
+      - name: Check for Go
+        run: |
+          if find . -name "*.go" | grep -q .; then
+            echo "❌ Go files detected - use Rust/WASM instead"
+            find . -name "*.go"
+            exit 1
+          fi
+          echo "✅ No Go files"
+
+      - name: Check for npm lockfiles
+        run: |
+          if [ -f "package-lock.json" ] || [ -f "yarn.lock" ]; then
+            echo "❌ npm/yarn lockfile detected - use Deno instead"
+            exit 1
+          fi
+          echo "✅ No npm lockfiles"
+
+      - name: Check for tsconfig
+        run: |
+          if [ -f "tsconfig.json" ]; then
+            echo "❌ tsconfig.json detected - use ReScript instead"
+            exit 1
+          fi
+          echo "✅ No tsconfig.json"
+
+      - name: Summary
+        run: |
+          echo "╔════════════════════════════════════════════════════════════╗"
+          echo "║           RSR Anti-Pattern Check Passed ✅                 ║"
+          echo "║                                                            ║"
+          echo "║  Note: Python is allowed in this repo (Rust↔Python bridge) ║"
+          echo "╚════════════════════════════════════════════════════════════╝"
