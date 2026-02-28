@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0
+# SPDX-License-Identifier: PMPL-1.0-or-later
 # RSR-compliant .gitignore
 
 # OS & Editor
@@ -63,6 +63,10 @@ htmlcov/
 # Local tooling artifacts
 /ffi/zig/.zig-cache/
 /tools/ephapax-cli
+
+# Generated runtime output (panic-attack, abduct, amuck)
+/reports/
+/runtime/
 
 # PyO3 integration test venv
 tests/pyo3-integration/.venv/

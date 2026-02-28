@@ -9,6 +9,7 @@ authors = ["Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"]
 license = "PMPL-1.0-or-later"
 description = "CLI tool for schema analysis and PyO3 code generation"
 repository = "https://github.com/hyperpolymath/protocol-squisher"
+homepage = "https://github.com/hyperpolymath/protocol-squisher"
 keywords = ["cli", "codegen", "interoperability", "pyo3"]
 categories = ["command-line-utilities", "development-tools"]
 

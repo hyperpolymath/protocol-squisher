@@ -1,6 +1,6 @@
 #!/bin/bash
-# SPDX-License-Identifier: PMPL-1.0
-# SPDX-FileCopyrightText: 2025 hyperpolymath
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
 
 # Run PyO3 integration tests
 # This script builds the Python extension and runs pytest

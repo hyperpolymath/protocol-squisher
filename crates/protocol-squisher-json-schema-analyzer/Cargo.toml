@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: PMPL-1.0-or-later
-# SPDX-FileCopyrightText: 2025 hyperpolymath
+# SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
 
 [package]
 name = "protocol-squisher-json-schema-analyzer"
@@ -10,6 +10,7 @@ authors = ["Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"]
 description = "JSON Schema to IR converter for protocol-squisher"
 license = "PMPL-1.0-or-later"
 repository = "https://github.com/hyperpolymath/protocol-squisher"
+homepage = "https://github.com/hyperpolymath/protocol-squisher"
 
 [dependencies]
 protocol-squisher-ir = { path = "../protocol-squisher-ir" }

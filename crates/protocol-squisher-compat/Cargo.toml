@@ -8,6 +8,7 @@ authors = ["Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"]
 license = "PMPL-1.0-or-later"
 description = "Schema compatibility analysis for protocol-squisher"
 repository = "https://github.com/hyperpolymath/protocol-squisher"
+homepage = "https://github.com/hyperpolymath/protocol-squisher"
 keywords = ["compatibility", "schema", "interop", "analysis", "conversion"]
 categories = ["development-tools", "encoding"]
 rust-version = "1.75"
