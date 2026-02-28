@@ -8,6 +8,7 @@ authors = ["Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"]
 license = "PMPL-1.0-or-later"
 description = "End-to-end integration tests for protocol-squisher"
 repository = "https://github.com/hyperpolymath/protocol-squisher"
+homepage = "https://github.com/hyperpolymath/protocol-squisher"
 publish = false
 
 [dependencies]

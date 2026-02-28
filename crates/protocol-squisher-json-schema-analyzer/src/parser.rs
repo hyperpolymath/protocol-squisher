@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: PMPL-1.0-or-later
-// SPDX-FileCopyrightText: Copyright (c) 2025 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+// SPDX-FileCopyrightText: Copyright (c) 2025 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 
 //! JSON Schema parser
 

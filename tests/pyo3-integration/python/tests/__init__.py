@@ -1,2 +1,2 @@
-# SPDX-License-Identifier: PMPL-1.0
-# SPDX-FileCopyrightText: 2025 hyperpolymath
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell

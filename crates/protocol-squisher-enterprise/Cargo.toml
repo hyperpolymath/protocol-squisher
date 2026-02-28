@@ -9,6 +9,7 @@ authors = ["Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"]
 license = "PMPL-1.0-or-later"
 description = "Enterprise features: schema registry, migrations, audit, governance, marketplace"
 repository = "https://github.com/hyperpolymath/protocol-squisher"
+homepage = "https://github.com/hyperpolymath/protocol-squisher"
 keywords = ["registry", "migration", "governance", "audit", "marketplace"]
 categories = ["development-tools", "encoding"]
 

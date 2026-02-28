@@ -1,0 +1,10 @@
+{
+  "name": "protocol-squisher",
+  "description": "Universal protocol interoperability through automatic adapter synthesis",
+  "homepage": "https://github.com/hyperpolymath/protocol-squisher",
+  "license": "PMPL-1.0-or-later",
+  "version": "1.0.0",
+  "author": "Jonathan D.A. Jewell",
+  "rsr_compliant": true,
+  "machine_readable_path": ".machines_readable/6scm/"
+}

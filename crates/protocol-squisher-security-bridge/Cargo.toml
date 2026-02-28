@@ -9,6 +9,7 @@ authors = ["Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"]
 license = "PMPL-1.0-or-later"
 description = "TLS/Noise protocol family bridging with safety checks"
 repository = "https://github.com/hyperpolymath/protocol-squisher"
+homepage = "https://github.com/hyperpolymath/protocol-squisher"
 keywords = ["security", "tls", "noise", "verification"]
 categories = ["development-tools", "network-programming"]
 

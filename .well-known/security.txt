@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# https://securitytxt.org/
+
+Contact: mailto:j.d.a.jewell@open.ac.uk
+Expires: 2027-02-28T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://github.com/hyperpolymath/protocol-squisher/.well-known/security.txt
+Policy: https://github.com/hyperpolymath/protocol-squisher/blob/main/SECURITY.md
