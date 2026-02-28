@@ -3,7 +3,7 @@
 - Generated at (UTC): 2026-02-28
 - Git tag: `v1.0.0`
 - Command: `cargo test --workspace`
-- Result: 721 passed, 0 ignored, 0 failed
+- Result: 742 passed, 0 ignored, 0 failed
 
 ## Notes
 

@@ -182,8 +182,8 @@ Proofs are automatically verified in `.github/workflows/formal-verification.yml`
 |—
 
 |Wheelbarrow Necessity
-|Partial
-|Partial (postulates at lines 43, 91)
+|✓ Constructive
+|✓ (postulates replaced with counterexample + case analysis)
 |—
 |Planned
 |Planned
@@ -198,8 +198,8 @@ Proofs are automatically verified in `.github/workflows/formal-verification.yml`
 |—
 
 |Carries Invariant
-|Partial
-|Partial ({!!} hole at line 141)
+|✓ Constructive
+|✓ (hole filled; JSON axioms postulated — justified runtime assumption)
 |—
 |Planned
 |Planned

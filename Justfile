@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0
+# SPDX-License-Identifier: PMPL-1.0-or-later
 # protocol-squisher - Justfile
 # https://just.systems/man/en/
 
@@ -8,7 +8,7 @@ set positional-arguments := true
 
 # Project metadata
 project := "protocol-squisher"
-version := "0.1.0"
+version := "1.0.0"
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # DEFAULT & HELP
