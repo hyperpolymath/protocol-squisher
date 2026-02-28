@@ -133,10 +133,16 @@ fn pattern_to_suggestion(
                     "Enables {expected_class:?}-class transport for field `{field}`"
                 ),
             })
-        }
+        },
 
-        Pattern::UnnecessaryOption { field, reason, blocker_to } => {
-            let title = format!("Field `{field}` is always present — removing Option enables zero-copy transport");
+        Pattern::UnnecessaryOption {
+            field,
+            reason,
+            blocker_to,
+        } => {
+            let title = format!(
+                "Field `{field}` is always present — removing Option enables zero-copy transport"
+            );
             let body = format_suggestion_body(
                 &title,
                 &format!(
@@ -158,7 +164,7 @@ fn pattern_to_suggestion(
                     "Enables {blocker_to:?}-class transport for field `{field}`"
                 ),
             })
-        }
+        },
 
         Pattern::StringThatCouldBeEnum {
             field,
@@ -194,7 +200,7 @@ fn pattern_to_suggestion(
                     "Enables {blocker_to:?}-class transport for field `{field}`"
                 ),
             })
-        }
+        },
 
         Pattern::OverprecisionFloat {
             field,
@@ -223,9 +229,11 @@ fn pattern_to_suggestion(
                 platform: config.platform.clone(),
                 confidence: report.confidence,
                 source_pattern: "OverprecisionFloat".to_string(),
-                expected_improvement: format!("Saves {savings} bits per record for field `{field}`"),
+                expected_improvement: format!(
+                    "Saves {savings} bits per record for field `{field}`"
+                ),
             })
-        }
+        },
 
         // Patterns without actionable upstream suggestions.
         Pattern::ZeroCopyCandidate { .. }
@@ -335,20 +343,21 @@ mod tests {
             ..Default::default()
         };
 
-        let reports = vec![
-            sample_report(
-                vec![Pattern::SafeWidening {
-                    field: "id".to_string(),
-                    from_type: "Int32".to_string(),
-                    to_type: "Int64".to_string(),
-                    expected_class: TransportClass::Business,
-                }],
-                0.5, // below threshold
-            ),
-        ];
+        let reports = vec![sample_report(
+            vec![Pattern::SafeWidening {
+                field: "id".to_string(),
+                from_type: "Int32".to_string(),
+                to_type: "Int64".to_string(),
+                expected_class: TransportClass::Business,
+            }],
+            0.5, // below threshold
+        )];
 
         let suggestions = generate_suggestions(&reports, &config, "org/repo");
-        assert!(suggestions.is_empty(), "Low-confidence reports should be filtered out");
+        assert!(
+            suggestions.is_empty(),
+            "Low-confidence reports should be filtered out"
+        );
     }
 
     #[test]

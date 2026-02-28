@@ -273,9 +273,7 @@ not-json
     fn chunked_processor_transforms_data() {
         let input = vec![1u8, 2, 3, 4, 5];
         let mut processor = ChunkedProcessor::new(2);
-        let output = processor.process(&input, |chunk| {
-            chunk.iter().map(|b| b * 2).collect()
-        });
+        let output = processor.process(&input, |chunk| chunk.iter().map(|b| b * 2).collect());
         assert_eq!(output, vec![2, 4, 6, 8, 10]);
     }
 }

@@ -446,8 +446,8 @@ mod tests {
 
     #[test]
     fn test_e2e_proof_goal_generation() {
-        use protocol_squisher_echidna_bridge::ProofGoalGenerator;
         use protocol_squisher_echidna_bridge::types::ProverKind;
+        use protocol_squisher_echidna_bridge::ProofGoalGenerator;
         use protocol_squisher_ir::PrimitiveType;
 
         // Generate Coq and Z3 goals for I32 → I64 widening.
@@ -475,8 +475,8 @@ mod tests {
 
     #[test]
     fn test_e2e_cross_prover_mock() {
-        use protocol_squisher_echidna_bridge::{cross_validate, TrustLevel};
         use protocol_squisher_echidna_bridge::types::{ProofResponse, ProofStatus, ProverKind};
+        use protocol_squisher_echidna_bridge::{cross_validate, TrustLevel};
 
         // Simulate 3 successful proof responses.
         let responses = vec![
@@ -516,10 +516,10 @@ mod tests {
 
     #[test]
     fn test_e2e_tactic_to_weight_pipeline() {
+        use protocol_squisher_echidna_bridge::types::{ProofStatus, TacticSuggestion};
         use protocol_squisher_echidna_bridge::{
             boost_suggestion_from_proof, map_tactics_to_weights,
         };
-        use protocol_squisher_echidna_bridge::types::{ProofStatus, TacticSuggestion};
 
         let tactics = vec![
             TacticSuggestion {
@@ -536,12 +536,18 @@ mod tests {
 
         let mut weights = map_tactics_to_weights(&tactics);
         let widen_weight = weights.get("WidenType").copied().unwrap_or(1.0);
-        assert!(widen_weight > 1.5, "High-confidence tactics should boost WidenType");
+        assert!(
+            widen_weight > 1.5,
+            "High-confidence tactics should boost WidenType"
+        );
 
         // Boost from a successful proof.
         boost_suggestion_from_proof(&mut weights, ProofStatus::Success, "WidenType");
         let boosted = weights.get("WidenType").copied().unwrap_or(1.0);
-        assert!(boosted >= widen_weight, "Proof success should boost or maintain weight");
+        assert!(
+            boosted >= widen_weight,
+            "Proof success should boost or maintain weight"
+        );
     }
 
     #[test]

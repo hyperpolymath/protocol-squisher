@@ -5,7 +5,7 @@ import Lake
 open Lake DSL
 
 package «protocol-squisher-proofs» where
-  version := v!"1.0.0"
+  version := v!"1.1.0"
 
 lean_lib Proofs where
   roots := #[`concorde_safety]

@@ -506,7 +506,6 @@ impl SchemaConverter {
 
         result
     }
-
 }
 
 #[cfg(test)]

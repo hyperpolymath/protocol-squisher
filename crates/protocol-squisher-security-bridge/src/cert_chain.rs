@@ -198,7 +198,12 @@ mod tests {
 
     #[test]
     fn self_signed_detected() {
-        let chain = vec![sample_cert("self.example.com", "self.example.com", 2048, false)];
+        let chain = vec![sample_cert(
+            "self.example.com",
+            "self.example.com",
+            2048,
+            false,
+        )];
         assert_eq!(
             validate_cert_chain(&chain),
             ChainValidationResult::SelfSigned

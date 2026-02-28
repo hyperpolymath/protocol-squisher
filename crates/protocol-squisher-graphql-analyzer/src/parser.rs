@@ -183,8 +183,7 @@ fn parse_enums(content: &str) -> Vec<GraphqlEnum> {
 
 /// Parse union definitions.
 fn parse_unions(content: &str) -> Vec<GraphqlUnion> {
-    let re =
-        Regex::new(r"union\s+(\w+)\s*(?:(@\w+(?:\([^)]*\))?)\s*)?=\s*([^\n]+)").unwrap();
+    let re = Regex::new(r"union\s+(\w+)\s*(?:(@\w+(?:\([^)]*\))?)\s*)?=\s*([^\n]+)").unwrap();
     re.captures_iter(content)
         .map(|cap| {
             let name = cap[1].to_string();
@@ -217,10 +216,8 @@ fn parse_scalars(content: &str) -> Vec<GraphqlScalar> {
 
 /// Parse interface definitions.
 fn parse_interfaces(content: &str) -> Vec<GraphqlInterface> {
-    let re = Regex::new(
-        r"(?s)interface\s+(\w+)\s*(?:(@\w+(?:\([^)]*\))?)\s*)?\{([^}]+)\}",
-    )
-    .unwrap();
+    let re =
+        Regex::new(r"(?s)interface\s+(\w+)\s*(?:(@\w+(?:\([^)]*\))?)\s*)?\{([^}]+)\}").unwrap();
     re.captures_iter(content)
         .map(|cap| {
             let name = cap[1].to_string();
@@ -268,10 +265,7 @@ fn parse_objects(content: &str) -> Vec<GraphqlObject> {
 
 /// Parse input type definitions.
 fn parse_inputs(content: &str) -> Vec<GraphqlInput> {
-    let re = Regex::new(
-        r"(?s)input\s+(\w+)\s*(?:(@\w+(?:\([^)]*\))?)\s*)?\{([^}]+)\}",
-    )
-    .unwrap();
+    let re = Regex::new(r"(?s)input\s+(\w+)\s*(?:(@\w+(?:\([^)]*\))?)\s*)?\{([^}]+)\}").unwrap();
     re.captures_iter(content)
         .map(|cap| {
             let name = cap[1].to_string();
@@ -370,9 +364,9 @@ mod tests {
         let t = parse_type("[String!]!");
         assert_eq!(
             t,
-            GraphqlType::NonNull(Box::new(GraphqlType::List(Box::new(
-                GraphqlType::NonNull(Box::new(GraphqlType::Named("String".to_string())))
-            ))))
+            GraphqlType::NonNull(Box::new(GraphqlType::List(Box::new(GraphqlType::NonNull(
+                Box::new(GraphqlType::Named("String".to_string()))
+            )))))
         );
     }
 }

@@ -6,7 +6,7 @@
 ;; When adding/removing satellites, update this file and the satellite's ECOSYSTEM.scm.
 
 (ecosystem
-  (version . "1.0.0")
+  (version . "1.1.0")
   (name . "protocol-squisher")
   (type . "library")
   (purpose . "Universal protocol interoperability through automatic adapter synthesis between incompatible serialization formats")

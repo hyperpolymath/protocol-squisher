@@ -74,15 +74,15 @@ impl CircuitBreaker {
                     self.state = CircuitState::Closed;
                     self.consecutive_successes = 0;
                 }
-            }
+            },
             CircuitState::Open => {
                 // Shouldn't happen, but recover gracefully.
                 self.state = CircuitState::HalfOpen;
                 self.consecutive_successes = 1;
-            }
+            },
             CircuitState::Closed => {
                 // Normal operation.
-            }
+            },
         }
     }
 
@@ -135,7 +135,7 @@ pub fn retry_with_backoff<T, E>(
                     let delay = base_delay_ms.saturating_mul(1u64 << attempt);
                     std::thread::sleep(std::time::Duration::from_millis(delay));
                 }
-            }
+            },
         }
     }
 

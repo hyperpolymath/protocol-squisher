@@ -73,7 +73,7 @@ CORE ENGINE
 PROOF & VERIFICATION
   Formal Proofs (Agda/Lean/Coq/Isa) ██████████ 100%    8 Agda + Coq/Lean/Isabelle/Z3 cross-validation
   Diversity Analysis                ██████████ 100%    Squishability rankings verified
-  Property-Based Tests              ██████████ 100%    892+ tests passing
+  Property-Based Tests              ██████████ 100%    921 tests passing
 
 ADVANCED FEATURES (Phase 3+)
   Security Bridge                   █████████░  95%    Negotiation, audit, downgrade, cert expiry, TLS probe

@@ -89,10 +89,10 @@ impl fmt::Display for BridgeError {
             BridgeError::UnsafeConfiguration(reason) => write!(f, "unsafe configuration: {reason}"),
             BridgeError::UnsupportedTranslation { from, to } => {
                 write!(f, "unsupported translation: {from:?} -> {to:?}")
-            }
+            },
             BridgeError::MissingProperties(props) => {
                 write!(f, "missing required properties: {props:?}")
-            }
+            },
         }
     }
 }
@@ -307,22 +307,22 @@ pub fn noise_to_tls_requirements(pattern: NoisePattern) -> SecurityRequirements 
 pub fn noise_pattern_properties(pattern: NoisePattern) -> Vec<SecurityProperty> {
     let mut props = vec![SecurityProperty::ReplayResistance];
     match pattern {
-        NoisePattern::NN => {}
+        NoisePattern::NN => {},
         NoisePattern::NK => {
             props.push(SecurityProperty::ForwardSecrecy);
-        }
+        },
         NoisePattern::XX => {
             props.push(SecurityProperty::ForwardSecrecy);
             props.push(SecurityProperty::IdentityHiding);
-        }
+        },
         NoisePattern::IK => {
             props.push(SecurityProperty::ForwardSecrecy);
             props.push(SecurityProperty::MutualAuthentication);
-        }
+        },
         NoisePattern::KK => {
             props.push(SecurityProperty::ForwardSecrecy);
             props.push(SecurityProperty::MutualAuthentication);
-        }
+        },
     }
     props
 }
@@ -451,7 +451,8 @@ pub fn validate_security_requirements(
     if requirements.require_forward_secrecy
         && !matches!(profile.key_exchange, KeyExchange::Ecdhe | KeyExchange::Dhe)
     {
-        violations.push("Forward secrecy required but key exchange does not provide it".to_string());
+        violations
+            .push("Forward secrecy required but key exchange does not provide it".to_string());
     }
 
     // Check required properties.
@@ -530,13 +531,13 @@ pub fn negotiate(profile: &TlsProfile) -> NegotiationResult {
                 downgrade_warnings,
                 guaranteed_properties: bridge.properties,
             };
-        }
+        },
         BridgeDecision::Reject { reason } => {
             rejected.push(RejectedAlternative {
                 protocol: ProtocolFamily::WireGuard,
                 reason,
             });
-        }
+        },
     }
 
     // Fall back to Noise.
@@ -555,7 +556,7 @@ pub fn negotiate(profile: &TlsProfile) -> NegotiationResult {
                 downgrade_warnings,
                 guaranteed_properties: bridge.properties,
             }
-        }
+        },
         BridgeDecision::Reject { reason } => {
             rejected.push(RejectedAlternative {
                 protocol: ProtocolFamily::Noise,
@@ -565,12 +566,10 @@ pub fn negotiate(profile: &TlsProfile) -> NegotiationResult {
                 chosen_protocol: ProtocolFamily::Tls,
                 chosen_pattern: None,
                 rejected_alternatives: rejected,
-                downgrade_warnings: vec![
-                    "No translation possible; staying on TLS.".to_string(),
-                ],
+                downgrade_warnings: vec!["No translation possible; staying on TLS.".to_string()],
                 guaranteed_properties: profile.provided_properties(),
             }
-        }
+        },
     }
 }
 
@@ -657,10 +656,10 @@ mod tests {
                 assert!(bridge
                     .properties
                     .contains(&SecurityProperty::MutualAuthentication));
-            }
+            },
             BridgeDecision::Reject { reason } => {
                 panic!("expected accept for WireGuard, got reject: {reason}");
-            }
+            },
         }
     }
 
@@ -764,9 +763,7 @@ mod tests {
         assert!(result.is_err());
         let violations = result.unwrap_err();
         assert!(violations.len() >= 1);
-        assert!(violations
-            .iter()
-            .any(|v| v.contains("Forward secrecy")));
+        assert!(violations.iter().any(|v| v.contains("Forward secrecy")));
     }
 
     #[test]

@@ -3,7 +3,7 @@
 
 [seambot]
 name = "protocol-squisher-integration"
-version = "1.0.0"
+version = "1.1.0"
 description = "End-to-end integration testing for protocol-squisher pipeline"
 
 [testing]

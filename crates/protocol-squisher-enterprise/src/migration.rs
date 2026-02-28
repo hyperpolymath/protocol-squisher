@@ -190,7 +190,10 @@ pub fn validate_migration(plan: &MigrationPlan) -> MigrationValidation {
 
     for step in &plan.steps {
         if step.breaking {
-            issues.push(format!("Breaking change at {}: {:?}", step.path, step.action));
+            issues.push(format!(
+                "Breaking change at {}: {:?}",
+                step.path, step.action
+            ));
         }
         if matches!(step.action, MigrationAction::JsonFallback) {
             issues.push(format!(
@@ -202,11 +205,12 @@ pub fn validate_migration(plan: &MigrationPlan) -> MigrationValidation {
 
     let risk = if plan.breaking_changes > 0 {
         MigrationRisk::Breaking
-    } else if plan
-        .steps
-        .iter()
-        .any(|s| matches!(s.action, MigrationAction::NarrowWithGuard | MigrationAction::JsonFallback))
-    {
+    } else if plan.steps.iter().any(|s| {
+        matches!(
+            s.action,
+            MigrationAction::NarrowWithGuard | MigrationAction::JsonFallback
+        )
+    }) {
         MigrationRisk::Warning
     } else {
         MigrationRisk::Safe
@@ -240,7 +244,7 @@ pub fn rollback_plan(forward: &MigrationPlan) -> RollbackPlan {
             MigrationAction::DropField => {
                 irreversible.push(step.path.clone());
                 (MigrationAction::AddOptional, false)
-            }
+            },
             MigrationAction::JsonFallback => (MigrationAction::JsonFallback, true),
         };
 
@@ -351,15 +355,13 @@ mod tests {
             target_schema: "B".to_string(),
             overall_class: TransportClass::BusinessClass,
             breaking_changes: 0,
-            steps: vec![
-                MigrationStep {
-                    path: "Record.id".to_string(),
-                    action: MigrationAction::WidenType,
-                    class: TransportClass::BusinessClass,
-                    breaking: false,
-                    rationale: "I32 -> I64".to_string(),
-                },
-            ],
+            steps: vec![MigrationStep {
+                path: "Record.id".to_string(),
+                action: MigrationAction::WidenType,
+                class: TransportClass::BusinessClass,
+                breaking: false,
+                rationale: "I32 -> I64".to_string(),
+            }],
         };
 
         let rollback = rollback_plan(&plan);

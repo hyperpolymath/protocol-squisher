@@ -175,11 +175,7 @@ pub fn xor_bytes(a: &[u8], b: &[u8]) -> Vec<u8> {
         result.extend_from_slice(&lane);
     }
 
-    for (&ba, &bb) in chunks_a
-        .remainder()
-        .iter()
-        .zip(chunks_b.remainder().iter())
-    {
+    for (&ba, &bb) in chunks_a.remainder().iter().zip(chunks_b.remainder().iter()) {
         result.push(ba ^ bb);
     }
 

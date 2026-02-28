@@ -191,7 +191,11 @@ mod tests {
             .collect();
         serialized.sort();
         serialized.dedup();
-        assert_eq!(serialized.len(), 30, "All 30 provers must serialize to unique strings");
+        assert_eq!(
+            serialized.len(),
+            30,
+            "All 30 provers must serialize to unique strings"
+        );
     }
 
     #[test]
@@ -239,7 +243,11 @@ mod tests {
     fn proof_status_lifecycle() {
         // Verify the three terminal states are distinct from the two active states.
         let active = [ProofStatus::Pending, ProofStatus::InProgress];
-        let terminal = [ProofStatus::Success, ProofStatus::Failed, ProofStatus::Timeout];
+        let terminal = [
+            ProofStatus::Success,
+            ProofStatus::Failed,
+            ProofStatus::Timeout,
+        ];
 
         for a in &active {
             for t in &terminal {

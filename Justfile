@@ -8,7 +8,7 @@ set positional-arguments := true
 
 # Project metadata
 project := "protocol-squisher"
-version := "1.0.0"
+version := "1.1.0"
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # DEFAULT & HELP

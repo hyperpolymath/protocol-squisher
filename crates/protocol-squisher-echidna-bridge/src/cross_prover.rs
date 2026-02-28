@@ -31,7 +31,8 @@ pub fn cross_validate(goal: &str, responses: Vec<ProofResponse>) -> CrossProverR
         .count();
 
     // Consensus requires all completed provers to agree.
-    let consensus = !completed.is_empty() && (success_count == completed.len() || fail_count == completed.len());
+    let consensus = !completed.is_empty()
+        && (success_count == completed.len() || fail_count == completed.len());
 
     let agreeing_count = success_count.max(fail_count);
     let trust_level = compute_trust_level(agreeing_count, completed.len());

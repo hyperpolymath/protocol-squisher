@@ -9,9 +9,7 @@
 //! cached results or safe defaults (trust level 1).
 
 use crate::cache::ProofCache;
-use crate::types::{
-    ProofRequest, ProofResponse, ProofStatus, ProverKind, TacticSuggestion,
-};
+use crate::types::{ProofRequest, ProofResponse, ProofStatus, ProverKind, TacticSuggestion};
 use thiserror::Error;
 
 /// Errors from ECHIDNA client operations.
@@ -86,9 +84,7 @@ impl EchidnaClient {
             .header("Content-Type", "application/json")
             .body(body)
             .send()
-            .map_err(|_| EchidnaError::Unavailable {
-                url: url.clone(),
-            })?;
+            .map_err(|_| EchidnaError::Unavailable { url: url.clone() })?;
 
         if !response.status().is_success() {
             return Err(EchidnaError::Api {
@@ -111,9 +107,7 @@ impl EchidnaClient {
         let response = reqwest::blocking::Client::new()
             .get(&url)
             .send()
-            .map_err(|_| EchidnaError::Unavailable {
-                url: url.clone(),
-            })?;
+            .map_err(|_| EchidnaError::Unavailable { url: url.clone() })?;
 
         if !response.status().is_success() {
             return Err(EchidnaError::Api {
@@ -143,9 +137,7 @@ impl EchidnaClient {
             .post(&url)
             .json(&body)
             .send()
-            .map_err(|_| EchidnaError::Unavailable {
-                url: url.clone(),
-            })?;
+            .map_err(|_| EchidnaError::Unavailable { url: url.clone() })?;
 
         if !response.status().is_success() {
             return Err(EchidnaError::Api {
@@ -171,9 +163,7 @@ impl EchidnaClient {
             .post(&url)
             .json(tactic)
             .send()
-            .map_err(|_| EchidnaError::Unavailable {
-                url: url.clone(),
-            })?;
+            .map_err(|_| EchidnaError::Unavailable { url: url.clone() })?;
 
         if !response.status().is_success() {
             return Err(EchidnaError::Api {
@@ -194,9 +184,7 @@ impl EchidnaClient {
         let response = reqwest::blocking::Client::new()
             .delete(&url)
             .send()
-            .map_err(|_| EchidnaError::Unavailable {
-                url: url.clone(),
-            })?;
+            .map_err(|_| EchidnaError::Unavailable { url: url.clone() })?;
 
         if !response.status().is_success() {
             return Err(EchidnaError::Api {
@@ -215,9 +203,7 @@ impl EchidnaClient {
         let response = reqwest::blocking::Client::new()
             .get(&url)
             .send()
-            .map_err(|_| EchidnaError::Unavailable {
-                url: url.clone(),
-            })?;
+            .map_err(|_| EchidnaError::Unavailable { url: url.clone() })?;
 
         if !response.status().is_success() {
             return Err(EchidnaError::Api {
@@ -252,13 +238,12 @@ impl EchidnaClient {
         match self.submit_proof(request) {
             Ok(response) => {
                 // Cache successful completions.
-                if response.status == ProofStatus::Success
-                    || response.status == ProofStatus::Failed
+                if response.status == ProofStatus::Success || response.status == ProofStatus::Failed
                 {
                     self.cache.store(&request.goal, &response);
                 }
                 response
-            }
+            },
             Err(_) => {
                 // Offline: try cache.
                 if let Some(cached) = self.cache.get(&request.goal) {
@@ -271,12 +256,10 @@ impl EchidnaClient {
                     goal: request.goal.clone(),
                     prover: request.prover,
                     result: None,
-                    diagnostics: vec![
-                        "ECHIDNA unavailable; returning safe default".to_string(),
-                    ],
+                    diagnostics: vec!["ECHIDNA unavailable; returning safe default".to_string()],
                     duration_ms: None,
                 }
-            }
+            },
         }
     }
 }

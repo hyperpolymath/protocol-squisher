@@ -227,10 +227,7 @@ impl SchemaRegistry {
 
 /// Convert a simple glob pattern (with `*` wildcards) to a matching check.
 fn glob_to_contains(pattern: &str) -> Vec<String> {
-    pattern
-        .split('*')
-        .map(|s| s.to_lowercase())
-        .collect()
+    pattern.split('*').map(|s| s.to_lowercase()).collect()
 }
 
 /// Check if a name matches a glob pattern (split into segments by `*`).
@@ -374,8 +371,7 @@ impl RegistryBackend for HttpRegistryBackend {
             .vql_query(&vql)
             .map_err(|e| anyhow::anyhow!("VeriSimDB list_versions query failed: {e}"))?;
 
-        let records: Vec<RegistryIndexRecord> = serde_json::from_value(result)
-            .unwrap_or_default();
+        let records: Vec<RegistryIndexRecord> = serde_json::from_value(result).unwrap_or_default();
         let mut versions: Vec<String> = records.into_iter().map(|r| r.version).collect();
         versions.sort_by(|a, b| compare_versions(a, b));
         Ok(versions)
@@ -388,8 +384,7 @@ impl RegistryBackend for HttpRegistryBackend {
             .vql_query(vql)
             .map_err(|e| anyhow::anyhow!("VeriSimDB list_schemas query failed: {e}"))?;
 
-        let records: Vec<RegistryIndexRecord> =
-            serde_json::from_value(result).unwrap_or_default();
+        let records: Vec<RegistryIndexRecord> = serde_json::from_value(result).unwrap_or_default();
         Ok(records)
     }
 }
@@ -460,7 +455,12 @@ mod tests {
         let root = temp_registry_dir();
         let registry = SchemaRegistry::new(&root);
 
-        registry.publish("billing.events", "1.0.0", "json-schema", sample_schema("BE"))?;
+        registry.publish(
+            "billing.events",
+            "1.0.0",
+            "json-schema",
+            sample_schema("BE"),
+        )?;
         registry.publish("billing.invoices", "1.0.0", "protobuf", sample_schema("BI"))?;
         registry.publish("orders.events", "1.0.0", "json-schema", sample_schema("OE"))?;
 

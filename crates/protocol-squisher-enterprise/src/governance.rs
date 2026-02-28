@@ -280,8 +280,7 @@ mod tests {
     fn violations_have_correct_severity() {
         let plan = sample_plan();
         let policy = GovernancePolicy::default();
-        let violations =
-            evaluate_policy_violations(&policy, &plan, "rust", "python", true);
+        let violations = evaluate_policy_violations(&policy, &plan, "rust", "python", true);
         assert!(!violations.is_empty());
         // Breaking changes should produce Critical violation.
         assert!(violations
