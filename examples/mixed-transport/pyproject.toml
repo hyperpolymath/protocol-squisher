@@ -10,7 +10,7 @@ name = "mixed-transport"
 version = "0.1.0"
 description = "Example demonstrating mixed transport classes (Business and Wheelbarrow)"
 authors = [
-    {name = "Jonathan D.A. Jewell", email = "jonathan.jewell@open.ac.uk"}
+    {name = "Jonathan D.A. Jewell", email = "j.d.a.jewell@open.ac.uk"}
 ]
 license = {text = "PMPL-1.0-or-later"}
 requires-python = ">=3.8"

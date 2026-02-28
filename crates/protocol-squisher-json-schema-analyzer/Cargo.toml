@@ -3,9 +3,10 @@
 
 [package]
 name = "protocol-squisher-json-schema-analyzer"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 rust-version = "1.83"
+authors = ["Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"]
 description = "JSON Schema to IR converter for protocol-squisher"
 license = "PMPL-1.0-or-later"
 repository = "https://github.com/hyperpolymath/protocol-squisher"

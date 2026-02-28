@@ -18,9 +18,9 @@ image:https://img.shields.io/badge/License-PMPL--1.0-blue.svg[License: PMPL-1.0,
 **Status:** ✅ **Phase 2 Format Expansion Complete** (100%)
 
 **Phase 1 (MVP):**
-- 312 tests passing (ephapax IR + analyzers + codegen + optimizer + property tests)
+- 721 tests passing (ephapax IR + analyzers + codegen + optimizer + property tests)
 - Rust ↔ Python fully working (Concorde, Business, Economy, Wheelbarrow classes)
-- Formal verification (4 theorems proven in Agda, cross-validated in Lean)
+- Formal verification (2 theorems fully proven in Agda, 2 partial; Concorde Safety cross-validated in Lean)
 - Comprehensive documentation (CLI guide, optimization guide, transport classes reference)
 
 **Phase 2 (Format Expansion - COMPLETE ✅):**

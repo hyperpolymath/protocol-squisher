@@ -507,13 +507,6 @@ impl SchemaConverter {
         result
     }
 
-    /// Generate a unique anonymous type name
-    #[allow(dead_code)]
-    fn generate_type_name(&self, prefix: &str) -> String {
-        let counter = self.type_counter.get();
-        self.type_counter.set(counter + 1);
-        format!("{}{}", prefix, counter)
-    }
 }
 
 #[cfg(test)]

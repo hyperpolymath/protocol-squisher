@@ -771,7 +771,7 @@ dependencies = [
 
 [[package]]
 name = "protocol-squisher"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "criterion",
  "proptest",
@@ -794,7 +794,7 @@ dependencies = [
 
 [[package]]
 name = "protocol-squisher-avro-analyzer"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "pretty_assertions",
  "protocol-squisher-ir",
@@ -806,7 +806,7 @@ dependencies = [
 
 [[package]]
 name = "protocol-squisher-bebop-analyzer"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "pretty_assertions",
  "protocol-squisher-ir",
@@ -817,7 +817,7 @@ dependencies = [
 
 [[package]]
 name = "protocol-squisher-capnproto-analyzer"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "protocol-squisher-ir",
  "protocol-squisher-transport-primitives",
@@ -828,7 +828,7 @@ dependencies = [
 
 [[package]]
 name = "protocol-squisher-cli"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -863,7 +863,7 @@ dependencies = [
 
 [[package]]
 name = "protocol-squisher-compat"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "proptest",
  "protocol-squisher-ir",
@@ -875,7 +875,7 @@ dependencies = [
 
 [[package]]
 name = "protocol-squisher-distributed"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "protocol-squisher-compat",
  "protocol-squisher-ir",
@@ -885,7 +885,7 @@ dependencies = [
 
 [[package]]
 name = "protocol-squisher-enterprise"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "protocol-squisher-compat",
@@ -897,7 +897,7 @@ dependencies = [
 
 [[package]]
 name = "protocol-squisher-flatbuffers-analyzer"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "pretty_assertions",
  "protocol-squisher-ir",
@@ -909,7 +909,7 @@ dependencies = [
 
 [[package]]
 name = "protocol-squisher-integration-tests"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "proptest",
  "protocol-squisher-compat",
@@ -925,7 +925,7 @@ dependencies = [
 
 [[package]]
 name = "protocol-squisher-ir"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "proptest",
  "serde",
@@ -934,7 +934,7 @@ dependencies = [
 
 [[package]]
 name = "protocol-squisher-json-fallback"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "proptest",
  "protocol-squisher-compat",
@@ -946,7 +946,7 @@ dependencies = [
 
 [[package]]
 name = "protocol-squisher-json-schema-analyzer"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "pretty_assertions",
  "protocol-squisher-ir",
@@ -958,7 +958,7 @@ dependencies = [
 
 [[package]]
 name = "protocol-squisher-messagepack-analyzer"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "pretty_assertions",
  "protocol-squisher-ir",
@@ -970,7 +970,7 @@ dependencies = [
 
 [[package]]
 name = "protocol-squisher-meta-analysis"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "criterion",
  "serde",
@@ -979,7 +979,7 @@ dependencies = [
 
 [[package]]
 name = "protocol-squisher-minikanren"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "protocol-squisher-compat",
  "protocol-squisher-ir",
@@ -988,7 +988,7 @@ dependencies = [
 
 [[package]]
 name = "protocol-squisher-optimizer"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "protocol-squisher-compat",
  "protocol-squisher-ir",
@@ -999,7 +999,7 @@ dependencies = [
 
 [[package]]
 name = "protocol-squisher-performance"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "bytemuck",
  "once_cell",
@@ -1010,7 +1010,7 @@ dependencies = [
 
 [[package]]
 name = "protocol-squisher-property-tests"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "proptest",
  "proptest-derive",
@@ -1021,7 +1021,7 @@ dependencies = [
 
 [[package]]
 name = "protocol-squisher-protobuf-analyzer"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "pretty_assertions",
  "protocol-squisher-ir",
@@ -1032,7 +1032,7 @@ dependencies = [
 
 [[package]]
 name = "protocol-squisher-pyo3-codegen"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "proptest",
  "protocol-squisher-compat",
@@ -1044,7 +1044,7 @@ dependencies = [
 
 [[package]]
 name = "protocol-squisher-python-analyzer"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "proptest",
  "protocol-squisher-ir",
@@ -1055,7 +1055,7 @@ dependencies = [
 
 [[package]]
 name = "protocol-squisher-rescript-analyzer"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "proptest",
  "protocol-squisher-ir",
@@ -1068,7 +1068,7 @@ dependencies = [
 
 [[package]]
 name = "protocol-squisher-rust-analyzer"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "proc-macro2",
  "proptest",
@@ -1082,14 +1082,14 @@ dependencies = [
 
 [[package]]
 name = "protocol-squisher-security-bridge"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "protocol-squisher-thrift-analyzer"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "criterion",
  "protocol-squisher-ir",
@@ -1101,7 +1101,7 @@ dependencies = [
 
 [[package]]
 name = "protocol-squisher-transport-primitives"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "proptest",

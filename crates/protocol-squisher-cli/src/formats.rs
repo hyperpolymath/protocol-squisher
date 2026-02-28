@@ -212,7 +212,7 @@ impl ProtocolFormat {
     }
 
     /// Analyze a string with the appropriate analyzer
-    #[allow(dead_code)]
+    #[allow(dead_code)] // Public API for future lib extraction
     pub fn analyze_str(&self, content: &str, name: &str) -> Result<IrSchema> {
         match self {
             Self::Rust => {
