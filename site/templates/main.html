@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{title}} | protocol-squisher</title>
+  <meta name="description" content="Universal protocol analysis substrate. 937 tests, 13 format analyzers, formal proofs in 5 systems.">
+  <style>
+    /* ================================================================
+       protocol-squisher.net — Built with ddraig-ssg (Idris 2)
+       Clean, professional, accessible design
+       ================================================================ */
+
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #fafbfc;
+      --fg: #1a1a2e;
+      --fg-muted: #555;
+      --fg-light: #888;
+      --accent: #e94560;
+      --accent-hover: #d63851;
+      --header-bg: #1a1a2e;
+      --header-fg: #f0f0f0;
+      --nav-bg: #16213e;
+      --nav-fg: #b0b8c8;
+      --nav-active: #ffffff;
+      --code-bg: #f0f2f5;
+      --border: #dde1e6;
+      --card-bg: #ffffff;
+      --link: #2563eb;
+      --link-hover: #1d4ed8;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      font-size: 1rem;
+      line-height: 1.7;
+      color: var(--fg);
+      background: var(--bg);
+    }
+
+    a { color: var(--link); text-decoration: none; }
+    a:hover { color: var(--link-hover); text-decoration: underline; }
+
+    /* Header ============================================================= */
+    header {
+      background: var(--header-bg);
+      color: var(--header-fg);
+      padding: 1.5rem 0;
+    }
+
+    .header-inner {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .site-logo {
+      font-size: 1.1rem;
+      letter-spacing: 0.04em;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .site-logo .accent { color: var(--accent); }
+
+    .site-tagline {
+      color: #8899aa;
+      font-size: 0.85rem;
+      margin-left: auto;
+    }
+
+    /* Navigation (Tabs) ================================================== */
+    nav {
+      background: var(--nav-bg);
+      border-bottom: 2px solid #0d1b30;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    nav ul {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 1rem;
+      display: flex;
+      list-style: none;
+      gap: 0;
+      overflow-x: auto;
+    }
+
+    nav li a {
+      display: block;
+      padding: 0.75rem 1.2rem;
+      color: var(--nav-fg);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      border-bottom: 3px solid transparent;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+
+    nav li a:hover {
+      color: var(--nav-active);
+      background: rgba(255,255,255,0.04);
+      text-decoration: none;
+    }
+
+    nav li a.active {
+      color: var(--nav-active);
+      border-bottom-color: var(--accent);
+      background: rgba(255,255,255,0.06);
+    }
+
+    /* Main Content ======================================================= */
+    main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    main h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: var(--fg);
+      line-height: 1.3;
+    }
+
+    main h2 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-top: 2rem;
+      margin-bottom: 0.75rem;
+      color: var(--fg);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.3rem;
+    }
+
+    main h3 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-top: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    main p {
+      margin-bottom: 1rem;
+    }
+
+    main ul, main ol {
+      margin-bottom: 1rem;
+      padding-left: 1.5rem;
+    }
+
+    main li {
+      margin-bottom: 0.3rem;
+    }
+
+    main code {
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.88em;
+      background: var(--code-bg);
+      padding: 0.15em 0.4em;
+      border-radius: 3px;
+    }
+
+    main pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+      overflow-x: auto;
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+
+    main pre code {
+      background: none;
+      padding: 0;
+      font-size: 0.85rem;
+    }
+
+    main strong { font-weight: 600; }
+
+    main em { font-style: italic; }
+
+    /* Stats/Feature cards */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+
+    /* Footer ============================================================= */
+    footer {
+      background: var(--header-bg);
+      color: #8899aa;
+      padding: 1.5rem 0;
+      font-size: 0.85rem;
+      margin-top: 3rem;
+    }
+
+    .footer-inner {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .footer-inner a { color: #aabbcc; }
+    .footer-inner a:hover { color: #ffffff; }
+
+    /* Responsive ========================================================= */
+    @media (max-width: 640px) {
+      .header-inner { flex-direction: column; align-items: flex-start; }
+      .site-tagline { margin-left: 0; }
+      nav ul { gap: 0; }
+      nav li a { padding: 0.6rem 0.8rem; font-size: 0.82rem; }
+      main h1 { font-size: 1.6rem; }
+      .footer-inner { flex-direction: column; text-align: center; }
+    }
+
+    /* Print ============================================================== */
+    @media print {
+      nav, footer { display: none; }
+      header { background: white; color: black; }
+      main { max-width: 100%; }
+    }
+  </style>
+</head>
+<body class="{{body_class}}">
+
+  <header>
+    <div class="header-inner">
+      <div class="site-logo">
+        <span class="accent">&gt;</span> protocol-squisher
+      </div>
+      <div class="site-tagline">Universal Protocol Analysis Substrate</div>
+    </div>
+  </header>
+
+  <nav>
+    <ul>
+{{nav}}
+    </ul>
+  </nav>
+
+  <main>
+    {{content}}
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <span>&copy; 2026 Jonathan D.A. Jewell. Built with <a href="https://github.com/hyperpolymath/ssg-collection">ddraig-ssg</a> (Idris 2).</span>
+      <span>
+        <a href="https://github.com/hyperpolymath/protocol-squisher">GitHub</a>
+        &middot;
+        <a href="governance.html">Governance</a>
+        &middot;
+        PMPL-1.0-or-later
+      </span>
+    </div>
+  </footer>
+
+</body>
+</html>

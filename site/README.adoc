@@ -1,0 +1,91 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+= protocol-squisher.net Site
+
+This directory contains the source content and build tooling for the
+protocol-squisher.net website.
+
+== Structure
+
+[source]
+----
+site/
+├── content/           # Markdown source pages (5 tabs)
+│   ├── index.md       # Tab 1: About
+│   ├── project.md     # Tab 2: The Project
+│   ├── technology.md  # Tab 3: Technology
+│   ├── progress.md    # Tab 4: Progress & Contact
+│   └── governance.md  # Tab 5: Governance & Help
+├── templates/
+│   └── main.html      # HTML template with tabbed navigation
+├── output/            # Generated HTML (gitignored except .gitkeep)
+├── build.sh           # Build script
+└── README.adoc        # This file
+----
+
+== Building
+
+The site is built with https://github.com/hyperpolymath/ssg-collection[ddraig-ssg],
+a dependently typed static site generator written in Idris 2.
+
+=== Prerequisites
+
+* Idris 2 >= 0.8.0 (via https://github.com/stefan-hoeck/idris2-pack[pack] or system package)
+* ddraig-ssg compiled from `ssg-collection/stubs/ddraig/`
+
+=== Compile ddraig-ssg
+
+[source,bash]
+----
+cd ~/Documents/hyperpolymath-repos/ssg-collection/stubs/ddraig
+idris2 Ddraig.idr -o ddraig
+----
+
+=== Build the site
+
+[source,bash]
+----
+./build.sh
+----
+
+The build script automatically locates ddraig-ssg in sibling repos or on `$PATH`.
+Override with `DDRAIG=/path/to/ddraig ./build.sh`.
+
+=== Preview
+
+[source,bash]
+----
+cd output
+python3 -m http.server 8000
+# Open http://localhost:8000
+----
+
+== Content Guidelines
+
+Each markdown file uses YAML-like frontmatter:
+
+[source,markdown]
+----
+---
+title: Page Title
+slug: url-slug
+order: 1
+date: 2026-02-28
+tags: [tag1, tag2]
+---
+
+# Heading
+
+Content here...
+----
+
+* `title` — Displayed in the navigation tab and page heading
+* `slug` — URL slug (determines output filename: `<slug>.html`)
+* `order` — Tab ordering (1-5 for the main navigation)
+* `date` — Last updated date
+* `tags` — Categorisation tags
+* `draft: true` — Excludes the page from the build
+
+== DNS
+
+The domain `protocol-squisher.net` is pending registration. Once available,
+the site will be deployed via GitHub Pages or a static hosting provider.
