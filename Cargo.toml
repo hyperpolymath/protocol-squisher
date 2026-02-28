@@ -90,6 +90,8 @@ members = [
   "crates/protocol-squisher-flatbuffers-analyzer",
   "crates/protocol-squisher-messagepack-analyzer",
   "crates/protocol-squisher-rescript-analyzer",
+  "crates/protocol-squisher-graphql-analyzer",
+  "crates/protocol-squisher-toml-analyzer",
 ]
 exclude = [
   "tests/pyo3-integration",        # Standalone maturin project for integration tests

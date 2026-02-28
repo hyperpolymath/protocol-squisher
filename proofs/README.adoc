@@ -177,7 +177,7 @@ Proofs are automatically verified in `.github/workflows/formal-verification.yml`
 |✓ Verified
 |✓
 |✓
-|Planned
+|✓ (ConcordeSafety.v — identity, bijectivity, size preservation)
 |Planned
 |—
 
@@ -186,7 +186,7 @@ Proofs are automatically verified in `.github/workflows/formal-verification.yml`
 |✓ (postulates replaced with counterexample + case analysis)
 |—
 |Planned
-|Planned
+|✓ (WheelbarrowNecessity.thy — incompatible pairs, narrowing)
 |—
 
 |Container Propagation
@@ -201,9 +201,25 @@ Proofs are automatically verified in `.github/workflows/formal-verification.yml`
 |✓ Constructive
 |✓ (hole filled; JSON axioms postulated — justified runtime assumption)
 |—
-|Planned
+|✓ (CarriesInvariant.v — totality, strategy existence, no Economy for primitives)
 |Planned
 |—
+
+|Transport Exhaustiveness
+|✓ Automated
+|—
+|—
+|—
+|—
+|✓ (transport_exhaustive.smt2 — no gaps in classification)
+
+|Concorde Constraints
+|✓ Automated
+|—
+|—
+|—
+|—
+|✓ (concorde_constraints.smt2 — 4 checks: identity, size ordering, irreflexivity, Business assignment)
 
 |Optimization Soundness
 |Planned

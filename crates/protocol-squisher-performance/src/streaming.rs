@@ -121,6 +121,65 @@ where
     Ok(processed)
 }
 
+/// A chunked byte stream processor that tracks statistics.
+pub struct ChunkedProcessor {
+    chunk_size: usize,
+    bytes_processed: usize,
+    chunks_completed: usize,
+}
+
+/// Statistics for a completed chunked processing session.
+#[derive(Debug, Clone, PartialEq)]
+pub struct StreamStats {
+    /// Total bytes processed.
+    pub bytes_processed: usize,
+    /// Number of chunks completed.
+    pub chunks_completed: usize,
+    /// Effective throughput in bytes per microsecond (if duration > 0).
+    pub throughput_bytes_per_us: f64,
+}
+
+impl ChunkedProcessor {
+    /// Create a new processor with the given chunk size.
+    pub fn new(chunk_size: usize) -> Self {
+        assert!(chunk_size > 0, "chunk_size must be > 0");
+        Self {
+            chunk_size,
+            bytes_processed: 0,
+            chunks_completed: 0,
+        }
+    }
+
+    /// Process an input byte slice in chunks, applying the transform to each chunk.
+    pub fn process<F>(&mut self, input: &[u8], mut transform: F) -> Vec<u8>
+    where
+        F: FnMut(&[u8]) -> Vec<u8>,
+    {
+        let mut output = Vec::with_capacity(input.len());
+        for chunk in input.chunks(self.chunk_size) {
+            let result = transform(chunk);
+            output.extend_from_slice(&result);
+            self.bytes_processed += chunk.len();
+            self.chunks_completed += 1;
+        }
+        output
+    }
+
+    /// Return statistics from processing. `duration_us` is the wall-clock
+    /// time for the processing session.
+    pub fn stats(&self, duration_us: u64) -> StreamStats {
+        StreamStats {
+            bytes_processed: self.bytes_processed,
+            chunks_completed: self.chunks_completed,
+            throughput_bytes_per_us: if duration_us > 0 {
+                self.bytes_processed as f64 / duration_us as f64
+            } else {
+                0.0
+            },
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -195,5 +254,28 @@ not-json
             StreamingError::Deserialize { line, .. } => assert_eq!(line, 2),
             other => panic!("expected deserialize error, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn chunked_processor_tracks_stats() {
+        let input = vec![1u8; 100];
+        let mut processor = ChunkedProcessor::new(30);
+        let output = processor.process(&input, |chunk| chunk.to_vec());
+
+        assert_eq!(output.len(), 100);
+        let stats = processor.stats(1000);
+        assert_eq!(stats.bytes_processed, 100);
+        assert_eq!(stats.chunks_completed, 4); // 30 + 30 + 30 + 10
+        assert!(stats.throughput_bytes_per_us > 0.0);
+    }
+
+    #[test]
+    fn chunked_processor_transforms_data() {
+        let input = vec![1u8, 2, 3, 4, 5];
+        let mut processor = ChunkedProcessor::new(2);
+        let output = processor.process(&input, |chunk| {
+            chunk.iter().map(|b| b * 2).collect()
+        });
+        assert_eq!(output, vec![2, 4, 6, 8, 10]);
     }
 }

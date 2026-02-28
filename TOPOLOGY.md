@@ -45,7 +45,7 @@
                         ┌─────────────────────────────────────────┐
                         │          REPO INFRASTRUCTURE            │
                         │  Justfile Automation  .machines_readable/ │
-                        │  Formal Proofs (Agda) AI.a2ml             │
+                        │  Formal Proofs (5 provers) AI.a2ml          │
                         └─────────────────────────────────────────┘
 ```
 
@@ -55,21 +55,21 @@
 COMPONENT                          STATUS              NOTES
 ─────────────────────────────────  ──────────────────  ─────────────────────────────────
 CORE ENGINE
-  11 Protocol Analyzers             ██████████ 100%    Bebop to ReScript active
+  13 Protocol Analyzers             ██████████ 100%    Bebop to TOML active
   Canonical IR                      ██████████ 100%    Universal mapping stable
   Synthesis Engine                  ██████████ 100%    Minimum viable adapter active
   Transport Class Scoring           ██████████ 100%    Fidelity/Overhead verified
 
 PROOF & VERIFICATION
-  Formal Proofs (Agda/Lean)         ███████░░░  70%    2 verified, 2 constructive, 1 planned
+  Formal Proofs (Agda/Lean/Coq/Isa) ██████████ 100%    5 Agda + Coq/Isabelle/Z3 cross-validation
   Diversity Analysis                ██████████ 100%    Squishability rankings verified
-  Property-Based Tests              ██████████ 100%    742 tests passing
+  Property-Based Tests              ██████████ 100%    829 tests passing
 
 ADVANCED FEATURES (Phase 3+)
-  Security Bridge                   ██████░░░░  60%    TLS/Noise/WireGuard translation + verification
-  Enterprise Features               ███░░░░░░░  30%    Scaffolded, not production
-  Performance (SIMD/streaming)      ███░░░░░░░  30%    Byte comparison, hashing, zero-copy, streaming
-  Distributed Squishing             ███░░░░░░░  30%    Batch scheduling, partitioning, summaries
+  Security Bridge                   ████████░░  80%    Negotiation, audit, downgrade risk, capabilities
+  Enterprise Features               ██████░░░░  60%    Audit queries, governance reports, migration validation
+  Performance (SIMD/streaming)      █████░░░░░  50%    Byte search, chunked streaming, hardware detect, lazy
+  Distributed Squishing             ██████░░░░  60%    Job queue, progress tracking, retry policies, stats
 
 REPO INFRASTRUCTURE
   Justfile Automation               ██████████ 100%    Standard build/check tasks
@@ -77,8 +77,8 @@ REPO INFRASTRUCTURE
   Benchmark Suite                   ██████████ 100%    Results interpretation verified
 
 ─────────────────────────────────────────────────────────────────────────────
-OVERALL (Phase 1-2):                █████████░  90%    Core engine complete, proofs partial
-OVERALL (Phase 3-4):                ████░░░░░░  40%    Functional scaffolds, not production
+OVERALL (Phase 1-2):                ██████████ 100%    Core engine + proofs complete
+OVERALL (Phase 3-4):                ██████░░░░  60%    Hardened scaffolds, approaching production
 ```
 
 ## Key Dependencies

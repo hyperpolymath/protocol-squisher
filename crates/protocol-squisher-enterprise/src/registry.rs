@@ -169,6 +169,85 @@ fn sanitize_component(input: &str) -> String {
         .collect()
 }
 
+/// Summary statistics for the schema registry.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RegistryStats {
+    /// Total number of schema entries (across all names and versions).
+    pub total_entries: usize,
+    /// Number of distinct schema names.
+    pub distinct_schemas: usize,
+    /// Number of distinct formats represented.
+    pub distinct_formats: usize,
+}
+
+impl SchemaRegistry {
+    /// Search the registry for schemas whose name matches a glob-like pattern.
+    ///
+    /// Supports `*` as a wildcard (e.g., `billing.*` matches `billing.events`,
+    /// `billing.invoices`).
+    pub fn search(&self, pattern: &str) -> Result<Vec<RegistryIndexRecord>> {
+        let all = self.list(None)?;
+        let regex_pattern = glob_to_contains(pattern);
+        Ok(all
+            .into_iter()
+            .filter(|r| matches_glob(&r.name, &regex_pattern))
+            .collect())
+    }
+
+    /// Return summary statistics for the registry.
+    pub fn stats(&self) -> Result<RegistryStats> {
+        let all = self.list(None)?;
+        let distinct_schemas = {
+            let mut names: Vec<_> = all.iter().map(|r| &r.name).collect();
+            names.sort();
+            names.dedup();
+            names.len()
+        };
+        let distinct_formats = {
+            let mut formats: Vec<_> = all.iter().map(|r| &r.format).collect();
+            formats.sort();
+            formats.dedup();
+            formats.len()
+        };
+
+        Ok(RegistryStats {
+            total_entries: all.len(),
+            distinct_schemas,
+            distinct_formats,
+        })
+    }
+
+    /// List all versions for a given schema name, sorted by semver.
+    pub fn list_versions(&self, name: &str) -> Result<Vec<String>> {
+        let records = self.list(Some(name))?;
+        Ok(records.into_iter().map(|r| r.version).collect())
+    }
+}
+
+/// Convert a simple glob pattern (with `*` wildcards) to a matching check.
+fn glob_to_contains(pattern: &str) -> Vec<String> {
+    pattern
+        .split('*')
+        .map(|s| s.to_lowercase())
+        .collect()
+}
+
+/// Check if a name matches a glob pattern (split into segments by `*`).
+fn matches_glob(name: &str, segments: &[String]) -> bool {
+    let lower = name.to_lowercase();
+    let mut pos = 0;
+    for seg in segments {
+        if seg.is_empty() {
+            continue;
+        }
+        match lower[pos..].find(seg.as_str()) {
+            Some(idx) => pos += idx + seg.len(),
+            None => return false,
+        }
+    }
+    true
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -225,6 +304,57 @@ mod tests {
             .ok_or_else(|| anyhow::anyhow!("expected latest entry"))?;
         assert_eq!(latest.version, "1.10.0");
         assert_eq!(latest.schema.name, "B");
+
+        fs::remove_dir_all(root).ok();
+        Ok(())
+    }
+
+    #[test]
+    fn search_with_glob_pattern() -> Result<()> {
+        let root = temp_registry_dir();
+        let registry = SchemaRegistry::new(&root);
+
+        registry.publish("billing.events", "1.0.0", "json-schema", sample_schema("BE"))?;
+        registry.publish("billing.invoices", "1.0.0", "protobuf", sample_schema("BI"))?;
+        registry.publish("orders.events", "1.0.0", "json-schema", sample_schema("OE"))?;
+
+        let results = registry.search("billing.*")?;
+        assert_eq!(results.len(), 2);
+        assert!(results.iter().all(|r| r.name.starts_with("billing")));
+
+        fs::remove_dir_all(root).ok();
+        Ok(())
+    }
+
+    #[test]
+    fn registry_stats() -> Result<()> {
+        let root = temp_registry_dir();
+        let registry = SchemaRegistry::new(&root);
+
+        registry.publish("billing.events", "1.0.0", "json-schema", sample_schema("A"))?;
+        registry.publish("billing.events", "2.0.0", "json-schema", sample_schema("B"))?;
+        registry.publish("orders.events", "1.0.0", "protobuf", sample_schema("C"))?;
+
+        let stats = registry.stats()?;
+        assert_eq!(stats.total_entries, 3);
+        assert_eq!(stats.distinct_schemas, 2);
+        assert_eq!(stats.distinct_formats, 2);
+
+        fs::remove_dir_all(root).ok();
+        Ok(())
+    }
+
+    #[test]
+    fn list_versions_sorted() -> Result<()> {
+        let root = temp_registry_dir();
+        let registry = SchemaRegistry::new(&root);
+
+        registry.publish("orders", "2.0.0", "json-schema", sample_schema("A"))?;
+        registry.publish("orders", "1.0.0", "json-schema", sample_schema("B"))?;
+        registry.publish("orders", "1.5.0", "json-schema", sample_schema("C"))?;
+
+        let versions = registry.list_versions("orders")?;
+        assert_eq!(versions, vec!["1.0.0", "1.5.0", "2.0.0"]);
 
         fs::remove_dir_all(root).ok();
         Ok(())

@@ -110,6 +110,82 @@ pub fn fast_hash(bytes: &[u8]) -> u64 {
     hash
 }
 
+/// Find the first occurrence of a byte value in a slice, using lane-parallel
+/// scanning.
+///
+/// Returns the index of the first matching byte, or `None` if not found.
+pub fn find_byte(haystack: &[u8], needle: u8) -> Option<usize> {
+    // Process in 16-byte lanes for potential auto-vectorization.
+    let mut chunks = haystack.chunks_exact(LANES);
+    let mut base = 0;
+
+    for chunk in &mut chunks {
+        for (i, &byte) in chunk.iter().enumerate() {
+            if byte == needle {
+                return Some(base + i);
+            }
+        }
+        base += LANES;
+    }
+
+    // Check remainder.
+    for (i, &byte) in chunks.remainder().iter().enumerate() {
+        if byte == needle {
+            return Some(base + i);
+        }
+    }
+
+    None
+}
+
+/// Compute the sum of a `u32` slice, returning `u64` to avoid overflow.
+///
+/// Uses lane-parallel accumulation for auto-vectorization potential.
+pub fn sum_u32(values: &[u32]) -> u64 {
+    const U32_LANES: usize = 8;
+    let mut lane_acc = [0u64; U32_LANES];
+    let mut chunks = values.chunks_exact(U32_LANES);
+
+    for chunk in &mut chunks {
+        for i in 0..U32_LANES {
+            lane_acc[i] += chunk[i] as u64;
+        }
+    }
+
+    let mut total: u64 = lane_acc.iter().sum();
+    total += chunks.remainder().iter().map(|&v| v as u64).sum::<u64>();
+    total
+}
+
+/// XOR two byte slices element-wise, returning the result.
+///
+/// The output length is the minimum of the two input lengths.
+pub fn xor_bytes(a: &[u8], b: &[u8]) -> Vec<u8> {
+    let len = a.len().min(b.len());
+    let mut result = Vec::with_capacity(len);
+
+    let mut chunks_a = a[..len].chunks_exact(LANES);
+    let mut chunks_b = b[..len].chunks_exact(LANES);
+
+    for (ca, cb) in chunks_a.by_ref().zip(chunks_b.by_ref()) {
+        let mut lane = [0u8; LANES];
+        for i in 0..LANES {
+            lane[i] = ca[i] ^ cb[i];
+        }
+        result.extend_from_slice(&lane);
+    }
+
+    for (&ba, &bb) in chunks_a
+        .remainder()
+        .iter()
+        .zip(chunks_b.remainder().iter())
+    {
+        result.push(ba ^ bb);
+    }
+
+    result
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -187,5 +263,51 @@ mod tests {
         assert_eq!(count_differences(&[], &[]), 0);
         assert!(bytes_equal(&[], &[]));
         assert_eq!(fast_hash(&[]), 0xcbf29ce484222325); // FNV offset basis
+    }
+
+    #[test]
+    fn find_byte_returns_first_position() {
+        let data = b"hello world";
+        assert_eq!(find_byte(data, b'o'), Some(4));
+        assert_eq!(find_byte(data, b'z'), None);
+        assert_eq!(find_byte(b"", b'a'), None);
+    }
+
+    #[test]
+    fn find_byte_large_buffer() {
+        let mut data = vec![0u8; 1000];
+        data[999] = 42;
+        assert_eq!(find_byte(&data, 42), Some(999));
+    }
+
+    #[test]
+    fn sum_u32_produces_correct_total() {
+        let values = vec![1u32, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+        assert_eq!(sum_u32(&values), 55);
+        assert_eq!(sum_u32(&[]), 0);
+    }
+
+    #[test]
+    fn sum_u32_large_array() {
+        let values: Vec<u32> = (1..=10_000).collect();
+        let expected: u64 = (1..=10_000u64).sum();
+        assert_eq!(sum_u32(&values), expected);
+    }
+
+    #[test]
+    fn xor_bytes_produces_correct_result() {
+        let a = vec![0xFFu8, 0x00, 0xAA, 0x55];
+        let b = vec![0x0Fu8, 0xF0, 0x55, 0xAA];
+        let result = xor_bytes(&a, &b);
+        assert_eq!(result, vec![0xF0, 0xF0, 0xFF, 0xFF]);
+    }
+
+    #[test]
+    fn xor_bytes_different_lengths() {
+        let a = vec![0xFF, 0x00];
+        let b = vec![0x0F, 0xF0, 0xAA];
+        let result = xor_bytes(&a, &b);
+        // Only processes common length (2 bytes).
+        assert_eq!(result, vec![0xF0, 0xF0]);
     }
 }

@@ -89,6 +89,95 @@ impl AuditLogger {
     }
 }
 
+/// Time range and type filters for querying audit entries.
+#[derive(Debug, Clone, Default)]
+pub struct AuditQuery {
+    /// Only return events at or after this UTC timestamp.
+    pub from_timestamp: Option<String>,
+    /// Only return events at or before this UTC timestamp.
+    pub to_timestamp: Option<String>,
+    /// Only return events matching this action.
+    pub action_filter: Option<String>,
+    /// Only return events by this actor.
+    pub actor_filter: Option<String>,
+}
+
+/// Summary statistics for a set of audit events.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AuditStats {
+    /// Total number of events.
+    pub total_events: usize,
+    /// Number of events with outcome "success".
+    pub success_count: usize,
+    /// Number of events with outcome "failure".
+    pub failure_count: usize,
+    /// Distinct actors seen.
+    pub distinct_actors: usize,
+    /// Distinct actions seen.
+    pub distinct_actions: usize,
+}
+
+impl AuditLogger {
+    /// Query audit events with optional time range and type filters.
+    pub fn query_entries(&self, query: &AuditQuery) -> Result<Vec<AuditEvent>> {
+        let all = self.read_all()?;
+        let filtered = all
+            .into_iter()
+            .filter(|event| {
+                if let Some(from) = &query.from_timestamp {
+                    if event.timestamp_utc < *from {
+                        return false;
+                    }
+                }
+                if let Some(to) = &query.to_timestamp {
+                    if event.timestamp_utc > *to {
+                        return false;
+                    }
+                }
+                if let Some(action) = &query.action_filter {
+                    if !event.action.contains(action.as_str()) {
+                        return false;
+                    }
+                }
+                if let Some(actor) = &query.actor_filter {
+                    if event.actor != *actor {
+                        return false;
+                    }
+                }
+                true
+            })
+            .collect();
+        Ok(filtered)
+    }
+
+    /// Compute summary statistics over all events in the log.
+    pub fn stats(&self) -> Result<AuditStats> {
+        let events = self.read_all()?;
+        let mut actors = std::collections::HashSet::new();
+        let mut actions = std::collections::HashSet::new();
+        let mut success_count = 0usize;
+        let mut failure_count = 0usize;
+
+        for event in &events {
+            actors.insert(event.actor.clone());
+            actions.insert(event.action.clone());
+            if event.outcome == "success" {
+                success_count += 1;
+            } else if event.outcome == "failure" {
+                failure_count += 1;
+            }
+        }
+
+        Ok(AuditStats {
+            total_events: events.len(),
+            success_count,
+            failure_count,
+            distinct_actors: actors.len(),
+            distinct_actions: actions.len(),
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -119,6 +208,74 @@ mod tests {
         assert_eq!(events.len(), 1);
         assert_eq!(events[0].actor, "ci");
         assert_eq!(events[0].action, "schema_registry.publish");
+
+        fs::remove_file(path).ok();
+    }
+
+    #[test]
+    fn query_filters_by_action() {
+        let path = temp_log_path();
+        let logger = AuditLogger::new(&path);
+        logger
+            .record("ci", "schema.publish", "success", serde_json::json!({}))
+            .expect("record");
+        logger
+            .record("ci", "governance.evaluate", "success", serde_json::json!({}))
+            .expect("record");
+
+        let query = AuditQuery {
+            action_filter: Some("schema".to_string()),
+            ..Default::default()
+        };
+        let results = logger.query_entries(&query).expect("query");
+        assert_eq!(results.len(), 1);
+        assert!(results[0].action.contains("schema"));
+
+        fs::remove_file(path).ok();
+    }
+
+    #[test]
+    fn query_filters_by_actor() {
+        let path = temp_log_path();
+        let logger = AuditLogger::new(&path);
+        logger
+            .record("alice", "publish", "success", serde_json::json!({}))
+            .expect("record");
+        logger
+            .record("bob", "publish", "failure", serde_json::json!({}))
+            .expect("record");
+
+        let query = AuditQuery {
+            actor_filter: Some("bob".to_string()),
+            ..Default::default()
+        };
+        let results = logger.query_entries(&query).expect("query");
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].actor, "bob");
+
+        fs::remove_file(path).ok();
+    }
+
+    #[test]
+    fn stats_counts_outcomes() {
+        let path = temp_log_path();
+        let logger = AuditLogger::new(&path);
+        logger
+            .record("ci", "action-a", "success", serde_json::json!({}))
+            .expect("record");
+        logger
+            .record("ci", "action-b", "failure", serde_json::json!({}))
+            .expect("record");
+        logger
+            .record("admin", "action-a", "success", serde_json::json!({}))
+            .expect("record");
+
+        let stats = logger.stats().expect("stats");
+        assert_eq!(stats.total_events, 3);
+        assert_eq!(stats.success_count, 2);
+        assert_eq!(stats.failure_count, 1);
+        assert_eq!(stats.distinct_actors, 2);
+        assert_eq!(stats.distinct_actions, 2);
 
         fs::remove_file(path).ok();
     }
