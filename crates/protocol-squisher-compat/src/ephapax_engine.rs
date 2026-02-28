@@ -6,20 +6,12 @@
 //! to determine the best conversion strategy between Rust and Python types.
 
 use protocol_squisher_ir::IrSchema;
-use protocol_squisher_python_analyzer::PythonAnalyzer;
-use protocol_squisher_rust_analyzer::RustAnalyzer;
 use protocol_squisher_transport_primitives::{IRContext, TransportClass as EphapaxTransportClass};
 
 /// Compatibility engine using ephapax for proven-correct analysis
 pub struct EphapaxCompatibilityEngine {
     /// Ephapax IR context for transport class analysis
     ir_ctx: IRContext,
-    /// Rust analyzer (reserved for future source-level analysis)
-    #[allow(dead_code)]
-    rust_analyzer: RustAnalyzer,
-    /// Python analyzer (reserved for future source-level analysis)
-    #[allow(dead_code)]
-    python_analyzer: PythonAnalyzer,
 }
 
 impl Default for EphapaxCompatibilityEngine {
@@ -33,8 +25,6 @@ impl EphapaxCompatibilityEngine {
     pub fn new() -> Self {
         Self {
             ir_ctx: IRContext::new(),
-            rust_analyzer: RustAnalyzer::new(),
-            python_analyzer: PythonAnalyzer::new(),
         }
     }
 

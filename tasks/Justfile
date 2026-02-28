@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: PMPL-1.0-or-later
 # protocol-squisher - Justfile
 # https://just.systems/man/en/
 
@@ -30,10 +30,12 @@ info:
 # Build the project
 build:
     @echo "Building {{project}}..."
+    cargo build --workspace
 
 # Clean build artifacts
 clean:
     @echo "Cleaning..."
+    cargo clean
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TEST & QUALITY
@@ -42,14 +44,17 @@ clean:
 # Run tests
 test:
     @echo "Running tests..."
+    cargo test --workspace
 
 # Run linter
 lint:
     @echo "Linting..."
+    cargo clippy --workspace -- -D warnings
 
 # Format code
 fmt:
     @echo "Formatting..."
+    cargo fmt --all -- --check
 
 # Run all quality checks
 quality: fmt lint test
