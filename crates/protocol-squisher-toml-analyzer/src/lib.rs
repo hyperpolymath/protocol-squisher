@@ -70,6 +70,26 @@ impl TomlAnalyzer {
     }
 }
 
+impl protocol_squisher_ir::SchemaAnalyzer for TomlAnalyzer {
+    type Error = AnalyzerError;
+
+    fn analyzer_name(&self) -> &str {
+        "toml"
+    }
+
+    fn supported_extensions(&self) -> &[&str] {
+        &["toml"]
+    }
+
+    fn analyze_file(&self, path: &Path) -> Result<IrSchema, Self::Error> {
+        self.analyze_file(path)
+    }
+
+    fn analyze_str(&self, content: &str, name: &str) -> Result<IrSchema, Self::Error> {
+        self.analyze_str(content, name)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -261,5 +281,20 @@ mod tests {
         )
         .unwrap();
         assert!(result.is_zero_copy());
+    }
+
+    #[test]
+    fn test_schema_analyzer_trait() {
+        use protocol_squisher_ir::SchemaAnalyzer;
+
+        let a = TomlAnalyzer::new();
+        assert_eq!(a.analyzer_name(), "toml");
+        assert_eq!(a.supported_extensions(), &["toml"]);
+
+        let toml_str = r#"
+            msg = "hello"
+        "#;
+        let ir = SchemaAnalyzer::analyze_str(&a, toml_str, "ping").unwrap();
+        assert!(ir.types.contains_key("Ping"));
     }
 }

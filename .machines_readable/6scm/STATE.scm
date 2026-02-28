@@ -34,7 +34,7 @@
   '((phase . "v1-released")
     (overall-completion . 95)
     (crate-version . "1.1.0")
-    (test-count . 921)
+    (test-count . 937)
     (components
       ((core-ir . "working")
        (compat-engine . "working")
@@ -66,7 +66,7 @@
       (date . "2026-02-28")
       (checks
         ("cargo check --workspace --all-targets"
-         "cargo test --workspace (921 pass)"
+         "cargo test --workspace (937 pass)"
          "cargo clippy --workspace -- -D warnings (clean)"
          "cargo fmt --all -- --check (clean)"
          "cargo audit (clean)")))))
@@ -96,9 +96,15 @@
       "First external contributor.")))
 
 (define session-history
-  '((session-2026-02-28-roadmap-panll-integration
+  '((session-2026-02-28-phase4ab-library-extraction
       (date . "2026-02-28")
       (accomplishments
+        "Phase 4a: Defined SchemaAnalyzer trait in protocol-squisher-ir, implemented across all 13 analyzers."
+        "Phase 4b: Rewrote src/lib.rs with full public API (13 analyzer modules, compat, meta, optimizer, prelude)."
+        "Added all_analyzers() registry returning 13 type-erased trait objects for dynamic dispatch."
+        "Test count increased 921 → 937 (13 trait tests + 3 library API tests)."
+        "Rewrote ROADMAP.adoc with Phases 4-6 (PanLL substrate, ProtocolModule, Five Pillars)."
+        "Identified Quality/Observability as the missing fifth pillar."
         "Synchronized all 16 non-Cargo files to v1.1.0 (versions, test counts)."
         "Applied cargo fmt across all crates."
         "Ran full panic-attack security suite: assail + assault + abduct + adjudicate → PASS."
@@ -106,9 +112,9 @@
         "Rewrote ROADMAP.adoc with Phases 4-6 (PanLL substrate, ProtocolModule, Five Pillars)."
         "Identified Quality/Observability as the missing fifth pillar."
         "Updated STATE.scm critical-next-actions for Phase 4 work."
-        "Updated CHANGELOG.md with v1.1.1 release notes.")
+        "Updated all documentation: CHANGELOG, README, TOPOLOGY, METRICS, HN post.")
       (notes
-        "Roadmap now positions protocol-squisher as PanLL's protocol substrate. Five-pillar architecture: Languages, Databases, Protocols, Containers, Quality. Phase 4 (library extraction) is the critical prerequisite for Phase 5 (PanLL ProtocolModule)."))
+        "Phase 4a/4b complete. protocol-squisher now usable as a library dependency via `use protocol_squisher::prelude::*`. Five-pillar architecture: Languages, Databases, Protocols, Containers, Quality."))
     (session-2026-02-28-full-integration-phase3-proofs
       (date . "2026-02-28")
       (accomplishments

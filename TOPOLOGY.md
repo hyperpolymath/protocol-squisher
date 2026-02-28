@@ -73,7 +73,7 @@ CORE ENGINE
 PROOF & VERIFICATION
   Formal Proofs (Agda/Lean/Coq/Isa) ██████████ 100%    8 Agda + Coq/Lean/Isabelle/Z3 cross-validation
   Diversity Analysis                ██████████ 100%    Squishability rankings verified
-  Property-Based Tests              ██████████ 100%    921 tests passing
+  Property-Based Tests              ██████████ 100%    937 tests passing
 
 ADVANCED FEATURES (Phase 3+)
   Security Bridge                   █████████░  95%    Negotiation, audit, downgrade, cert expiry, TLS probe
@@ -92,8 +92,16 @@ REPO INFRASTRUCTURE
   Benchmark Suite                   ██████████ 100%    Results interpretation verified
 
 ─────────────────────────────────────────────────────────────────────────────
+LIBRARY API (Phase 4a/4b)
+  SchemaAnalyzer Trait               ██████████ 100%    Implemented across all 13 analyzers
+  Public Library API                 ██████████ 100%    prelude, all_analyzers(), 13 re-exported modules
+  Constraint Evaluation API          ░░░░░░░░░░   0%    Phase 4c — planned
+  protocol-squisher-server           ░░░░░░░░░░   0%    Phase 4e — planned
+
+─────────────────────────────────────────────────────────────────────────────
 OVERALL (Phase 1-2):                ██████████ 100%    Core engine + proofs complete
-OVERALL (Phase 3-4):                █████████░  90%    Hardened + integrated, approaching production
+OVERALL (Phase 3):                  █████████░  95%    Hardened + integrated
+OVERALL (Phase 4):                  ████░░░░░░  40%    Library extraction started
 ```
 
 ## Key Dependencies

@@ -124,9 +124,46 @@ impl ThriftAnalyzer {
     }
 }
 
+impl protocol_squisher_ir::SchemaAnalyzer for ThriftAnalyzer {
+    type Error = AnalyzerError;
+
+    fn analyzer_name(&self) -> &str {
+        "thrift"
+    }
+
+    fn supported_extensions(&self) -> &[&str] {
+        &["thrift"]
+    }
+
+    fn analyze_file(&self, path: &Path) -> Result<IrSchema, Self::Error> {
+        self.analyze_file(path)
+    }
+
+    fn analyze_str(&self, content: &str, name: &str) -> Result<IrSchema, Self::Error> {
+        self.analyze_str(content, name)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_schema_analyzer_trait() {
+        use protocol_squisher_ir::SchemaAnalyzer;
+
+        let analyzer = ThriftAnalyzer::new();
+        assert_eq!(analyzer.analyzer_name(), "thrift");
+        assert_eq!(analyzer.supported_extensions(), &["thrift"]);
+
+        let thrift = r#"
+            struct Ping {
+                1: required string msg
+            }
+        "#;
+        let ir = SchemaAnalyzer::analyze_str(&analyzer, thrift, "ping").unwrap();
+        assert!(ir.types.contains_key("Ping"));
+    }
 
     #[test]
     fn test_simple_struct() {

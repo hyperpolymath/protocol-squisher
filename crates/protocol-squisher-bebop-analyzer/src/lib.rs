@@ -117,9 +117,46 @@ impl BebopAnalyzer {
     }
 }
 
+impl protocol_squisher_ir::SchemaAnalyzer for BebopAnalyzer {
+    type Error = AnalyzerError;
+
+    fn analyzer_name(&self) -> &str {
+        "bebop"
+    }
+
+    fn supported_extensions(&self) -> &[&str] {
+        &["bop"]
+    }
+
+    fn analyze_file(&self, path: &Path) -> Result<IrSchema, Self::Error> {
+        self.analyze_file(path)
+    }
+
+    fn analyze_str(&self, content: &str, name: &str) -> Result<IrSchema, Self::Error> {
+        self.analyze_str(content, name)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_schema_analyzer_trait() {
+        use protocol_squisher_ir::SchemaAnalyzer;
+
+        let analyzer = BebopAnalyzer::new();
+        assert_eq!(analyzer.analyzer_name(), "bebop");
+        assert_eq!(analyzer.supported_extensions(), &["bop"]);
+
+        let bebop = r#"
+            struct Ping {
+                string msg;
+            }
+        "#;
+        let ir = SchemaAnalyzer::analyze_str(&analyzer, bebop, "ping").unwrap();
+        assert!(ir.types.contains_key("Ping"));
+    }
 
     #[test]
     fn test_simple_struct() {

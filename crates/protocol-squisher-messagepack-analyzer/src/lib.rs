@@ -134,9 +134,47 @@ impl MessagePackAnalyzer {
     }
 }
 
+impl protocol_squisher_ir::SchemaAnalyzer for MessagePackAnalyzer {
+    type Error = AnalyzerError;
+
+    fn analyzer_name(&self) -> &str {
+        "messagepack"
+    }
+
+    fn supported_extensions(&self) -> &[&str] {
+        &["msgpack"]
+    }
+
+    fn analyze_file(&self, path: &Path) -> Result<IrSchema, Self::Error> {
+        self.analyze_file(path)
+    }
+
+    fn analyze_str(&self, content: &str, name: &str) -> Result<IrSchema, Self::Error> {
+        self.analyze_str(content, name)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_schema_analyzer_trait() {
+        use protocol_squisher_ir::SchemaAnalyzer;
+
+        let analyzer = MessagePackAnalyzer::new();
+        assert_eq!(analyzer.analyzer_name(), "messagepack");
+        assert_eq!(analyzer.supported_extensions(), &["msgpack"]);
+
+        let json_schema = r#"{
+            "type": "object",
+            "properties": {
+                "msg": { "type": "string" }
+            }
+        }"#;
+        let ir = SchemaAnalyzer::analyze_str(&analyzer, json_schema, "ping").unwrap();
+        assert!(ir.types.contains_key("Ping"));
+    }
 
     #[test]
     fn test_simple_object() {

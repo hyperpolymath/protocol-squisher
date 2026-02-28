@@ -118,9 +118,46 @@ impl ReScriptAnalyzer {
     }
 }
 
+impl protocol_squisher_ir::SchemaAnalyzer for ReScriptAnalyzer {
+    type Error = AnalyzerError;
+
+    fn analyzer_name(&self) -> &str {
+        "rescript"
+    }
+
+    fn supported_extensions(&self) -> &[&str] {
+        &["res", "resi"]
+    }
+
+    fn analyze_file(&self, path: &Path) -> Result<IrSchema, Self::Error> {
+        self.analyze_file(path)
+    }
+
+    fn analyze_str(&self, content: &str, name: &str) -> Result<IrSchema, Self::Error> {
+        self.analyze_str(content, name)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_schema_analyzer_trait() {
+        use protocol_squisher_ir::SchemaAnalyzer;
+
+        let analyzer = ReScriptAnalyzer::new();
+        assert_eq!(analyzer.analyzer_name(), "rescript");
+        assert_eq!(analyzer.supported_extensions(), &["res", "resi"]);
+
+        let rescript = r#"
+            type ping = {
+                msg: string,
+            }
+        "#;
+        let ir = SchemaAnalyzer::analyze_str(&analyzer, rescript, "ping").unwrap();
+        assert!(ir.types.contains_key("ping"));
+    }
 
     #[test]
     fn test_simple_record() {

@@ -16,6 +16,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::path::Path;
 
 pub mod constraints;
 pub mod schema;
@@ -24,6 +25,38 @@ pub mod types;
 pub use constraints::*;
 pub use schema::*;
 pub use types::*;
+
+/// Universal trait for protocol-to-IR schema analysis.
+///
+/// All 13 protocol analyzers implement this trait, enabling dynamic dispatch
+/// and uniform access from PanLL's ProtocolModule and the public library API.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use protocol_squisher_ir::SchemaAnalyzer;
+/// use protocol_squisher_toml_analyzer::TomlAnalyzer;
+///
+/// let analyzer = TomlAnalyzer::new();
+/// assert_eq!(analyzer.analyzer_name(), "toml");
+/// let schema = analyzer.analyze_str("[server]\nhost = \"localhost\"", "config")?;
+/// ```
+pub trait SchemaAnalyzer: Send + Sync {
+    /// Error type for this analyzer.
+    type Error: std::error::Error + Send + Sync + 'static;
+
+    /// Short identifier for this analyzer (e.g. "rust", "protobuf", "toml").
+    fn analyzer_name(&self) -> &str;
+
+    /// File extensions this analyzer handles (e.g. &["rs"], &["proto"]).
+    fn supported_extensions(&self) -> &[&str];
+
+    /// Analyze a schema from a file path.
+    fn analyze_file(&self, path: &Path) -> Result<IrSchema, Self::Error>;
+
+    /// Analyze a schema from a string with a given schema name.
+    fn analyze_str(&self, content: &str, name: &str) -> Result<IrSchema, Self::Error>;
+}
 
 /// Unique identifier for types within a schema
 pub type TypeId = String;

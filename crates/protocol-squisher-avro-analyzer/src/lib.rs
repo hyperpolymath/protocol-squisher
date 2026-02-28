@@ -146,9 +146,37 @@ impl AvroAnalyzer {
     }
 }
 
+impl protocol_squisher_ir::SchemaAnalyzer for AvroAnalyzer {
+    type Error = AnalyzerError;
+
+    fn analyzer_name(&self) -> &str {
+        "avro"
+    }
+
+    fn supported_extensions(&self) -> &[&str] {
+        &["avsc", "avro"]
+    }
+
+    fn analyze_file(&self, path: &Path) -> Result<IrSchema, Self::Error> {
+        self.analyze_file(path)
+    }
+
+    fn analyze_str(&self, content: &str, name: &str) -> Result<IrSchema, Self::Error> {
+        self.analyze_str(content, name)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_schema_analyzer_trait() {
+        use protocol_squisher_ir::SchemaAnalyzer;
+        let analyzer = AvroAnalyzer::new();
+        assert_eq!(analyzer.analyzer_name(), "avro");
+        assert!(analyzer.supported_extensions().contains(&"avsc"));
+    }
 
     #[test]
     fn test_simple_record() {

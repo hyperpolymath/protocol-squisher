@@ -182,10 +182,38 @@ impl PythonAnalyzer {
     }
 }
 
+impl protocol_squisher_ir::SchemaAnalyzer for PythonAnalyzer {
+    type Error = AnalyzerError;
+
+    fn analyzer_name(&self) -> &str {
+        "python"
+    }
+
+    fn supported_extensions(&self) -> &[&str] {
+        &["py"]
+    }
+
+    fn analyze_file(&self, path: &Path) -> Result<IrSchema, Self::Error> {
+        self.analyze_file(path)
+    }
+
+    fn analyze_str(&self, content: &str, _name: &str) -> Result<IrSchema, Self::Error> {
+        self.analyze_json(content)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use protocol_squisher_ir::{ContainerType, IrType, TypeDef};
+
+    #[test]
+    fn test_schema_analyzer_trait() {
+        use protocol_squisher_ir::SchemaAnalyzer;
+        let analyzer = PythonAnalyzer::new();
+        assert_eq!(analyzer.analyzer_name(), "python");
+        assert!(analyzer.supported_extensions().contains(&"py"));
+    }
 
     #[test]
     fn test_analyzer_creation() {

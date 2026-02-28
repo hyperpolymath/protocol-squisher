@@ -140,9 +140,47 @@ impl JsonSchemaAnalyzer {
     }
 }
 
+impl protocol_squisher_ir::SchemaAnalyzer for JsonSchemaAnalyzer {
+    type Error = AnalyzerError;
+
+    fn analyzer_name(&self) -> &str {
+        "json-schema"
+    }
+
+    fn supported_extensions(&self) -> &[&str] {
+        &["json"]
+    }
+
+    fn analyze_file(&self, path: &std::path::Path) -> Result<IrSchema, Self::Error> {
+        self.analyze_file(path)
+    }
+
+    fn analyze_str(&self, content: &str, name: &str) -> Result<IrSchema, Self::Error> {
+        self.analyze_str(content, name)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_schema_analyzer_trait() {
+        use protocol_squisher_ir::SchemaAnalyzer;
+
+        let analyzer = JsonSchemaAnalyzer::new();
+        assert_eq!(analyzer.analyzer_name(), "json-schema");
+        assert_eq!(analyzer.supported_extensions(), &["json"]);
+
+        let schema = r#"{
+            "type": "object",
+            "properties": {
+                "name": { "type": "string" }
+            }
+        }"#;
+        let ir = SchemaAnalyzer::analyze_str(&analyzer, schema, "Ping").unwrap();
+        assert!(ir.types.contains_key("Ping"));
+    }
 
     #[test]
     fn test_schema_version_detection() {

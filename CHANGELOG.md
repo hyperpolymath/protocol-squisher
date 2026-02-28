@@ -12,11 +12,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Phase 4a: `SchemaAnalyzer` trait unifying all 13 analyzers
-- Phase 4b: Public library API (re-export IR, compat, meta-analysis from root crate)
 - Phase 4c: Constraint evaluation API (`Constraint::evaluate()` for live data)
 - Phase 4d: Bidirectional analysis as first-class top-level API
 - Phase 4e: `protocol-squisher-server` crate (axum HTTP/JSON API)
+
+## [1.2.0] - 2026-02-28
+
+### Added
+
+- **`SchemaAnalyzer` trait** defined in `protocol-squisher-ir` — universal interface for all
+  analyzers with `analyzer_name()`, `supported_extensions()`, `analyze_file()`, `analyze_str()`
+- **Trait implemented across all 13 analyzers** (Rust, Python, JSON Schema, Protobuf, Avro,
+  Thrift, Bebop, Cap'n Proto, FlatBuffers, MessagePack, ReScript, GraphQL, TOML)
+- **Public library API** — all 13 analyzers, compat, meta-analysis, optimizer, json-fallback,
+  and pyo3-codegen re-exported from root `protocol_squisher::*` crate
+- **`all_analyzers()` registry** — returns all 13 analyzers as type-erased trait objects for
+  dynamic dispatch (PanLL integration, CLI auto-detection)
+- **`protocol_squisher::prelude`** — convenience re-exports (`IrSchema`, `SchemaAnalyzer`)
+- **`AnalyzerError` wrapper** — type-erased error for the `all_analyzers()` registry
+- 13 new `test_schema_analyzer_trait` tests + 3 library API tests (937 total)
+
+### Changed
+
+- Root `Cargo.toml` now depends on all 13 analyzer crates (was only 6)
+- `JsonSchemaAnalyzer` converter uses `AtomicUsize` instead of `Cell<usize>` for `Sync` safety
+- Test count: 921 → 937 (16 new tests)
 
 ## [1.1.1] - 2026-02-28
 

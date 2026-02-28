@@ -15,7 +15,7 @@ use std::collections::{BTreeMap, HashSet};
 #[derive(Debug, Default)]
 pub struct SchemaConverter {
     /// Counter for generating anonymous type names
-    type_counter: std::cell::Cell<usize>,
+    type_counter: std::sync::atomic::AtomicUsize,
 }
 
 impl SchemaConverter {
@@ -26,7 +26,8 @@ impl SchemaConverter {
 
     /// Convert a parsed JSON Schema to IR
     pub fn convert(&self, schema: &JsonSchema, name: &str) -> Result<IrSchema, AnalyzerError> {
-        self.type_counter.set(0);
+        self.type_counter
+            .store(0, std::sync::atomic::Ordering::Relaxed);
 
         let mut ir = IrSchema::new(name, "json-schema");
         let mut collected_types = BTreeMap::new();

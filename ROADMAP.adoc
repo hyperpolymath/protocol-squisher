@@ -195,7 +195,7 @@ environment through https://github.com/hyperpolymath/panll[PanLL eNSAID]:
 This is the critical prerequisite for PanLL integration. Currently, consumers must know
 the internal crate structure to use anything beyond `ir` and `rust_analyzer`.
 
-=== 4a. SchemaAnalyzer Trait
+=== 4a. SchemaAnalyzer Trait [COMPLETE]
 
 Define a common trait in `protocol-squisher-ir` (or a new `protocol-squisher-core` crate):
 
@@ -216,7 +216,7 @@ no common trait. Implementing this trait across all 13 enables:
 - Plugin discovery (register analyzers at runtime)
 - Uniform error handling
 
-=== 4b. Public Library API
+=== 4b. Public Library API [COMPLETE]
 
 Re-export IR, compat, meta-analysis, and transport class types from the root `src/lib.rs`.
 Currently only `ir` and `rust_analyzer` are publicly re-exported. The full set:
