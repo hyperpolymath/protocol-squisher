@@ -135,9 +135,46 @@ impl CapnProtoAnalyzer {
     }
 }
 
+impl protocol_squisher_ir::SchemaAnalyzer for CapnProtoAnalyzer {
+    type Error = AnalyzerError;
+
+    fn analyzer_name(&self) -> &str {
+        "capnproto"
+    }
+
+    fn supported_extensions(&self) -> &[&str] {
+        &["capnp"]
+    }
+
+    fn analyze_file(&self, path: &Path) -> Result<IrSchema, Self::Error> {
+        self.analyze_file(path)
+    }
+
+    fn analyze_str(&self, content: &str, name: &str) -> Result<IrSchema, Self::Error> {
+        self.analyze_str(content, name)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_schema_analyzer_trait() {
+        use protocol_squisher_ir::SchemaAnalyzer;
+
+        let analyzer = CapnProtoAnalyzer::new();
+        assert_eq!(analyzer.analyzer_name(), "capnproto");
+        assert_eq!(analyzer.supported_extensions(), &["capnp"]);
+
+        let capnp = r#"
+            struct Ping {
+                msg @0 :Text;
+            }
+        "#;
+        let ir = SchemaAnalyzer::analyze_str(&analyzer, capnp, "ping").unwrap();
+        assert!(ir.types.contains_key("Ping"));
+    }
 
     #[test]
     fn test_simple_struct() {

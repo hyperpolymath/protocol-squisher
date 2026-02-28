@@ -158,9 +158,45 @@ impl ProtobufAnalyzer {
     }
 }
 
+impl protocol_squisher_ir::SchemaAnalyzer for ProtobufAnalyzer {
+    type Error = AnalyzerError;
+
+    fn analyzer_name(&self) -> &str {
+        "protobuf"
+    }
+
+    fn supported_extensions(&self) -> &[&str] {
+        &["proto"]
+    }
+
+    fn analyze_file(&self, path: &Path) -> Result<IrSchema, Self::Error> {
+        self.analyze_file(path)
+    }
+
+    fn analyze_str(&self, content: &str, name: &str) -> Result<IrSchema, Self::Error> {
+        self.analyze_str(content, name)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_schema_analyzer_trait() {
+        use protocol_squisher_ir::SchemaAnalyzer;
+
+        let analyzer = ProtobufAnalyzer::new();
+        assert_eq!(analyzer.analyzer_name(), "protobuf");
+        assert_eq!(analyzer.supported_extensions(), &["proto"]);
+
+        let proto = r#"
+            syntax = "proto3";
+            message Ping { string msg = 1; }
+        "#;
+        let ir = SchemaAnalyzer::analyze_str(&analyzer, proto, "ping").unwrap();
+        assert!(ir.types.contains_key("Ping"));
+    }
 
     #[test]
     fn test_simple_message() {

@@ -130,3 +130,21 @@ path = "crates/protocol-squisher-protobuf-analyzer"
 
 [dependencies.protocol-squisher-rescript-analyzer]
 path = "crates/protocol-squisher-rescript-analyzer"
+
+[dependencies.protocol-squisher-bebop-analyzer]
+path = "crates/protocol-squisher-bebop-analyzer"
+
+[dependencies.protocol-squisher-capnproto-analyzer]
+path = "crates/protocol-squisher-capnproto-analyzer"
+
+[dependencies.protocol-squisher-flatbuffers-analyzer]
+path = "crates/protocol-squisher-flatbuffers-analyzer"
+
+[dependencies.protocol-squisher-messagepack-analyzer]
+path = "crates/protocol-squisher-messagepack-analyzer"
+
+[dependencies.protocol-squisher-graphql-analyzer]
+path = "crates/protocol-squisher-graphql-analyzer"
+
+[dependencies.protocol-squisher-toml-analyzer]
+path = "crates/protocol-squisher-toml-analyzer"

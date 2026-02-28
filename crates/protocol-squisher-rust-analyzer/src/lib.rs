@@ -478,9 +478,45 @@ fn determine_tag_style(attrs: &SerdeAttributes) -> TagStyle {
     }
 }
 
+impl protocol_squisher_ir::SchemaAnalyzer for RustAnalyzer {
+    type Error = AnalyzerError;
+
+    fn analyzer_name(&self) -> &str {
+        "rust"
+    }
+
+    fn supported_extensions(&self) -> &[&str] {
+        &["rs"]
+    }
+
+    fn analyze_file(&self, path: &std::path::Path) -> Result<IrSchema, Self::Error> {
+        let content = std::fs::read_to_string(path)
+            .map_err(|e| AnalyzerError::ParseError(format!("IO error: {e}")))?;
+        self.analyze_source(&content)
+    }
+
+    fn analyze_str(&self, content: &str, _name: &str) -> Result<IrSchema, Self::Error> {
+        self.analyze_source(content)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_schema_analyzer_trait() {
+        use protocol_squisher_ir::SchemaAnalyzer;
+        let analyzer = RustAnalyzer::new();
+        assert_eq!(analyzer.analyzer_name(), "rust");
+        assert!(analyzer.supported_extensions().contains(&"rs"));
+        let source = r#"
+            #[derive(Serialize, Deserialize)]
+            struct Point { x: f64, y: f64 }
+        "#;
+        let schema = SchemaAnalyzer::analyze_str(&analyzer, source, "point").unwrap();
+        assert!(schema.types.contains_key("Point"));
+    }
 
     #[test]
     fn test_simple_struct() {

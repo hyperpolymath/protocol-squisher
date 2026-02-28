@@ -18,7 +18,7 @@ image:https://img.shields.io/badge/License-PMPL--1.0-blue.svg[License: PMPL-1.0,
 **Status:** ✅ **Phase 2 Format Expansion Complete** (100%)
 
 **Phase 1 (MVP):**
-- 921 tests passing (ephapax IR + 13 analyzers + codegen + optimizer + property tests + Phase 3 modules)
+- 937 tests passing (ephapax IR + 13 analyzers + codegen + optimizer + property tests + Phase 3/4 modules)
 - Rust ↔ Python fully working (Concorde, Business, Economy, Wheelbarrow classes)
 - Formal verification (5 theorems proven in Agda; cross-validated in Lean, Coq, Isabelle, and Z3)
 - Comprehensive documentation (CLI guide, optimization guide, transport classes reference)
@@ -37,7 +37,12 @@ image:https://img.shields.io/badge/License-PMPL--1.0-blue.svg[License: PMPL-1.0,
 - Enterprise features enhanced (audit queries, governance reports, migration validation)
 - Formal proofs cross-validated in Coq (ConcordeSafety, CarriesInvariant), Isabelle (WheelbarrowNecessity), Z3/SMT (exhaustiveness)
 
-**Next:** Phase 4 - IDE plugins, web playground, ecosystem growth
+**Phase 4 (Library Extraction - In Progress):**
+- `SchemaAnalyzer` trait defined and implemented across all 13 analyzers
+- Public library API exposed (`protocol_squisher::prelude`, `all_analyzers()` registry)
+- All analyzers accessible via `use protocol_squisher::{avro_analyzer, protobuf_analyzer, ...}`
+
+**Next:** Phase 4c-e (constraint evaluation API, bidirectional API, HTTP server)
 ====
 
 ____

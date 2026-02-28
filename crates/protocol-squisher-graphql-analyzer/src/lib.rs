@@ -83,6 +83,26 @@ impl GraphqlAnalyzer {
     }
 }
 
+impl protocol_squisher_ir::SchemaAnalyzer for GraphqlAnalyzer {
+    type Error = AnalyzerError;
+
+    fn analyzer_name(&self) -> &str {
+        "graphql"
+    }
+
+    fn supported_extensions(&self) -> &[&str] {
+        &["graphql", "gql"]
+    }
+
+    fn analyze_file(&self, path: &Path) -> Result<IrSchema, Self::Error> {
+        self.analyze_file(path)
+    }
+
+    fn analyze_str(&self, content: &str, name: &str) -> Result<IrSchema, Self::Error> {
+        self.analyze_str(content, name)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -325,5 +345,22 @@ mod tests {
         let json = schema.to_json().expect("serialize");
         let restored = IrSchema::from_json(&json).expect("deserialize");
         assert_eq!(restored.types.len(), schema.types.len());
+    }
+
+    #[test]
+    fn test_schema_analyzer_trait() {
+        use protocol_squisher_ir::SchemaAnalyzer;
+
+        let a = GraphqlAnalyzer::new();
+        assert_eq!(a.analyzer_name(), "graphql");
+        assert_eq!(a.supported_extensions(), &["graphql", "gql"]);
+
+        let sdl = r#"
+            type Ping {
+                msg: String!
+            }
+        "#;
+        let ir = SchemaAnalyzer::analyze_str(&a, sdl, "ping").unwrap();
+        assert!(ir.types.contains_key("Ping"));
     }
 }
