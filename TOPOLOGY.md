@@ -61,15 +61,15 @@ CORE ENGINE
   Transport Class Scoring           ██████████ 100%    Fidelity/Overhead verified
 
 PROOF & VERIFICATION
-  Formal Proofs (Agda/Lean)         ██████░░░░  60%    2 verified, 2 partial, 1 planned
+  Formal Proofs (Agda/Lean)         ███████░░░  70%    2 verified, 2 constructive, 1 planned
   Diversity Analysis                ██████████ 100%    Squishability rankings verified
-  Property-Based Tests              ██████████ 100%    721 tests passing
+  Property-Based Tests              ██████████ 100%    742 tests passing
 
 ADVANCED FEATURES (Phase 3+)
-  Security Bridge                   ███░░░░░░░  30%    Type scaffolding only
+  Security Bridge                   ██████░░░░  60%    TLS/Noise/WireGuard translation + verification
   Enterprise Features               ███░░░░░░░  30%    Scaffolded, not production
-  Performance (SIMD/streaming)      ██░░░░░░░░  20%    Zero-copy works; SIMD stub only
-  Distributed Squishing             ██░░░░░░░░  20%    Rayon scheduler scaffolded
+  Performance (SIMD/streaming)      ███░░░░░░░  30%    Byte comparison, hashing, zero-copy, streaming
+  Distributed Squishing             ███░░░░░░░  30%    Batch scheduling, partitioning, summaries
 
 REPO INFRASTRUCTURE
   Justfile Automation               ██████████ 100%    Standard build/check tasks
@@ -78,7 +78,7 @@ REPO INFRASTRUCTURE
 
 ─────────────────────────────────────────────────────────────────────────────
 OVERALL (Phase 1-2):                █████████░  90%    Core engine complete, proofs partial
-OVERALL (Phase 3-4):                ███░░░░░░░  30%    Scaffolded, not production
+OVERALL (Phase 3-4):                ████░░░░░░  40%    Functional scaffolds, not production
 ```
 
 ## Key Dependencies

@@ -1,6 +1,6 @@
 # Show HN: Protocol Squisher – Universal Protocol Interoperability with Formal Guarantees
 
-**TL;DR:** Automatic adapter synthesis between any two serialization formats. If it compiles, it carries. 721 tests, formal proofs in Agda/Lean, 11 format analyzers, v1.0.0 just released.
+**TL;DR:** Automatic adapter synthesis between any two serialization formats. If it compiles, it carries. 742 tests, formal proofs in Agda/Lean, 11 format analyzers, v1.0.0 just released.
 
 ---
 
@@ -121,7 +121,7 @@ Generated code handles all FFI, type conversions, and includes property tests.
 ## Current Status
 
 **v1.0.0 Released**
-- ✅ 721 tests passing
+- ✅ 742 tests passing
 - ✅ 11 format analyzers: Rust, Python, Protobuf, Thrift, Avro, MessagePack, FlatBuffers, Cap'n Proto, Bebop, ReScript, JSON Schema
 - ✅ CLI with analysis, optimization suggestions, code generation
 - ✅ Formal proofs in Agda/Lean (2 complete, 2 partial)

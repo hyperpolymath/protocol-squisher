@@ -1,6 +1,6 @@
 # Protocol Squisher Test Coverage
 
-**Total: 721 tests passing** (as of 2026-02-28)
+**Total: 742 tests passing** (as of 2026-02-28)
 
 ## Test Breakdown by Component
 
