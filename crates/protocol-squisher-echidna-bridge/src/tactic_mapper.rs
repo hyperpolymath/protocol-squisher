@@ -114,7 +114,10 @@ mod tests {
         let weights = map_tactics_to_weights(&tactics);
         let widen_weight = weights.get("WidenType").copied().unwrap_or(1.0);
         // confidence 0.95 → weight = 0.5 + 0.95*1.5 = 1.925
-        assert!(widen_weight > 1.5, "High confidence tactic should boost weight");
+        assert!(
+            widen_weight > 1.5,
+            "High confidence tactic should boost weight"
+        );
     }
 
     #[test]
@@ -128,6 +131,9 @@ mod tests {
         let weights = map_tactics_to_weights(&tactics);
         let widen_weight = weights.get("WidenType").copied().unwrap_or(1.0);
         // confidence 0.1 → weight = 0.5 + 0.1*1.5 = 0.65
-        assert!(widen_weight < 1.0, "Low confidence should produce sub-1.0 weight");
+        assert!(
+            widen_weight < 1.0,
+            "Low confidence should produce sub-1.0 weight"
+        );
     }
 }

@@ -56,10 +56,10 @@ impl fmt::Display for DistributedError {
         match self {
             DistributedError::PoolCreationFailed(msg) => {
                 write!(f, "failed to build thread pool: {msg}")
-            }
+            },
             DistributedError::TaskPanicked { task_id, message } => {
                 write!(f, "task {task_id} panicked: {message}")
-            }
+            },
         }
     }
 }
@@ -171,7 +171,7 @@ pub fn run_batch(
             TransportClass::BusinessClass => class_counts.business += 1,
             TransportClass::Economy => class_counts.economy += 1,
             TransportClass::Wheelbarrow => class_counts.wheelbarrow += 1,
-            TransportClass::Incompatible => {} // counted as succeeded but no class bucket
+            TransportClass::Incompatible => {}, // counted as succeeded but no class bucket
         }
     }
 
@@ -242,10 +242,7 @@ impl JobQueue {
 
     /// Submit a task at the given priority level.
     pub fn submit(&mut self, priority: Priority, task: DistributedSquishTask) {
-        self.queues
-            .entry(priority)
-            .or_default()
-            .push_back(task);
+        self.queues.entry(priority).or_default().push_back(task);
         self.total += 1;
     }
 
@@ -367,7 +364,7 @@ impl RetryPolicy {
             BackoffStrategy::Fixed(ms) => *ms,
             BackoffStrategy::Exponential { base_ms } => {
                 base_ms.saturating_mul(1u64.checked_shl(attempt as u32).unwrap_or(u64::MAX))
-            }
+            },
         }
     }
 }
@@ -434,7 +431,7 @@ pub fn run_batch_with_retry(
             TransportClass::BusinessClass => class_counts.business += 1,
             TransportClass::Economy => class_counts.economy += 1,
             TransportClass::Wheelbarrow => class_counts.wheelbarrow += 1,
-            TransportClass::Incompatible => {}
+            TransportClass::Incompatible => {},
         }
     }
 
@@ -566,8 +563,7 @@ mod tests {
 
     #[test]
     fn empty_batch_returns_zero_summary() {
-        let (results, summary) =
-            run_batch(&[], &BatchConfig::default()).expect("empty batch");
+        let (results, summary) = run_batch(&[], &BatchConfig::default()).expect("empty batch");
         assert!(results.is_empty());
         assert_eq!(summary.total_tasks, 0);
         assert_eq!(summary.succeeded, 0);

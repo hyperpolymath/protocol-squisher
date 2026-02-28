@@ -60,15 +60,11 @@ pub fn analyze_transport_compatibility(
     target: &IrType,
 ) -> Result<TransportAnalysis, AnalyzerError> {
     let (class, fidelity, overhead) = match (source, target) {
-        (IrType::Primitive(s), IrType::Primitive(t)) => {
-            analyze_primitive_compatibility(s, t)
-        }
-        (IrType::Container(s), IrType::Container(t)) => {
-            analyze_container_compatibility(s, t)?
-        }
+        (IrType::Primitive(s), IrType::Primitive(t)) => analyze_primitive_compatibility(s, t),
+        (IrType::Container(s), IrType::Container(t)) => analyze_container_compatibility(s, t)?,
         (IrType::Reference(s), IrType::Reference(t)) if s == t => {
             (TransportClass::Concorde, 100, 0)
-        }
+        },
         _ => (TransportClass::Wheelbarrow, 50, 80),
     };
 
@@ -137,8 +133,12 @@ fn analyze_container_compatibility(
         (ContainerType::Option(s), ContainerType::Option(t))
         | (ContainerType::Vec(s), ContainerType::Vec(t)) => {
             let inner = analyze_transport_compatibility(s, t)?;
-            Ok((inner.class, inner.fidelity, inner.overhead.saturating_add(2)))
-        }
+            Ok((
+                inner.class,
+                inner.fidelity,
+                inner.overhead.saturating_add(2),
+            ))
+        },
         (ContainerType::Map(sk, sv), ContainerType::Map(tk, tv)) => {
             let key_analysis = analyze_transport_compatibility(sk, tk)?;
             let val_analysis = analyze_transport_compatibility(sv, tv)?;
@@ -146,7 +146,7 @@ fn analyze_container_compatibility(
             let fidelity = key_analysis.fidelity.min(val_analysis.fidelity);
             let overhead = key_analysis.overhead.max(val_analysis.overhead);
             Ok((class, fidelity, overhead))
-        }
+        },
         _ => Ok((TransportClass::Wheelbarrow, 50, 80)),
     }
 }

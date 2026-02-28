@@ -33,11 +33,7 @@ impl GraphqlConverter {
     }
 
     /// Convert a parsed GraphQL schema into an `IrSchema`.
-    pub fn convert(
-        &self,
-        parsed: &ParsedGraphql,
-        name: &str,
-    ) -> Result<IrSchema, AnalyzerError> {
+    pub fn convert(&self, parsed: &ParsedGraphql, name: &str) -> Result<IrSchema, AnalyzerError> {
         let mut schema = IrSchema::new(name, "graphql");
 
         // Convert enums first (other types may reference them).
@@ -94,10 +90,7 @@ impl GraphqlConverter {
     fn convert_object(&self, obj: &GraphqlObject) -> StructDef {
         let mut extra = std::collections::BTreeMap::new();
         if !obj.implements.is_empty() {
-            extra.insert(
-                "graphql_implements".to_string(),
-                obj.implements.join(", "),
-            );
+            extra.insert("graphql_implements".to_string(), obj.implements.join(", "));
         }
         for dir in &obj.directives {
             extra.insert(format!("graphql_directive_{dir}"), "true".to_string());
@@ -215,18 +208,18 @@ fn convert_graphql_type(gql_type: &GraphqlType) -> (IrType, bool) {
         GraphqlType::NonNull(inner) => {
             let (ty, _) = convert_graphql_type(inner);
             (ty, false)
-        }
+        },
         GraphqlType::List(inner) => {
             let (elem_ty, _) = convert_graphql_type(inner);
             (
                 IrType::Container(ContainerType::Vec(Box::new(elem_ty))),
                 true,
             )
-        }
+        },
         GraphqlType::Named(name) => {
             let ty = graphql_builtin_to_ir(name);
             (ty, true) // GraphQL fields are nullable by default.
-        }
+        },
     }
 }
 

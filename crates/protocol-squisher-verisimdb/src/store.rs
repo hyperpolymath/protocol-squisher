@@ -192,8 +192,7 @@ impl AnalysisStore for VeriSimDBStore {
 
     fn get_analysis(&self, id: &str) -> Result<AnalysisRecord, VeriSimError> {
         let value = self.client.get_entity("analyses", id)?;
-        serde_json::from_value(value)
-            .map_err(|e| VeriSimError::SerializationError(e.to_string()))
+        serde_json::from_value(value).map_err(|e| VeriSimError::SerializationError(e.to_string()))
     }
 
     fn query_similar(
@@ -209,8 +208,7 @@ impl AnalysisStore for VeriSimDBStore {
              LIMIT {limit}"
         );
         let result = self.client.vql_query(&vql)?;
-        serde_json::from_value(result)
-            .map_err(|e| VeriSimError::SerializationError(e.to_string()))
+        serde_json::from_value(result).map_err(|e| VeriSimError::SerializationError(e.to_string()))
     }
 
     fn query_history(
@@ -225,8 +223,7 @@ impl AnalysisStore for VeriSimDBStore {
             "2099-12-31",
         );
         let result = self.client.vql_query(&vql)?;
-        serde_json::from_value(result)
-            .map_err(|e| VeriSimError::SerializationError(e.to_string()))
+        serde_json::from_value(result).map_err(|e| VeriSimError::SerializationError(e.to_string()))
     }
 
     fn query_by_provenance(
@@ -235,8 +232,7 @@ impl AnalysisStore for VeriSimDBStore {
     ) -> Result<Vec<AnalysisRecord>, VeriSimError> {
         let vql = crate::queries::build_provenance_query(analyzer_version, None);
         let result = self.client.vql_query(&vql)?;
-        serde_json::from_value(result)
-            .map_err(|e| VeriSimError::SerializationError(e.to_string()))
+        serde_json::from_value(result).map_err(|e| VeriSimError::SerializationError(e.to_string()))
     }
 
     fn log_suggestion(&mut self, entry: SuggestionLogEntry) -> Result<(), VeriSimError> {

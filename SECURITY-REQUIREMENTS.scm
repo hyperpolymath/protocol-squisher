@@ -18,7 +18,7 @@
 ;;; These standards apply to future security-sensitive features
 
 (define cryptographic-standards
-  '((version . "1.0.0")
+  '((version . "1.1.0")
     (updated . "2026-02-04")
     (compliance . ("NIST-SP-800-series" "FIPS-140-3" "Post-Quantum-Cryptography-NIST"))
     (note . "protocol-squisher is currently a code generation tool. Security requirements apply to future features.")))

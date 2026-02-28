@@ -33,8 +33,8 @@
 (define current-position
   '((phase . "v1-released")
     (overall-completion . 95)
-    (crate-version . "1.0.0")
-    (test-count . 923)
+    (crate-version . "1.1.0")
+    (test-count . 921)
     (components
       ((core-ir . "working")
        (compat-engine . "working")
@@ -54,7 +54,7 @@
 
 (define release-readiness
   '((status . "released")
-    (release-tag . "v1.0.0")
+    (release-tag . "v1.1.0")
     (release-date . "2026-02-28")
     (latest-security-sweep
       (date . "2026-02-28")
@@ -66,7 +66,7 @@
       (date . "2026-02-28")
       (checks
         ("cargo check --workspace --all-targets"
-         "cargo test --workspace (923 pass)"
+         "cargo test --workspace (921 pass)"
          "cargo clippy --workspace -- -D warnings (clean)"
          "cargo fmt --all -- --check (clean)"
          "cargo audit (clean)")))))
@@ -105,7 +105,7 @@
         "Security: cert expiry validation (validate_cert_chain_at), TLS probing stub (probe_tls_version), check_cert_expiry."
         "10 new end-to-end integration tests covering full pipeline (analysis → proof → storage → feedback)."
         "4 new formal proofs: OptimizationSoundness.agda, optimization_soundness.smt2, wheelbarrow_necessity.lean, ContainerPropagation.v."
-        "Test count increased 892 → 923 (31 new tests)."
+        "Test count increased 892 → 921 (29 new tests)."
         "Updated TOPOLOGY.md and STATE.scm with accurate counts and new component rows."
         "Zero Admitted/sorry/postulate/believe_me in new proofs.")
       (notes

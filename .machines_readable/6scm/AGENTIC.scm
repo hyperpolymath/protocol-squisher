@@ -6,7 +6,7 @@
   #:export (agentic-config))
 
 (define agentic-config
-  '((version . "1.0.0")
+  '((version . "1.1.0")
     (name . "protocol-squisher")
     (entropy-budget . 0.3)
     (allowed-operations . (read analyze suggest))

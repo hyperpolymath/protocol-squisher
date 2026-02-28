@@ -93,10 +93,16 @@ mod tests {
             TypeDef::Struct(s) => {
                 assert_eq!(s.fields.len(), 4);
                 let name_field = s.fields.iter().find(|f| f.name == "name").unwrap();
-                assert!(matches!(name_field.ty, IrType::Primitive(PrimitiveType::String)));
+                assert!(matches!(
+                    name_field.ty,
+                    IrType::Primitive(PrimitiveType::String)
+                ));
                 let port_field = s.fields.iter().find(|f| f.name == "port").unwrap();
-                assert!(matches!(port_field.ty, IrType::Primitive(PrimitiveType::I64)));
-            }
+                assert!(matches!(
+                    port_field.ty,
+                    IrType::Primitive(PrimitiveType::I64)
+                ));
+            },
             other => panic!("Expected Struct, got {other:?}"),
         }
     }
@@ -114,7 +120,7 @@ mod tests {
         match &schema.types["App_Server"] {
             TypeDef::Struct(s) => {
                 assert_eq!(s.fields.len(), 2);
-            }
+            },
             other => panic!("Expected Struct for server, got {other:?}"),
         }
     }
@@ -132,7 +138,7 @@ mod tests {
                     tags_field.ty,
                     IrType::Container(protocol_squisher_ir::ContainerType::Vec(_))
                 ));
-            }
+            },
             other => panic!("Expected Struct, got {other:?}"),
         }
     }
@@ -156,7 +162,7 @@ mod tests {
                     servers_field.ty,
                     IrType::Container(protocol_squisher_ir::ContainerType::Vec(_))
                 ));
-            }
+            },
             other => panic!("Expected Struct, got {other:?}"),
         }
     }
@@ -174,10 +180,16 @@ mod tests {
             TypeDef::Struct(s) => {
                 assert_eq!(s.fields.len(), 4);
                 let bool_field = s.fields.iter().find(|f| f.name == "enabled").unwrap();
-                assert!(matches!(bool_field.ty, IrType::Primitive(PrimitiveType::Bool)));
+                assert!(matches!(
+                    bool_field.ty,
+                    IrType::Primitive(PrimitiveType::Bool)
+                ));
                 let float_field = s.fields.iter().find(|f| f.name == "threshold").unwrap();
-                assert!(matches!(float_field.ty, IrType::Primitive(PrimitiveType::F64)));
-            }
+                assert!(matches!(
+                    float_field.ty,
+                    IrType::Primitive(PrimitiveType::F64)
+                ));
+            },
             other => panic!("Expected Struct, got {other:?}"),
         }
     }
@@ -204,7 +216,7 @@ mod tests {
         match &schema.types["Config_Database"] {
             TypeDef::Struct(s) => {
                 assert_eq!(s.fields.len(), 3);
-            }
+            },
             other => panic!("Expected Struct, got {other:?}"),
         }
     }
@@ -221,10 +233,10 @@ mod tests {
                 match &field.ty {
                     IrType::Container(protocol_squisher_ir::ContainerType::Vec(inner)) => {
                         assert!(matches!(**inner, IrType::Primitive(PrimitiveType::String)));
-                    }
+                    },
                     other => panic!("Expected Vec, got {other:?}"),
                 }
-            }
+            },
             other => panic!("Expected Struct, got {other:?}"),
         }
     }

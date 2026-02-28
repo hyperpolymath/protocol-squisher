@@ -2,7 +2,7 @@
 -- SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
 package ephapax-ir-ffi
 
-version = 1.0.0
+version = 1.1.0
 authors = "Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"
 license = "PMPL-1.0-or-later"
 brief = "Protocol Squisher IR - C FFI Library"

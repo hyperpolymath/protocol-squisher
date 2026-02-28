@@ -220,7 +220,12 @@ mod tests {
             .record("ci", "schema.publish", "success", serde_json::json!({}))
             .expect("record");
         logger
-            .record("ci", "governance.evaluate", "success", serde_json::json!({}))
+            .record(
+                "ci",
+                "governance.evaluate",
+                "success",
+                serde_json::json!({}),
+            )
             .expect("record");
 
         let query = AuditQuery {

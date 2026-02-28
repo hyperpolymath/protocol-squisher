@@ -725,9 +725,7 @@ fn feedback_command(
     };
 
     if submit && !feedback::is_feedback_available(&config) {
-        anyhow::bail!(
-            "feedback-a-tron binary not found. Install it or use --dry-run mode."
-        );
+        anyhow::bail!("feedback-a-tron binary not found. Install it or use --dry-run mode.");
     }
 
     // Pull reports from VeriSimDB (or in-memory fallback if unavailable).
@@ -748,7 +746,7 @@ fn feedback_command(
         "json" => {
             let json = serde_json::to_string_pretty(&suggestions)?;
             println!("{json}");
-        }
+        },
         _ => {
             for (i, s) in suggestions.iter().enumerate() {
                 println!(
@@ -764,12 +762,12 @@ fn feedback_command(
                 }
                 println!();
             }
-        }
+        },
     }
 
     if !config.dry_run {
-        let submitted = feedback::submit_batch(&suggestions, &config)
-            .map_err(|e| anyhow::anyhow!(e))?;
+        let submitted =
+            feedback::submit_batch(&suggestions, &config).map_err(|e| anyhow::anyhow!(e))?;
         println!("Submitted {submitted} suggestion(s) to {platform}.");
     }
 
@@ -1037,10 +1035,7 @@ fn synthesize_command(
         if let Some((_proven_class, trust_level)) =
             ctx.try_prove_transport_class(&source_schema, &target_schema)
         {
-            println!(
-                "  ECHIDNA Trust: {:?} (synthesis verified)",
-                trust_level
-            );
+            println!("  ECHIDNA Trust: {:?} (synthesis verified)", trust_level);
         }
         let _ = ctx.store_analysis_record(
             &source_schema.name,

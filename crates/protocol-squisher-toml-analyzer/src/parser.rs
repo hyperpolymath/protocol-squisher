@@ -68,9 +68,9 @@ impl TomlParser {
 
     /// Parse a TOML string.
     pub fn parse_str(&self, content: &str, name: &str) -> Result<ParsedToml, AnalyzerError> {
-        let table: toml::Value = content.parse().map_err(|e: toml::de::Error| {
-            AnalyzerError::ParseError(e.to_string())
-        })?;
+        let table: toml::Value = content
+            .parse()
+            .map_err(|e: toml::de::Error| AnalyzerError::ParseError(e.to_string()))?;
 
         let entries = match table {
             toml::Value::Table(t) => convert_table(&t),
@@ -78,7 +78,7 @@ impl TomlParser {
                 return Err(AnalyzerError::ParseError(
                     "TOML root must be a table".to_string(),
                 ))
-            }
+            },
         };
 
         Ok(ParsedToml {
@@ -107,9 +107,7 @@ fn convert_value(value: &toml::Value) -> TomlValue {
         toml::Value::Float(f) => TomlValue::Float(*f),
         toml::Value::Boolean(b) => TomlValue::Boolean(*b),
         toml::Value::Datetime(dt) => TomlValue::DateTime(dt.to_string()),
-        toml::Value::Array(arr) => {
-            TomlValue::Array(arr.iter().map(convert_value).collect())
-        }
+        toml::Value::Array(arr) => TomlValue::Array(arr.iter().map(convert_value).collect()),
         toml::Value::Table(t) => TomlValue::Table(convert_table(t)),
     }
 }

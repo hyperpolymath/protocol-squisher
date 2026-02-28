@@ -27,11 +27,7 @@ impl TomlConverter {
     }
 
     /// Convert a parsed TOML document into an `IrSchema`.
-    pub fn convert(
-        &self,
-        parsed: &ParsedToml,
-        name: &str,
-    ) -> Result<IrSchema, AnalyzerError> {
+    pub fn convert(&self, parsed: &ParsedToml, name: &str) -> Result<IrSchema, AnalyzerError> {
         let mut schema = IrSchema::new(name, "toml");
 
         // The root table becomes the root struct.
@@ -90,11 +86,10 @@ impl TomlConverter {
             TomlValue::DateTime(_) => IrType::Primitive(PrimitiveType::DateTime),
             TomlValue::Table(entries) => {
                 let struct_name = format!("{parent_name}_{}", to_pascal_case(key));
-                let struct_def =
-                    self.convert_table_entries(entries, &struct_name, schema);
+                let struct_def = self.convert_table_entries(entries, &struct_name, schema);
                 schema.add_type(struct_name.clone(), TypeDef::Struct(struct_def));
                 IrType::Reference(struct_name)
-            }
+            },
             TomlValue::Array(elements) => {
                 if elements.is_empty() {
                     // Empty array — default to Vec<String>.
@@ -103,11 +98,10 @@ impl TomlConverter {
                     ))))
                 } else {
                     // Infer type from first element.
-                    let elem_ty =
-                        self.convert_value(&elements[0], key, parent_name, schema);
+                    let elem_ty = self.convert_value(&elements[0], key, parent_name, schema);
                     IrType::Container(ContainerType::Vec(Box::new(elem_ty)))
                 }
-            }
+            },
         }
     }
 }
@@ -123,7 +117,7 @@ fn to_pascal_case(s: &str) -> String {
                     let mut result = first.to_uppercase().to_string();
                     result.extend(chars.flat_map(|c| c.to_lowercase()));
                     result
-                }
+                },
                 None => String::new(),
             }
         })

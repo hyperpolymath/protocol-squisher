@@ -1,6 +1,6 @@
 # Show HN: Protocol Squisher – Universal Protocol Interoperability with Formal Guarantees
 
-**TL;DR:** Automatic adapter synthesis between any two serialization formats. If it compiles, it carries. 742 tests, formal proofs in Agda/Lean, 11 format analyzers, v1.0.0 just released.
+**TL;DR:** Automatic adapter synthesis between any two serialization formats. If it compiles, it carries. 921 tests, formal proofs in Agda/Lean/Coq/Isabelle/Z3, 13 format analyzers, v1.1.0 released.
 
 ---
 
@@ -120,11 +120,11 @@ Generated code handles all FFI, type conversions, and includes property tests.
 
 ## Current Status
 
-**v1.0.0 Released**
-- ✅ 742 tests passing
-- ✅ 11 format analyzers: Rust, Python, Protobuf, Thrift, Avro, MessagePack, FlatBuffers, Cap'n Proto, Bebop, ReScript, JSON Schema
+**v1.1.0 Released**
+- ✅ 921 tests passing
+- ✅ 13 format analyzers: Rust, Python, Protobuf, Thrift, Avro, MessagePack, FlatBuffers, Cap'n Proto, Bebop, ReScript, JSON Schema, GraphQL, TOML
 - ✅ CLI with analysis, optimization suggestions, code generation
-- ✅ Formal proofs in Agda/Lean (2 complete, 2 partial)
+- ✅ Formal proofs in Agda/Lean/Coq/Isabelle/Z3 (8 Agda theorems + cross-validation)
 - ✅ Zero-copy benchmarks (~1ns Concorde, ~100-1000ns Wheelbarrow)
 
 ## Try It
@@ -168,7 +168,7 @@ We need:
 - Real-world schema examples that break our analysis
 - Edge cases in formal proofs (help us finish the partial proofs!)
 - Performance optimizations
-- New format analyzers (GraphQL, gRPC, Excel, etc.)
+- New format analyzers (gRPC, Excel, etc.)
 
 Issues: https://github.com/hyperpolymath/protocol-squisher/issues
 

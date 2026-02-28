@@ -13,10 +13,12 @@
 //! - `ECHIDNA_URL`: Base URL for the ECHIDNA prover (default: `http://localhost:8000`)
 //! - `VERISIMDB_URL`: Base URL for VeriSimDB (default: `http://localhost:8080`)
 
+use protocol_squisher_echidna_bridge::types::{
+    ProofRequest, ProofResponse, ProofStatus, ProverKind,
+};
 use protocol_squisher_echidna_bridge::{
     cross_validate, map_tactics_to_weights, EchidnaBridge, ProofGoalGenerator, TrustLevel,
 };
-use protocol_squisher_echidna_bridge::types::{ProofRequest, ProofResponse, ProofStatus, ProverKind};
 use protocol_squisher_ir::{IrSchema, PrimitiveType};
 use protocol_squisher_meta_analysis::SquishabilityReport;
 use protocol_squisher_transport_primitives::TransportClass;
@@ -44,10 +46,10 @@ impl IntegrationContext {
     /// back to localhost defaults. Services are probed silently; if unreachable,
     /// the context uses offline fallbacks.
     pub fn new() -> Self {
-        let echidna_url = std::env::var("ECHIDNA_URL")
-            .unwrap_or_else(|_| "http://localhost:8000".to_string());
-        let verisimdb_url = std::env::var("VERISIMDB_URL")
-            .unwrap_or_else(|_| "http://localhost:8080".to_string());
+        let echidna_url =
+            std::env::var("ECHIDNA_URL").unwrap_or_else(|_| "http://localhost:8000".to_string());
+        let verisimdb_url =
+            std::env::var("VERISIMDB_URL").unwrap_or_else(|_| "http://localhost:8080".to_string());
 
         let bridge = EchidnaBridge::with_url(&echidna_url);
         let echidna = if bridge.is_available() {
@@ -94,7 +96,9 @@ impl IntegrationContext {
         let requests = [
             ProofRequest {
                 goal: ProofGoalGenerator::widening_is_lossless(
-                    &source_prim, &target_prim, ProverKind::Coq,
+                    &source_prim,
+                    &target_prim,
+                    ProverKind::Coq,
                 ),
                 prover: ProverKind::Coq,
                 label: Some("widening-lossless-coq".to_string()),
@@ -102,7 +106,9 @@ impl IntegrationContext {
             },
             ProofRequest {
                 goal: ProofGoalGenerator::widening_is_lossless(
-                    &source_prim, &target_prim, ProverKind::Z3,
+                    &source_prim,
+                    &target_prim,
+                    ProverKind::Z3,
                 ),
                 prover: ProverKind::Z3,
                 label: Some("widening-lossless-z3".to_string()),
@@ -110,7 +116,9 @@ impl IntegrationContext {
             },
             ProofRequest {
                 goal: ProofGoalGenerator::widening_is_lossless(
-                    &source_prim, &target_prim, ProverKind::Lean4,
+                    &source_prim,
+                    &target_prim,
+                    ProverKind::Lean4,
                 ),
                 prover: ProverKind::Lean4,
                 label: Some("widening-lossless-lean4".to_string()),
@@ -181,9 +189,7 @@ impl IntegrationContext {
             metadata: HashMap::new(),
         };
 
-        self.store
-            .store_analysis(record)
-            .map_err(|e| e.to_string())
+        self.store.store_analysis(record).map_err(|e| e.to_string())
     }
 
     /// Query historical analysis reports for a type pair.
@@ -204,10 +210,7 @@ impl IntegrationContext {
     /// feedback command's suggestion generator.
     pub fn build_squishability_reports(&self) -> Vec<SquishabilityReport> {
         // Query all records produced by this analyzer version.
-        let records = self
-            .store
-            .query_by_provenance("1.1.0")
-            .unwrap_or_default();
+        let records = self.store.query_by_provenance("1.1.0").unwrap_or_default();
 
         records_to_reports(&records)
     }
@@ -338,9 +341,7 @@ pub fn timestamp_now() -> String {
     }
     let day = remaining_days + 1;
 
-    format!(
-        "{year:04}-{month:02}-{day:02}T{hours:02}:{minutes:02}:{seconds:02}Z"
-    )
+    format!("{year:04}-{month:02}-{day:02}T{hours:02}:{minutes:02}:{seconds:02}Z")
 }
 
 #[cfg(test)]
@@ -415,8 +416,15 @@ mod tests {
         let mut ctx = IntegrationContext::offline();
         ctx.store_analysis_record("User.id", "UserDTO.id", "Business", 98.0, 5.0, "protobuf")
             .unwrap();
-        ctx.store_analysis_record("Order.total", "OrderDTO.total", "Concorde", 100.0, 0.0, "avro")
-            .unwrap();
+        ctx.store_analysis_record(
+            "Order.total",
+            "OrderDTO.total",
+            "Concorde",
+            100.0,
+            0.0,
+            "avro",
+        )
+        .unwrap();
 
         let reports = ctx.build_squishability_reports();
         assert_eq!(reports.len(), 2);

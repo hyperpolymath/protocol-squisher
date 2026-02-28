@@ -91,9 +91,7 @@ pub fn run(
 
         // ECHIDNA proof attempt (non-fatal).
         let mut ctx = crate::integration::IntegrationContext::new();
-        if let Some((proven_class, trust_level)) =
-            ctx.try_prove_transport_class(source, target)
-        {
+        if let Some((proven_class, trust_level)) = ctx.try_prove_transport_class(source, target) {
             println!(
                 "  ECHIDNA Trust: {:?} (proven class: {:?})",
                 trust_level, proven_class

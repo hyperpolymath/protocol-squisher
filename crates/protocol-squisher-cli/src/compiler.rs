@@ -147,9 +147,7 @@ impl UniversalCompiler {
     ) -> Result<TransportClass> {
         // Attempt ECHIDNA-backed proof of transport class.
         let mut ctx = crate::integration::IntegrationContext::new();
-        if let Some((proven_class, trust_level)) =
-            ctx.try_prove_transport_class(schema, schema)
-        {
+        if let Some((proven_class, trust_level)) = ctx.try_prove_transport_class(schema, schema) {
             if trust_level >= TrustLevel::Level2 {
                 return Ok(proven_class);
             }

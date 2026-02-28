@@ -18,7 +18,7 @@ image:https://img.shields.io/badge/License-PMPL--1.0-blue.svg[License: PMPL-1.0,
 **Status:** ✅ **Phase 2 Format Expansion Complete** (100%)
 
 **Phase 1 (MVP):**
-- 829 tests passing (ephapax IR + 13 analyzers + codegen + optimizer + property tests + Phase 3 modules)
+- 921 tests passing (ephapax IR + 13 analyzers + codegen + optimizer + property tests + Phase 3 modules)
 - Rust ↔ Python fully working (Concorde, Business, Economy, Wheelbarrow classes)
 - Formal verification (5 theorems proven in Agda; cross-validated in Lean, Coq, Isabelle, and Z3)
 - Comprehensive documentation (CLI guide, optimization guide, transport classes reference)
@@ -30,7 +30,7 @@ image:https://img.shields.io/badge/License-PMPL--1.0-blue.svg[License: PMPL-1.0,
 - **Hypothesis testing** confirms: schema evolution protocols (Avro/Thrift) most squishable, zero-copy (Cap'n Proto) already optimal
 - **Protocol compatibility matrix** shows Business class achievable for most schema-based pairs
 
-**Phase 3 (In Progress):**
+**Phase 3 (Hardened):**
 - Security bridge hardened (negotiation, audit, downgrade risk)
 - Distributed squishing expanded (job queue, progress tracking, retry policies)
 - Performance primitives extended (SIMD byte search, chunked streaming, hardware detection, lazy schemas)

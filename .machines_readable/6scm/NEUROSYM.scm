@@ -6,7 +6,7 @@
   #:export (neurosym-config))
 
 (define neurosym-config
-  '((version . "1.0.0")
+  '((version . "1.1.0")
     (name . "protocol-squisher")
     (proof-obligations . ())
     (invariants . ())

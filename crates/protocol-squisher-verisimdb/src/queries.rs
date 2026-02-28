@@ -11,12 +11,7 @@
 ///
 /// Returns all analysis records for a `(source, target)` pair between
 /// `from` and `to` timestamps, ordered chronologically.
-pub fn build_temporal_query(
-    source_type: &str,
-    target_type: &str,
-    from: &str,
-    to: &str,
-) -> String {
+pub fn build_temporal_query(source_type: &str, target_type: &str, from: &str, to: &str) -> String {
     format!(
         "SELECT * FROM analyses \
          WHERE source_type = '{source_type}' \
@@ -43,10 +38,7 @@ pub fn build_vector_query(embedding: &[f64], limit: usize) -> String {
 ///
 /// Returns all analysis records produced by a specific analyzer version,
 /// optionally filtered by format.
-pub fn build_provenance_query(
-    analyzer_version: &str,
-    format: Option<&str>,
-) -> String {
+pub fn build_provenance_query(analyzer_version: &str, format: Option<&str>) -> String {
     let base = format!(
         "SELECT * FROM analyses \
          PROVENANCE analyzer_version = '{analyzer_version}'"
@@ -78,12 +70,7 @@ mod tests {
 
     #[test]
     fn vql_temporal_builder() {
-        let query = build_temporal_query(
-            "User.id",
-            "UserDTO.id",
-            "2026-01-01",
-            "2026-02-28",
-        );
+        let query = build_temporal_query("User.id", "UserDTO.id", "2026-01-01", "2026-02-28");
         assert!(query.contains("TEMPORAL BETWEEN"));
         assert!(query.contains("User.id"));
         assert!(query.contains("2026-01-01"));

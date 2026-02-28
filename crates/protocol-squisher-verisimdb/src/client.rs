@@ -35,9 +35,7 @@ impl VeriSimDBClient {
             .get(&url)
             .timeout(std::time::Duration::from_secs(3))
             .send()
-            .map_err(|_| VeriSimError::Unavailable {
-                url: url.clone(),
-            })?;
+            .map_err(|_| VeriSimError::Unavailable { url: url.clone() })?;
         Ok(response.status().is_success())
     }
 
@@ -50,9 +48,7 @@ impl VeriSimDBClient {
             .post(&url)
             .json(&body)
             .send()
-            .map_err(|_| VeriSimError::Unavailable {
-                url: url.clone(),
-            })?;
+            .map_err(|_| VeriSimError::Unavailable { url: url.clone() })?;
 
         if !response.status().is_success() {
             return Err(VeriSimError::ApiError {
@@ -67,20 +63,14 @@ impl VeriSimDBClient {
     }
 
     /// Create a new entity in VeriSimDB.
-    pub fn create_entity(
-        &self,
-        collection: &str,
-        entity: &Value,
-    ) -> Result<Value, VeriSimError> {
+    pub fn create_entity(&self, collection: &str, entity: &Value) -> Result<Value, VeriSimError> {
         let url = format!("{}/api/v1/entities/{}", self.base_url, collection);
 
         let response = reqwest::blocking::Client::new()
             .post(&url)
             .json(entity)
             .send()
-            .map_err(|_| VeriSimError::Unavailable {
-                url: url.clone(),
-            })?;
+            .map_err(|_| VeriSimError::Unavailable { url: url.clone() })?;
 
         if !response.status().is_success() {
             return Err(VeriSimError::ApiError {
@@ -95,19 +85,13 @@ impl VeriSimDBClient {
     }
 
     /// Retrieve an entity by collection and ID.
-    pub fn get_entity(
-        &self,
-        collection: &str,
-        id: &str,
-    ) -> Result<Value, VeriSimError> {
+    pub fn get_entity(&self, collection: &str, id: &str) -> Result<Value, VeriSimError> {
         let url = format!("{}/api/v1/entities/{}/{}", self.base_url, collection, id);
 
         let response = reqwest::blocking::Client::new()
             .get(&url)
             .send()
-            .map_err(|_| VeriSimError::Unavailable {
-                url: url.clone(),
-            })?;
+            .map_err(|_| VeriSimError::Unavailable { url: url.clone() })?;
 
         if response.status() == reqwest::StatusCode::NOT_FOUND {
             return Err(VeriSimError::NotFound(format!("{collection}/{id}")));
@@ -142,9 +126,7 @@ impl VeriSimDBClient {
             .post(&url)
             .json(&body)
             .send()
-            .map_err(|_| VeriSimError::Unavailable {
-                url: url.clone(),
-            })?;
+            .map_err(|_| VeriSimError::Unavailable { url: url.clone() })?;
 
         if !response.status().is_success() {
             return Err(VeriSimError::ApiError {
