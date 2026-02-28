@@ -110,9 +110,7 @@ pub enum Blocker {
     },
 
     /// Dynamic typing (no schema)
-    NoSchema {
-        prevents: TransportClass,
-    },
+    NoSchema { prevents: TransportClass },
 
     /// Custom encoding/compression
     CustomEncoding {
@@ -288,7 +286,7 @@ impl ComparativeAnalysis {
             .iter()
             .map(|r| (r.protocol.clone(), r.squishability_score()))
             .collect();
-        ranking.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+        ranking.sort_by(|a, b| b.1.total_cmp(&a.1));
 
         Self {
             reports,
@@ -327,7 +325,8 @@ impl ComparativeAnalysis {
                     };
                 }
 
-                let evolution_avg = evolution_scores.iter().sum::<f64>() / evolution_scores.len() as f64;
+                let evolution_avg =
+                    evolution_scores.iter().sum::<f64>() / evolution_scores.len() as f64;
                 let other_avg = other_scores.iter().sum::<f64>() / other_scores.len() as f64;
 
                 HypothesisResult {
@@ -339,7 +338,7 @@ impl ComparativeAnalysis {
                         evolution_avg, other_avg
                     ),
                 }
-            }
+            },
             "zero_copy_unsquishable" => {
                 // Check if zero-copy protocols (Cap'n Proto, FlatBuffers) have low scores
                 let zero_copy_protocols = ["Cap'n Proto", "FlatBuffers"];
@@ -359,7 +358,8 @@ impl ComparativeAnalysis {
                     };
                 }
 
-                let zero_copy_avg = zero_copy_scores.iter().sum::<f64>() / zero_copy_scores.len() as f64;
+                let zero_copy_avg =
+                    zero_copy_scores.iter().sum::<f64>() / zero_copy_scores.len() as f64;
 
                 HypothesisResult {
                     hypothesis: hypothesis.to_string(),
@@ -367,7 +367,7 @@ impl ComparativeAnalysis {
                     confidence: 1.0 - zero_copy_avg,
                     evidence: format!("Zero-copy protocols avg score: {:.3}", zero_copy_avg),
                 }
-            }
+            },
             _ => HypothesisResult {
                 hypothesis: hypothesis.to_string(),
                 supported: false,
@@ -406,12 +406,18 @@ mod tests {
         };
 
         // All Concorde = score 1.0
-        report.field_transport_classes.insert("field1".to_string(), TransportClass::Concorde);
-        report.field_transport_classes.insert("field2".to_string(), TransportClass::Concorde);
+        report
+            .field_transport_classes
+            .insert("field1".to_string(), TransportClass::Concorde);
+        report
+            .field_transport_classes
+            .insert("field2".to_string(), TransportClass::Concorde);
         assert!((report.squishability_score() - 1.0).abs() < 0.01);
 
         // Mix of classes
-        report.field_transport_classes.insert("field3".to_string(), TransportClass::Wheelbarrow);
+        report
+            .field_transport_classes
+            .insert("field3".to_string(), TransportClass::Wheelbarrow);
         let score = report.squishability_score();
         assert!(score > 0.5 && score < 1.0);
     }

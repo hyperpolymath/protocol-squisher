@@ -42,9 +42,7 @@ pub fn run_introspection(
 ) -> Result<IntrospectionResult, AnalyzerError> {
     // Build command
     let mut cmd = Command::new(&config.python_path);
-    cmd.arg("-c")
-        .arg(INTROSPECTION_SCRIPT)
-        .arg(module_path);
+    cmd.arg("-c").arg(INTROSPECTION_SCRIPT).arg(module_path);
 
     // Add model names if specified
     for name in model_names {
@@ -77,23 +75,34 @@ pub fn run_introspection(
     }
 
     // Run the command
-    let output = cmd.output()
+    let output = cmd
+        .output()
         .map_err(|e| AnalyzerError::PythonError(format!("Failed to run Python: {e}")))?;
 
     // Check for execution errors
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(AnalyzerError::PythonError(
-            format!("Python script failed: {stderr}")
-        ));
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let details = if !stderr.trim().is_empty() {
+            stderr.to_string()
+        } else if !stdout.trim().is_empty() {
+            stdout.to_string()
+        } else {
+            format!("exit status: {}", output.status)
+        };
+        return Err(AnalyzerError::PythonError(format!(
+            "Python script failed: {}",
+            enrich_failure_details(details)
+        )));
     }
 
     // Parse the JSON output
     let stdout = String::from_utf8_lossy(&output.stdout);
-    serde_json::from_str(&stdout)
-        .map_err(|e| AnalyzerError::PythonError(
-            format!("Failed to parse introspection output: {e}\nOutput: {stdout}")
+    serde_json::from_str(&stdout).map_err(|e| {
+        AnalyzerError::PythonError(format!(
+            "Failed to parse introspection output: {e}\nOutput: {stdout}"
         ))
+    })
 }
 
 /// Run the introspection script with a custom script (for testing)
@@ -103,9 +112,7 @@ pub fn run_introspection_with_script(
     config: &PythonRunnerConfig,
 ) -> Result<IntrospectionResult, AnalyzerError> {
     let mut cmd = Command::new(&config.python_path);
-    cmd.arg("-c")
-        .arg(script)
-        .arg(module_path);
+    cmd.arg("-c").arg(script).arg(module_path);
 
     cmd.stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -115,21 +122,30 @@ pub fn run_introspection_with_script(
         cmd.current_dir(dir);
     }
 
-    let output = cmd.output()
+    let output = cmd
+        .output()
         .map_err(|e| AnalyzerError::PythonError(format!("Failed to run Python: {e}")))?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(AnalyzerError::PythonError(
-            format!("Python script failed: {stderr}")
-        ));
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let details = if !stderr.trim().is_empty() {
+            stderr.to_string()
+        } else if !stdout.trim().is_empty() {
+            stdout.to_string()
+        } else {
+            format!("exit status: {}", output.status)
+        };
+        return Err(AnalyzerError::PythonError(format!(
+            "Python script failed: {}",
+            enrich_failure_details(details)
+        )));
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    serde_json::from_str(&stdout)
-        .map_err(|e| AnalyzerError::PythonError(
-            format!("Failed to parse introspection output: {e}")
-        ))
+    serde_json::from_str(&stdout).map_err(|e| {
+        AnalyzerError::PythonError(format!("Failed to parse introspection output: {e}"))
+    })
 }
 
 /// Check if Python and Pydantic are available
@@ -157,10 +173,24 @@ except ImportError:
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    let result: serde_json::Value = serde_json::from_str(&stdout)
-        .map_err(|_| AnalyzerError::PythonError("Failed to parse Python check output".to_string()))?;
+    let result: serde_json::Value = serde_json::from_str(&stdout).map_err(|_| {
+        AnalyzerError::PythonError("Failed to parse Python check output".to_string())
+    })?;
 
-    Ok(result.get("available").and_then(|v| v.as_bool()).unwrap_or(false))
+    Ok(result
+        .get("available")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false))
+}
+
+fn enrich_failure_details(details: String) -> String {
+    if details.contains("Pydantic not installed") {
+        format!(
+            "{details}\nInstall with: `python3 -m pip install pydantic` (or activate the intended virtual environment first)"
+        )
+    } else {
+        details
+    }
 }
 
 #[cfg(test)]
@@ -169,9 +199,9 @@ mod tests {
 
     #[test]
     fn test_script_embedded() {
-        // Just verify the script is embedded and not empty
-        assert!(!INTROSPECTION_SCRIPT.is_empty());
+        // Verify the embedded introspection script has expected anchors.
         assert!(INTROSPECTION_SCRIPT.contains("introspect_module"));
+        assert!(INTROSPECTION_SCRIPT.contains("pydantic"));
     }
 
     #[test]

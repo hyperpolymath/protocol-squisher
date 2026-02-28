@@ -17,13 +17,13 @@
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
-pub mod types;
 pub mod constraints;
 pub mod schema;
+pub mod types;
 
-pub use types::*;
 pub use constraints::*;
 pub use schema::*;
+pub use types::*;
 
 /// Unique identifier for types within a schema
 pub type TypeId = String;

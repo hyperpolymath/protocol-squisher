@@ -21,8 +21,19 @@ pub struct ParsedSchema {
     pub definitions: HashMap<String, SchemaObject>,
 }
 
-/// JSON Schema object
+/// Top-level JSON Schema document with optional named-definition sections.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+struct SchemaDocument {
+    #[serde(flatten)]
+    root: SchemaObject,
+    #[serde(default)]
+    definitions: HashMap<String, SchemaObject>,
+    #[serde(rename = "$defs", default)]
+    defs: HashMap<String, SchemaObject>,
+}
+
+/// JSON Schema object
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct SchemaObject {
     /// Schema type (object, array, string, etc.)
     #[serde(rename = "type")]
@@ -71,26 +82,6 @@ pub struct SchemaObject {
     pub additional_properties: Option<bool>,
 }
 
-impl Default for SchemaObject {
-    fn default() -> Self {
-        Self {
-            schema_type: None,
-            properties: HashMap::new(),
-            required: Vec::new(),
-            items: None,
-            enum_values: None,
-            minimum: None,
-            maximum: None,
-            min_length: None,
-            max_length: None,
-            pattern: None,
-            description: None,
-            format: None,
-            additional_properties: None,
-        }
-    }
-}
-
 /// JSON Schema type enum
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -122,13 +113,15 @@ impl MessagePackParser {
 
     /// Parse JSON Schema content from a string
     pub fn parse_str(&self, content: &str) -> Result<ParsedSchema, AnalyzerError> {
-        let root: SchemaObject = serde_json::from_str(content)
+        let mut document: SchemaDocument = serde_json::from_str(content)
             .map_err(|e| AnalyzerError::ParseError(format!("JSON parse error: {}", e)))?;
+        let mut definitions = document.definitions;
+        definitions.extend(document.defs.drain());
 
-        // TODO: Extract definitions if present
-        let definitions = HashMap::new();
-
-        Ok(ParsedSchema { root, definitions })
+        Ok(ParsedSchema {
+            root: document.root,
+            definitions,
+        })
     }
 }
 
@@ -337,5 +330,25 @@ mod tests {
 
         let parsed = result.unwrap();
         assert_eq!(parsed.root.properties.len(), 5);
+    }
+
+    #[test]
+    fn test_parse_definitions_and_defs() {
+        let json = r#"{
+            "type": "object",
+            "definitions": {
+                "LegacyUserId": { "type": "string" }
+            },
+            "$defs": {
+                "OrderId": { "type": "integer" }
+            }
+        }"#;
+
+        let parser = MessagePackParser::new();
+        let parsed = parser.parse_str(json).unwrap();
+
+        assert_eq!(parsed.definitions.len(), 2);
+        assert!(parsed.definitions.contains_key("LegacyUserId"));
+        assert!(parsed.definitions.contains_key("OrderId"));
     }
 }

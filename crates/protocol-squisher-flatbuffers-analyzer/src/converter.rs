@@ -3,9 +3,7 @@
 
 //! Converter from parsed FlatBuffers to protocol-squisher IR
 
-use crate::parser::{
-    FbsEnum, FbsField, FbsStruct, FbsTable, FbsUnion, ParsedFlatBuffers,
-};
+use crate::parser::{FbsEnum, FbsField, FbsStruct, FbsTable, FbsUnion, ParsedFlatBuffers};
 use crate::AnalyzerError;
 use protocol_squisher_ir::{
     ContainerType, EnumDef, FieldDef, FieldMetadata, IrSchema, IrType, PrimitiveType, StructDef,
@@ -132,9 +130,9 @@ impl FlatBuffersConverter {
         let default_json = if let Some(ref default) = field.default_value {
             serde_hints.insert("default".to_string(), default.clone());
             // Try to parse default value as JSON, fallback to string
-            serde_json::from_str(default).ok().or_else(|| {
-                Some(serde_json::Value::String(default.clone()))
-            })
+            serde_json::from_str(default)
+                .ok()
+                .or_else(|| Some(serde_json::Value::String(default.clone())))
         } else {
             None
         };

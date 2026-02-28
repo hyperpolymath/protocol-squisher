@@ -4,9 +4,9 @@
 //! Protocol Squisher CLI
 //!
 //! ```bash
-//! protocol-squish analyze schema-a.rs schema-b.py
-//! protocol-squish generate --from schema.rs --output ./bindings/
-//! protocol-squish compare schema-a.rs schema-b.rs
+//! protocol-squisher analyze schema-a.rs schema-b.py
+//! protocol-squisher generate --from schema.rs --output ./bindings/
+//! protocol-squisher compare schema-a.rs schema-b.rs
 //! ```
 
 use protocol_squisher::compat::{CompatibilityAnalyzer, TransportClass, LossSeverity};
@@ -34,7 +34,7 @@ fn main() -> ExitCode {
         "generate" => cmd_generate(&args[2..]),
         "fallback" => cmd_fallback(&args[2..]),
         "version" | "--version" | "-V" => {
-            println!("protocol-squish {}", env!("CARGO_PKG_VERSION"));
+            println!("protocol-squisher {}", env!("CARGO_PKG_VERSION"));
             ExitCode::SUCCESS
         }
         "help" | "--help" | "-h" => {
@@ -52,10 +52,10 @@ fn main() -> ExitCode {
 
 fn print_usage() {
     println!(
-        r#"protocol-squish - Universal protocol interoperability
+        r#"protocol-squisher - Universal protocol interoperability
 
 USAGE:
-    protocol-squish <COMMAND> [OPTIONS]
+    protocol-squisher <COMMAND> [OPTIONS]
 
 COMMANDS:
     analyze     Parse a schema file and show its IR representation
@@ -66,11 +66,11 @@ COMMANDS:
     help        Show this help message
 
 EXAMPLES:
-    protocol-squish analyze models.rs
-    protocol-squish analyze models.py
-    protocol-squish compare rust_types.rs python_models.py
-    protocol-squish generate --from schema.rs --module my_bindings -o ./src/
-    protocol-squish fallback --from schema.rs --module transport -o ./bindings/
+    protocol-squisher analyze models.rs
+    protocol-squisher analyze models.py
+    protocol-squisher compare rust_types.rs python_models.py
+    protocol-squisher generate --from schema.rs --module my_bindings -o ./src/
+    protocol-squisher fallback --from schema.rs --module transport -o ./bindings/
 
 The Invariant: If it compiles, it carries.
 "#
@@ -80,7 +80,7 @@ The Invariant: If it compiles, it carries.
 /// Analyze a single schema file and display its IR
 fn cmd_analyze(args: &[String]) -> ExitCode {
     if args.is_empty() {
-        eprintln!("Usage: protocol-squish analyze <schema-file>");
+        eprintln!("Usage: protocol-squisher analyze <schema-file>");
         eprintln!();
         eprintln!("Supported formats:");
         eprintln!("  .rs   - Rust (serde derive)");
@@ -128,7 +128,7 @@ fn cmd_analyze(args: &[String]) -> ExitCode {
 /// Compare two schemas for compatibility
 fn cmd_compare(args: &[String]) -> ExitCode {
     if args.len() < 2 {
-        eprintln!("Usage: protocol-squish compare <schema-a> <schema-b>");
+        eprintln!("Usage: protocol-squisher compare <schema-a> <schema-b>");
         return ExitCode::from(1);
     }
 
@@ -260,7 +260,7 @@ fn cmd_generate(args: &[String]) -> ExitCode {
     let from_path = match from_path {
         Some(p) => p,
         None => {
-            eprintln!("Usage: protocol-squish generate --from <schema.rs> [--module name] [--output dir]");
+            eprintln!("Usage: protocol-squisher generate --from <schema.rs> [--module name] [--output dir]");
             return ExitCode::from(1);
         }
     };
@@ -389,7 +389,7 @@ fn cmd_fallback(args: &[String]) -> ExitCode {
     let from_path = match from_path {
         Some(p) => p,
         None => {
-            eprintln!("Usage: protocol-squish fallback --from <schema> [--module name] [--output dir] [--pretty]");
+            eprintln!("Usage: protocol-squisher fallback --from <schema> [--module name] [--output dir] [--pretty]");
             eprintln!();
             eprintln!("Generates JSON fallback transport code for both Rust and Python.");
             eprintln!("The guaranteed wheelbarrow: slow but unbreakable.");
@@ -501,34 +501,10 @@ fn analyze_rust(path: &str) -> Result<IrSchema, String> {
 
 /// Analyze a Python file (runs introspection)
 fn analyze_python(path: &str) -> Result<IrSchema, String> {
-    // Check if Python is available
-    let _analyzer = PythonAnalyzer::new();
-
-    // Read the Python file
-    let _content = fs::read_to_string(path)
-        .map_err(|e| format!("Failed to read {}: {}", path, e))?;
-
-    // For now, we need to run the Python introspection externally
-    // and feed the JSON output to analyze_json
-    Err(format!(
-        "Direct Python file analysis not yet implemented.\n\
-         Please run the introspection script manually:\n\
-         \n\
-         python3 -c \"\n\
-         import sys\n\
-         sys.path.insert(0, '.')\n\
-         exec(open('{}').read())\n\
-         # Then run introspection on your models\n\
-         \" > introspection.json\n\
-         \n\
-         Then analyze the JSON output:\n\
-         protocol-squish analyze introspection.json\n\
-         \n\
-         Alternatively, if you have Pydantic introspection JSON, use:\n\
-         protocol-squish analyze {}.json",
-        path,
-        path.trim_end_matches(".py")
-    ))
+    let analyzer = PythonAnalyzer::new();
+    analyzer
+        .analyze_file(Path::new(path))
+        .map_err(|e| format!("Failed to analyze Python: {}", e))
 }
 
 /// Analyze Pydantic introspection JSON

@@ -356,6 +356,12 @@ fn playground_dump_and_lsp_once_smoke() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("Content-Length:"), "lsp output missing framing");
-    assert!(stdout.contains("capabilities"), "lsp output missing capabilities");
+    assert!(
+        stdout.contains("Content-Length:"),
+        "lsp output missing framing"
+    );
+    assert!(
+        stdout.contains("capabilities"),
+        "lsp output missing capabilities"
+    );
 }

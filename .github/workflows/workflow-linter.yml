@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: Check SPDX Headers
         run: |
@@ -36,7 +36,7 @@ jobs:
             fi
           done
           if [ $failed -eq 1 ]; then
-            echo "Add '# SPDX-License-Identifier: AGPL-3.0-or-later' as first line"
+            echo "Add '# SPDX-License-Identifier: PMPL-1.0-or-later' as first line"
             exit 1
           fi
           echo "All workflows have SPDX headers"
@@ -61,20 +61,21 @@ jobs:
       - name: Check SHA-Pinned Actions
         run: |
           echo "=== Checking Action Pinning ==="
-          # Find any uses: lines that don't have @SHA format
-          # Exclude: comment lines, local actions, docker actions, github-script
+          # Find any uses: lines that don't have @SHA format.
+          # Exclude: comment lines, local actions, docker actions,
+          # github-script, and the linter's own grep commands.
           unpinned=$(grep -rn "uses:" .github/workflows/ | \
             grep -v "^\s*#" | \
             grep -v "@[a-f0-9]\{40\}" | \
-            grep -v "uses: \./\|uses: docker://\|uses: actions/github-script" | \
-            grep -v "# Pattern:\|# Find any" || true)
+            grep -v 'uses: \./\|uses: docker://\|uses: actions/github-script' | \
+            grep -v 'grep.*"uses:"\|unpinned=\|# Pattern:\|# Find any\|# Exclude' || true)
 
           if [ -n "$unpinned" ]; then
             echo "ERROR: Found unpinned actions:"
             echo "$unpinned"
             echo ""
             echo "Replace version tags with SHA pins, e.g.:"
-            echo "  uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v4.1.1"
+            echo "  uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4"
             exit 1
           fi
           echo "All actions are SHA-pinned"

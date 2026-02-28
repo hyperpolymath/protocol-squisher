@@ -5,9 +5,9 @@
 //! This module converts Rust types analyzed by syn into ephapax IR types
 //! for transport class analysis.
 
-use protocol_squisher_transport_primitives::{IRContext, PrimitiveType, TransportClass};
-use protocol_squisher_ir::IrType;
 use crate::AnalyzerError;
+use protocol_squisher_ir::IrType;
+use protocol_squisher_transport_primitives::{IRContext, PrimitiveType, TransportClass};
 
 /// Convert protocol-squisher IR type to ephapax primitive type
 ///
@@ -34,14 +34,17 @@ pub fn to_ephapax_primitive(ir_type: &IrType) -> Option<PrimitiveType> {
                 IrPrim::Char => Some(PrimitiveType::Char),
                 IrPrim::String => Some(PrimitiveType::String),
                 // Types not yet supported in ephapax IR
-                IrPrim::Bytes |
-                IrPrim::DateTime | IrPrim::Date | IrPrim::Time | IrPrim::Duration |
-                IrPrim::Uuid | IrPrim::Decimal | IrPrim::BigInt => None,
+                IrPrim::Bytes
+                | IrPrim::DateTime
+                | IrPrim::Date
+                | IrPrim::Time
+                | IrPrim::Duration
+                | IrPrim::Uuid
+                | IrPrim::Decimal
+                | IrPrim::BigInt => None,
             }
-        }
-        IrType::Special(protocol_squisher_ir::SpecialType::Unit) => {
-            Some(PrimitiveType::Unit)
-        }
+        },
+        IrType::Special(protocol_squisher_ir::SpecialType::Unit) => Some(PrimitiveType::Unit),
         // Containers and other complex types don't map to primitives
         _ => None,
     }
@@ -60,25 +63,28 @@ pub fn analyze_transport_compatibility(
 
     match (source, target) {
         // Primitive types - use ephapax analysis
-        (IrType::Primitive(_), IrType::Primitive(_)) |
-        (IrType::Special(_), IrType::Special(_)) => {
-            let source_prim = to_ephapax_primitive(source)
-                .ok_or_else(|| AnalyzerError::UnsupportedConstruct(
-                    format!("Unsupported primitive type: {:?}", source)
-                ))?;
+        (IrType::Primitive(_), IrType::Primitive(_)) | (IrType::Special(_), IrType::Special(_)) => {
+            let source_prim = to_ephapax_primitive(source).ok_or_else(|| {
+                AnalyzerError::UnsupportedConstruct(format!(
+                    "Unsupported primitive type: {:?}",
+                    source
+                ))
+            })?;
 
-            let target_prim = to_ephapax_primitive(target)
-                .ok_or_else(|| AnalyzerError::UnsupportedConstruct(
-                    format!("Unsupported primitive type: {:?}", target)
-                ))?;
+            let target_prim = to_ephapax_primitive(target).ok_or_else(|| {
+                AnalyzerError::UnsupportedConstruct(format!(
+                    "Unsupported primitive type: {:?}",
+                    target
+                ))
+            })?;
 
             Ok(ctx.analyze_compatibility(source_prim, target_prim))
-        }
+        },
 
         // Container types - recursive analysis
         (IrType::Container(source_container), IrType::Container(target_container)) => {
             analyze_container_compatibility(ctx, source_container, target_container)
-        }
+        },
 
         // Mismatched types (primitive vs container) - always Wheelbarrow
         _ => Ok(TransportClass::Wheelbarrow),
@@ -98,14 +104,14 @@ fn analyze_container_compatibility(
         (ContainerType::Option(source_inner), ContainerType::Option(target_inner)) => {
             // Option container itself is zero-overhead, propagate inner type's class
             analyze_transport_compatibility(ctx, source_inner, target_inner)
-        }
+        },
 
         // Vec<T> analysis
         (ContainerType::Vec(source_inner), ContainerType::Vec(target_inner)) => {
             // Vec has minor overhead even for identical types, but propagate inner class
             let inner_class = analyze_transport_compatibility(ctx, source_inner, target_inner)?;
             Ok(inner_class) // Propagate inner type's transport class
-        }
+        },
 
         // Map<K, V> analysis
         (ContainerType::Map(source_k, source_v), ContainerType::Map(target_k, target_v)) => {
@@ -115,7 +121,7 @@ fn analyze_container_compatibility(
 
             // Return the worst transport class
             Ok(worst_transport_class(key_class, val_class))
-        }
+        },
 
         // Tuple analysis
         (ContainerType::Tuple(source_elems), ContainerType::Tuple(target_elems)) => {
@@ -131,7 +137,7 @@ fn analyze_container_compatibility(
                 worst_class = worst_transport_class(worst_class, elem_class);
             }
             Ok(worst_class)
-        }
+        },
 
         // Mismatched container types (Vec vs Option, etc.) - always Wheelbarrow
         _ => Ok(TransportClass::Wheelbarrow),
@@ -159,11 +165,7 @@ pub struct TransportAnalysis {
 
 impl TransportAnalysis {
     /// Create a new transport analysis
-    pub fn new(
-        ctx: &IRContext,
-        source: &IrType,
-        target: &IrType,
-    ) -> Result<Self, AnalyzerError> {
+    pub fn new(ctx: &IRContext, source: &IrType, target: &IrType) -> Result<Self, AnalyzerError> {
         let class = analyze_transport_compatibility(ctx, source, target)?;
 
         Ok(Self {
@@ -182,7 +184,10 @@ impl TransportAnalysis {
 
     /// Check if this is a safe conversion (Concorde or Business)
     pub fn is_safe(&self) -> bool {
-        matches!(self.class, TransportClass::Concorde | TransportClass::Business)
+        matches!(
+            self.class,
+            TransportClass::Concorde | TransportClass::Business
+        )
     }
 
     /// Check if JSON fallback is required (Wheelbarrow)
@@ -265,12 +270,12 @@ mod tests {
         use protocol_squisher_ir::ContainerType;
 
         let ctx = IRContext::new();
-        let source = IrType::Container(ContainerType::Option(Box::new(
-            IrType::Primitive(IrPrim::I64)
-        )));
-        let target = IrType::Container(ContainerType::Option(Box::new(
-            IrType::Primitive(IrPrim::I32)
-        )));
+        let source = IrType::Container(ContainerType::Option(Box::new(IrType::Primitive(
+            IrPrim::I64,
+        ))));
+        let target = IrType::Container(ContainerType::Option(Box::new(IrType::Primitive(
+            IrPrim::I32,
+        ))));
 
         let class = analyze_transport_compatibility(&ctx, &source, &target).unwrap();
         assert_eq!(class, TransportClass::Wheelbarrow);
@@ -294,12 +299,10 @@ mod tests {
         use protocol_squisher_ir::ContainerType;
 
         let ctx = IRContext::new();
-        let source = IrType::Container(ContainerType::Vec(Box::new(
-            IrType::Primitive(IrPrim::I64)
-        )));
-        let target = IrType::Container(ContainerType::Vec(Box::new(
-            IrType::Primitive(IrPrim::I32)
-        )));
+        let source =
+            IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(IrPrim::I64))));
+        let target =
+            IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(IrPrim::I32))));
 
         let class = analyze_transport_compatibility(&ctx, &source, &target).unwrap();
         assert_eq!(class, TransportClass::Wheelbarrow);

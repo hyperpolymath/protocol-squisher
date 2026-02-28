@@ -252,7 +252,7 @@ Never hide the costs:
 
 ---
 
-## Post-Launch TODO
+## Post-Launch Action Items
 
 ### Immediate (Week 1)
 - [ ] Monitor all announcement threads

@@ -300,25 +300,23 @@ pub enum VariantPayload {
 }
 
 /// Tag representation style for enums
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub enum TagStyle {
     /// External: {"VariantName": {...}}
+    #[default]
     External,
 
     /// Internal: {"type": "VariantName", ...}
     Internal { tag_field: String },
 
     /// Adjacent: {"tag": "VariantName", "content": {...}}
-    Adjacent { tag_field: String, content_field: String },
+    Adjacent {
+        tag_field: String,
+        content_field: String,
+    },
 
     /// Untagged: {...} (discriminated by shape)
     Untagged,
-}
-
-impl Default for TagStyle {
-    fn default() -> Self {
-        TagStyle::External
-    }
 }
 
 /// Untagged union definition

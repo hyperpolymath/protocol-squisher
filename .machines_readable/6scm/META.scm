@@ -12,131 +12,86 @@
   '((adr-001
       (status . "accepted")
       (date . "2026-01-04")
-      (context . "Need universal approach to serialization format incompatibility")
-      (decision . "Use canonical IR as lingua franca between all formats")
-      (consequences . "All analyzers map to IR, all generators consume IR. Enables N-to-M format support with N+M analyzers instead of N*M converters."))
+      (decision . "Use canonical IR as lingua franca between all protocols")
+      (consequences . "N-to-M protocol interoperability scales as analyzers plus generators."))
     (adr-002
       (status . "accepted")
       (date . "2026-01-04")
-      (context . "Some format pairs are fundamentally incompatible at type level")
-      (decision . "JSON fallback guarantees transport for all format pairs (the wheelbarrow)")
-      (consequences . "Slow and lossy, but universal. Never block on type incompatibility. Document losses upfront."))
+      (decision . "Preserve universal transport with JSON fallback")
+      (consequences . "Wheelbarrow path is slower and potentially lossy, but transport never hard-fails."))
     (adr-003
       (status . "accepted")
       (date . "2026-01-04")
-      (context . "Need to set user expectations about adapter quality")
-      (decision . "Classify format pairs into transport classes: Concorde (perfect), Business (minor overhead), Economy (moderate loss), Wheelbarrow (high loss)")
-      (consequences . "Users know what they're getting. No surprise performance degradation."))
+      (decision . "Classify compatibility by transport classes")
+      (consequences . "Users see fidelity and performance tradeoffs before generating adapters."))
     (adr-004
       (status . "accepted")
-      (date . "2026-01-04")
-      (context . "Python↔Rust FFI is painful and error-prone")
-      (decision . "Start with PyO3 adapter generation as MVP use case")
-      (consequences . "High impact, proves invariant, addresses real pain point. Rust+Python is most valuable first target."))
+      (date . "2026-02-04")
+      (decision . "Implement canonical IR in ephapax with Idris2 proofs")
+      (consequences . "Critical IR invariants gain compile-time guarantees for zero-copy safety."))
     (adr-005
       (status . "accepted")
-      (date . "2026-01-04")
-      (context . "Generated code quality matters for adoption")
-      (decision . "Generated adapters must pass clippy, mypy, and property-based tests")
-      (consequences . "Higher bar for code generation, but professional quality output."))
+      (date . "2026-02-24")
+      (decision . "Use Zig-backed FFI boundaries for ephapax bridge paths")
+      (consequences . "FFI surface stays explicit and testable; panic-assail checks remain enforceable."))
     (adr-006
-      (status . "superseded")
-      (date . "2026-01-04")
-      (superseded-by . "adr-009")
-      (context . "Need to prove correctness of adapters")
-      (decision . "Use property-based testing (proptest) plus future formal verification (miniKanren)")
-      (consequences . "Exhaustive test coverage. Path to formal proofs in Phase 3."))
-    (adr-007
       (status . "accepted")
-      (date . "2026-02-04")
-      (context . "Need to validate ephapax with real-world programs and ensure zero-copy safety in IR")
-      (decision . "Implement canonical IR in ephapax instead of plain Rust")
-      (consequences . "Linear types prove zero-copy paths safe. No aliasing bugs in generated adapters. Memory safety at FFI boundaries proven at compile time. Serves as real-world ephapax validation. Adds compilation dependency on ephapax → WASM → Rust FFI pipeline."))
-    (adr-008
-      (status . "accepted")
-      (date . "2026-02-04")
-      (context . "Need full integer range support for interop with languages supporting 128-bit integers")
-      (decision . "Add I128/U128 support to ephapax IR with complete widening ladder")
-      (consequences . "All integer sizes supported: I8→I16→I32→I64→I128 and U8→U16→U32→U64→U128. Safe widening proven correct by Idris2 totality checking. Enables Python arbitrary precision int mapping. Rust i128/u128 types fully supported."))
-    (adr-009
-      (status . "accepted")
-      (date . "2026-02-04")
-      (context . "Need multi-prover verification for maximum confidence in transport class analysis")
-      (decision . "Integrate ECHIDNA neurosymbolic theorem proving platform with Agda, Lean, and Coq proofs")
-      (consequences . "4 core theorems proven in Agda (Concorde Safety, Wheelbarrow Necessity, Container Propagation, Carries Invariant). Cross-validation in Lean. Formal verification proves implementation correctness. ECHIDNA neural synthesis ready for future proof automation."))))
+      (date . "2026-02-24")
+      (decision . "Treat machine-readable SCM files under .machines_readable/6scm as the source of truth")
+      (consequences . "Automation and human docs remain aligned through single-location governance metadata."))))
 
 (define development-practices
   '((code-style
-     (formatter . "rustfmt")
-     (linter . "clippy")
-     (rust-edition . "2021")
-     (rust-version . "1.83"))
+      (formatter . "rustfmt")
+      (linter . "clippy")
+      (rust-edition . "2021")
+      (rust-version . "1.86"))
     (testing
-     (unit-tests . "Required for all modules")
-     (property-tests . "Required for IR and adapters (proptest)")
-     (integration-tests . "PyO3 integration tests with maturin")
-     (fuzzing . "ClusterFuzzLite for security"))
-    (versioning
-     (scheme . "Semantic Versioning 2.0.0"))
-    (documentation
-     (format . "AsciiDoc")
-     (readme . "README.adoc")
-     (roadmap . "ROADMAP.adoc")
-     (gauntlet . "GAUNTLET.adoc"))
+      (unit-tests . "Required for all crates")
+      (integration-tests . "Required for protocol and FFI bridges")
+      (property-tests . "Required for IR and compatibility invariants")
+      (fuzzing . "ClusterFuzzLite plus panic-assail regression"))
     (security
-     (spdx-required . #t)
-     (sha-pinning . #t)
-     (hypatia-scanning . #t)
-     (scorecard-compliance . #t))
-    (performance
-     (benchmarking . "criterion with HTML reports")
-     (release-profile . "LTO enabled, stripped binaries"))))
+      (spdx-required . #t)
+      (sha-pinning . #t)
+      (codeql-enabled . #t)
+      (scorecard-enabled . #t)
+      (dependabot-enabled . #t))
+    (containerization
+      (runtime . "podman")
+      (compose . "podman compose or podman-compose"))
+    (documentation
+      (human-readable . ("README.adoc" "ROADMAP.adoc" "docs/"))
+      (machine-readable . ".machines_readable/6scm"))))
 
 (define design-rationale
   '((why-rust
-      "Rust provides type safety, zero-cost abstractions, and excellent FFI support. Code generation benefits from strong type system.")
-    (why-ephapax-ir
-      "Linear types prove zero-copy paths are safe. Resources freed exactly once (no leaks). Memory safety at FFI boundaries guaranteed at compile time. Serves as real-world validation of ephapax language.")
-    (why-workspace-crates
-      "Each analyzer/generator is independent. Enables parallel development and pluggable architecture for new formats.")
-    (why-json-fallback
-      "JSON is universal, human-readable, and every format can convert to it. Slow but guaranteed to work - the ultimate wheelbarrow.")
+      "Strong type safety, predictable performance, and mature tooling for analyzers and generators.")
+    (why-idris2-ephapax
+      "Dependent typing and totality checks enforce IR safety properties that are hard to guarantee in tests alone.")
+    (why-zig-ffi
+      "A narrow Zig FFI boundary keeps ABI details explicit and easier to audit.")
     (why-transport-classes
-      "Users need honest communication about tradeoffs. Better to say 'this will be slow' upfront than surprise them later.")
-    (why-canonical-ir
-      "Single IR means N+M adapters instead of N*M. Optimizations to IR benefit all formats. Future AI/learning can target IR.")
-    (why-property-testing
-      "Serialization bugs are subtle. Property tests catch edge cases manual tests miss. Proves roundtrip fidelity.")
-    (why-no-runtime-library
-      "Generated code should be standalone and dependency-free. No lock-in, works in any environment.")
-    (why-pyo3-first
-      "Python↔Rust is highest impact use case. Proves concept with real-world value. PyO3 is mature and well-documented.")
-    (why-echidna-verification
-      "Multi-prover verification increases confidence beyond single prover. ECHIDNA enables Agda, Lean, Coq, Isabelle, Z3 cross-validation. Neural synthesis can generate proof candidates automatically. Formal proofs catch implementation bugs that tests miss.")
-    (why-i128-u128-support
-      "Complete integer coverage prevents gaps in type support. Python arbitrary precision integers can map to i128/u128 for large values. Some languages (Rust, C++) support 128-bit integers natively. Safe widening ladder proven exhaustive by totality checking.")))
+      "Explicit fidelity and overhead categories prevent hidden conversion surprises.")
+    (why-machine-readable-governance
+      "Structured metadata supports deterministic automation and keeps agents aligned with project intent.")))
 
-;; IMPORTANT: These requirements must always be kept up to date
 (define repository-requirements
   '((mandatory-dotfiles
-     ".gitignore"
-     ".gitattributes"
-     ".editorconfig"
-     ".tool-versions")
+      ".gitignore"
+      ".gitattributes"
+      ".editorconfig"
+      ".tool-versions")
+    (machine-readable-root
+      ".machines_readable/6scm")
     (mandatory-scm-files
-     "META.scm"
-     "STATE.scm"
-     "ECOSYSTEM.scm"
-     "PLAYBOOK.scm"
-     "AGENTIC.scm"
-     "NEUROSYM.scm")
+      "META.scm"
+      "STATE.scm"
+      "ECOSYSTEM.scm"
+      "PLAYBOOK.scm"
+      "AGENTIC.scm"
+      "NEUROSYM.scm")
     (build-system
-     (task-runner . "justfile")
-     (state-contract . "Mustfile")
-     (forbidden . ("Makefile")))
-    (meta-directory
-     ".meta/REQUIRED-FILES.md")
-    (satellite-management
-     (check-frequency . "on-new-repo")
-     (sync-ecosystem . #t)
-     (note . "When adding satellites, update ECOSYSTEM.scm in both parent and satellite"))))
+      (task-runner . "Justfile")
+      (state-contract . "Mustfile")
+      (forbidden . ("Makefile")))))

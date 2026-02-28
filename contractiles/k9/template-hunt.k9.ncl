@@ -7,7 +7,7 @@ K9!
 {
   pedigree = {
     schema_version = "1.0.0",
-    component_type = "TODO: describe component type (e.g., 'deployment', 'setup-script')",
+    component_type = "REQUIRED: describe component type (e.g., 'deployment', 'setup-script')",
     security = {
       leash = 'Hunt,
       trust_level = "full-system-access",
@@ -17,9 +17,9 @@ K9!
       signature_required = true,
     },
     metadata = {
-      name = "TODO: component-name",
+      name = "REQUIRED: component-name",
       version = "1.0.0",
-      description = "TODO: Detailed description of what this component does",
+      description = "REQUIRED: Detailed description of what this component does",
       author = "Jonathan D.A. Jewell <jonathan.jewell@open.ac.uk>",
     },
     warnings = [
@@ -29,9 +29,9 @@ K9!
       "Use dry-run mode first: ./must --dry-run run your-file.k9.ncl",
     ],
     side_effects = [
-      "TODO: List what files/directories this creates or modifies",
-      "TODO: List what commands this executes",
-      "TODO: List what network access this requires",
+      "REQUIRED: List what files/directories this creates or modifies",
+      "REQUIRED: List what commands this executes",
+      "REQUIRED: List what network access this requires",
     ],
   },
 
@@ -53,15 +53,15 @@ K9!
   recipes = {
     # Main entry point (runs by default)
     default = {
-      recipe = "TODO: main-task",
-      description = "TODO: What the default recipe does",
+      recipe = "REQUIRED: main-task",
+      description = "REQUIRED: What the default recipe does",
     },
 
     # Define your recipes here
     "main-task" = {
       dependencies = ["check-prerequisites"],
       commands = [
-        "echo 'TODO: Add your commands here'",
+        "echo 'REQUIRED: Add your commands here'",
         # Example: Create directory
         # "mkdir -p %{config.target_dir}",
         # Example: Run a command
@@ -86,7 +86,7 @@ K9!
     "build" = {
       description = "Build the project",
       commands = [
-        "echo 'TODO: Add build commands'",
+        "echo 'REQUIRED: Add build commands'",
       ],
     },
 
@@ -94,7 +94,7 @@ K9!
       description = "Deploy the application",
       dependencies = ["build"],
       commands = [
-        "echo 'TODO: Add deployment commands'",
+        "echo 'REQUIRED: Add deployment commands'",
       ],
     },
 
@@ -103,7 +103,7 @@ K9!
       commands = [
         "echo '⚠️  This will delete files - waiting 3 seconds...'",
         "sleep 3",
-        "echo 'TODO: Add cleanup commands'",
+        "echo 'REQUIRED: Add cleanup commands'",
         # "rm -rf %{config.target_dir}",
       ],
     },
@@ -117,7 +117,7 @@ K9!
 }
 
 # Usage:
-# 1. Fill in TODO items above
+# 1. Fill in placeholder items above
 # 2. Define configuration with contracts
 # 3. Implement Just recipes with your commands
 # 4. Test with dry-run: ./must --dry-run run your-file.k9.ncl
@@ -127,7 +127,7 @@ K9!
 # 8. Users verify and run: ./must verify && ./must run your-file.k9.ncl
 #
 # Security checklist:
-# ✓ All TODO items filled in
+# ✓ All placeholder items filled in
 # ✓ side_effects documented accurately
 # ✓ Commands reviewed for safety
 # ✓ No hardcoded secrets or credentials

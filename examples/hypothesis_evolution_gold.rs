@@ -75,7 +75,7 @@ fn schema_to_report(
                 let class = match &field.ty {
                     IrType::Primitive(PrimitiveType::I64 | PrimitiveType::I32) => {
                         TransportClass::Concorde
-                    }
+                    },
                     IrType::Primitive(PrimitiveType::F64) => TransportClass::Business,
                     IrType::Primitive(PrimitiveType::String) => TransportClass::Economy,
                     IrType::Primitive(PrimitiveType::Bool) => TransportClass::Concorde,
@@ -242,10 +242,10 @@ fn display_results(analysis: &ComparativeAnalysis) {
 
     for (idx, (protocol, score)) in analysis.ranking.iter().enumerate() {
         let bar_length = (score * 50.0) as usize;
-        let bar = "#".repeat(bar_length);
+        let progress_bar = "#".repeat(bar_length);
 
         println!("{}. {} - Score: {:.3}", idx + 1, protocol, score);
-        println!("   {}", bar);
+        println!("   {}", progress_bar);
         println!();
     }
 
@@ -256,7 +256,10 @@ fn display_results(analysis: &ComparativeAnalysis) {
 
     for report in &analysis.reports {
         println!("{} - {}", report.protocol, report.message);
-        println!("   Squishability Score: {:.3}", report.squishability_score());
+        println!(
+            "   Squishability Score: {:.3}",
+            report.squishability_score()
+        );
         println!("   Best Class: {:?}", report.best_achievable_class);
         println!("   Predicted Speedup: {:.1}x", report.predicted_speedup);
 

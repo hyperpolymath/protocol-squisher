@@ -51,8 +51,8 @@ Proven by:
 
 The `idris2/` directory contains the Idris2 implementation with dependent type
 proofs. Currently the Rust crate uses pure Rust stubs matching the Idris2
-semantics. Once the Idris2 refc-generated C library is available, `src/ffi.rs`
-will link to it directly.
+semantics. The C ABI surface is exported from Idris2 and bridged via
+`ffi/zig/`; `src/ffi.rs` stays as the Rust-side semantic fallback in stub mode.
 
 ## Relationship to ephapax
 

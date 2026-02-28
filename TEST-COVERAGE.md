@@ -1,6 +1,6 @@
 # Protocol Squisher Test Coverage
 
-**Total: 180 tests passing** (as of 2026-02-04)
+**Total: 721 tests passing** (as of 2026-02-28)
 
 ## Test Breakdown by Component
 
@@ -218,36 +218,20 @@
 ## Missing Test Categories
 
 ### High Priority
-1. **CLI Tests** (0 tests currently)
-   - [ ] Command parsing
-   - [ ] Output formatting
-   - [ ] Error handling
-   - [ ] File I/O edge cases
-
-2. **Nested Types** (not yet implemented)
+1. **Nested Types** (not yet implemented)
    - [ ] Vec<Vec<T>>
    - [ ] HashMap<K, Vec<V>>
    - [ ] Option<Box<T>>
    - [ ] Recursive types
 
-3. **Property Tests** (minimal coverage)
-   - [ ] Round-trip conversion invariants
-   - [ ] Transport class monotonicity
-   - [ ] Schema equivalence
-
 ### Medium Priority
-4. **Performance Tests** (0 benchmarks)
-   - [ ] Analysis performance (large schemas)
-   - [ ] Codegen performance
-   - [ ] Runtime conversion overhead
-
-5. **Error Path Tests** (basic coverage)
+2. **Error Path Tests** (basic coverage)
    - [ ] Malformed schemas
    - [ ] Conflicting types
    - [ ] Invalid configurations
 
 ### Low Priority
-6. **Documentation Tests** (0 doc tests)
+3. **Documentation Tests** (minimal doc tests)
    - [ ] README examples
    - [ ] API documentation examples
    - [ ] Tutorial code snippets
@@ -261,7 +245,9 @@
 - **Compatibility (engine, optimizer)**: 53 tests ✓
 - **Code Generation (PyO3, JSON fallback)**: 53 tests ✓
 - **Integration**: 7 tests ✓
-- **CLI**: 0 tests ⚠️
+- **CLI**: 19 tests ✓
+- **Property tests**: 66 tests ✓
+- **Protocol analyzers (11 formats)**: 456+ tests ✓
 
 ### Transport Class Testing
 - ✓ Concorde (zero-copy): Well tested
@@ -356,6 +342,6 @@ cargo test --workspace -- --nocapture --test-threads=1
 Current adherence:
 - Unit tests: ✓ 90%+ coverage
 - Integration tests: ✓ Core workflows covered
-- Property tests: ⚠️ Minimal (needs expansion)
+- Property tests: ✓ 66 tests across invariants
 - Regression tests: ✓ Ad-hoc coverage
-- Performance tests: ✗ Not yet implemented
+- Performance tests: ✓ 4 benchmark suites (Criterion)

@@ -198,7 +198,7 @@ All announcements verified against:
 
 ---
 
-## Post-Launch TODO
+## Post-Launch Action Items
 
 ### Immediate (Day 1-7)
 - Monitor announcement threads

@@ -8,8 +8,8 @@
 //! there's no compile-time schema to guarantee type safety.
 
 use crate::AnalyzerError;
-use protocol_squisher_transport_primitives::{IRContext, PrimitiveType, TransportClass};
 use protocol_squisher_ir::IrType;
+use protocol_squisher_transport_primitives::{IRContext, PrimitiveType, TransportClass};
 
 /// Convert protocol-squisher IR type to ephapax primitive type
 ///
@@ -36,10 +36,16 @@ pub fn to_ephapax_primitive(ir_type: &IrType) -> Option<PrimitiveType> {
                 IrPrim::Char => Some(PrimitiveType::Char),
                 IrPrim::String => Some(PrimitiveType::String),
                 // Types not yet supported in ephapax IR
-                IrPrim::Bytes | IrPrim::DateTime | IrPrim::Date | IrPrim::Time
-                | IrPrim::Duration | IrPrim::Uuid | IrPrim::Decimal | IrPrim::BigInt => None,
+                IrPrim::Bytes
+                | IrPrim::DateTime
+                | IrPrim::Date
+                | IrPrim::Time
+                | IrPrim::Duration
+                | IrPrim::Uuid
+                | IrPrim::Decimal
+                | IrPrim::BigInt => None,
             }
-        }
+        },
         IrType::Special(protocol_squisher_ir::SpecialType::Unit) => Some(PrimitiveType::Unit),
         // Containers and other complex types don't map to primitives
         _ => None,
@@ -69,8 +75,7 @@ pub fn analyze_transport_compatibility(
 
     match (source, target) {
         // Primitive types - use ephapax analysis
-        (IrType::Primitive(_), IrType::Primitive(_))
-        | (IrType::Special(_), IrType::Special(_)) => {
+        (IrType::Primitive(_), IrType::Primitive(_)) | (IrType::Special(_), IrType::Special(_)) => {
             // Even for primitives, MessagePack requires runtime validation
             // because the schema is not enforced at compile time
             let source_prim = to_ephapax_primitive(source).ok_or_else(|| {
@@ -96,17 +101,17 @@ pub fn analyze_transport_compatibility(
                 TransportClass::Concorde => {
                     // Identical types still need runtime validation in MessagePack
                     Ok(TransportClass::Wheelbarrow)
-                }
+                },
                 TransportClass::Business => Ok(TransportClass::Wheelbarrow),
                 TransportClass::Economy => Ok(TransportClass::Wheelbarrow),
                 TransportClass::Wheelbarrow => Ok(TransportClass::Wheelbarrow),
             }
-        }
+        },
 
         // Container types - recursive analysis
         (IrType::Container(source_container), IrType::Container(target_container)) => {
             analyze_container_compatibility(ctx, source_container, target_container)
-        }
+        },
 
         // Mismatched types (primitive vs container) - always Wheelbarrow
         _ => Ok(TransportClass::Wheelbarrow),
@@ -136,7 +141,7 @@ fn analyze_container_compatibility(
             let _inner_class = analyze_transport_compatibility(ctx, source_inner, target_inner)?;
             // Always Wheelbarrow due to dynamic typing
             Ok(TransportClass::Wheelbarrow)
-        }
+        },
 
         // Vec<T> analysis
         (ContainerType::Vec(source_inner), ContainerType::Vec(target_inner)) => {
@@ -144,7 +149,7 @@ fn analyze_container_compatibility(
             let _inner_class = analyze_transport_compatibility(ctx, source_inner, target_inner)?;
             // Always Wheelbarrow - array elements can be any type
             Ok(TransportClass::Wheelbarrow)
-        }
+        },
 
         // Map<K, V> analysis
         (ContainerType::Map(source_k, source_v), ContainerType::Map(target_k, target_v)) => {
@@ -153,7 +158,7 @@ fn analyze_container_compatibility(
             let _val_class = analyze_transport_compatibility(ctx, source_v, target_v)?;
             // Always Wheelbarrow - no compile-time type guarantees
             Ok(TransportClass::Wheelbarrow)
-        }
+        },
 
         // Tuple analysis
         (ContainerType::Tuple(source_elems), ContainerType::Tuple(target_elems)) => {
@@ -164,7 +169,7 @@ fn analyze_container_compatibility(
 
             // Even with matching element counts, dynamic typing means Wheelbarrow
             Ok(TransportClass::Wheelbarrow)
-        }
+        },
 
         // Mismatched container types - always Wheelbarrow
         _ => Ok(TransportClass::Wheelbarrow),
@@ -183,11 +188,7 @@ pub struct TransportAnalysis {
 
 impl TransportAnalysis {
     /// Create a new transport analysis
-    pub fn new(
-        ctx: &IRContext,
-        source: &IrType,
-        target: &IrType,
-    ) -> Result<Self, AnalyzerError> {
+    pub fn new(ctx: &IRContext, source: &IrType, target: &IrType) -> Result<Self, AnalyzerError> {
         let class = analyze_transport_compatibility(ctx, source, target)?;
 
         Ok(Self {
@@ -261,9 +262,8 @@ mod tests {
         use protocol_squisher_ir::ContainerType;
 
         let ctx = IRContext::new();
-        let vec_i64 = IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(
-            IrPrim::I64,
-        ))));
+        let vec_i64 =
+            IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(IrPrim::I64))));
 
         let analysis = TransportAnalysis::new(&ctx, &vec_i64, &vec_i64).unwrap();
 
@@ -293,9 +293,9 @@ mod tests {
         use protocol_squisher_ir::ContainerType;
 
         let ctx = IRContext::new();
-        let opt_string = IrType::Container(ContainerType::Option(Box::new(
-            IrType::Primitive(IrPrim::String),
-        )));
+        let opt_string = IrType::Container(ContainerType::Option(Box::new(IrType::Primitive(
+            IrPrim::String,
+        ))));
 
         let analysis = TransportAnalysis::new(&ctx, &opt_string, &opt_string).unwrap();
 
@@ -308,13 +308,12 @@ mod tests {
         use protocol_squisher_ir::ContainerType;
 
         let ctx = IRContext::new();
-        let dynamic_array = IrType::Container(ContainerType::Vec(Box::new(
-            IrType::Special(protocol_squisher_ir::SpecialType::Any),
-        )));
-
-        let i64_array = IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(
-            IrPrim::I64,
+        let dynamic_array = IrType::Container(ContainerType::Vec(Box::new(IrType::Special(
+            protocol_squisher_ir::SpecialType::Any,
         ))));
+
+        let i64_array =
+            IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(IrPrim::I64))));
 
         let analysis = TransportAnalysis::new(&ctx, &dynamic_array, &i64_array).unwrap();
 
@@ -367,9 +366,18 @@ mod tests {
 
         // Test several different type combinations
         let test_cases = vec![
-            (IrType::Primitive(IrPrim::I64), IrType::Primitive(IrPrim::I64)),
-            (IrType::Primitive(IrPrim::String), IrType::Primitive(IrPrim::String)),
-            (IrType::Primitive(IrPrim::Bool), IrType::Primitive(IrPrim::Bool)),
+            (
+                IrType::Primitive(IrPrim::I64),
+                IrType::Primitive(IrPrim::I64),
+            ),
+            (
+                IrType::Primitive(IrPrim::String),
+                IrType::Primitive(IrPrim::String),
+            ),
+            (
+                IrType::Primitive(IrPrim::Bool),
+                IrType::Primitive(IrPrim::Bool),
+            ),
         ];
 
         for (source, target) in test_cases {

@@ -6,31 +6,15 @@
 use anyhow::{Context, Result};
 use colored::Colorize;
 use protocol_squisher_pyo3_codegen::{OptimizedGenConfig, OptimizedPyO3Generator};
-use protocol_squisher_rust_analyzer::RustAnalyzer;
 use std::fs;
 use std::path::PathBuf;
 
-pub fn run(
-    rust_path: PathBuf,
-    python_path: PathBuf,
-    output: PathBuf,
-    stubs: bool,
-) -> Result<()> {
+pub fn run(rust_path: PathBuf, python_path: PathBuf, output: PathBuf, stubs: bool) -> Result<()> {
     println!("{}", "🔧 Generating PyO3 bindings...".cyan());
 
-    // Parse Rust schema
-    let rust_source = fs::read_to_string(&rust_path)
-        .with_context(|| format!("Failed to read Rust file: {}", rust_path.display()))?;
-    let rust_analyzer = RustAnalyzer::new();
-    let rust_schema = rust_analyzer
-        .analyze_source(&rust_source)
-        .context("Failed to analyze Rust source")?;
-
-    // Parse Python schema (stub)
-    let _python_source = fs::read_to_string(&python_path)
-        .with_context(|| format!("Failed to read Python file: {}", python_path.display()))?;
-
-    let target_schema = crate::create_target_schema(&rust_schema);
+    // Parse schemas
+    let rust_schema = crate::analyze_rust_schema(&rust_path)?;
+    let target_schema = crate::analyze_python_schema(&python_path)?;
 
     // Create output directory
     fs::create_dir_all(&output)
@@ -56,17 +40,28 @@ pub fn run(
     println!("  {} {}", "✓".green(), rust_output.display());
 
     // Write Python stubs if requested
-    if stubs && result.python_stub.is_some() {
-        let stubs_output = output.join("bindings.pyi");
-        fs::write(&stubs_output, result.python_stub.as_ref().unwrap())
-            .with_context(|| format!("Failed to write Python stubs: {}", stubs_output.display()))?;
+    if stubs {
+        if let Some(stub_code) = result.python_stub.as_ref() {
+            let stubs_output = output.join("bindings.pyi");
+            fs::write(&stubs_output, stub_code).with_context(|| {
+                format!("Failed to write Python stubs: {}", stubs_output.display())
+            })?;
 
-        println!("  {} {}", "✓".green(), stubs_output.display());
+            println!("  {} {}", "✓".green(), stubs_output.display());
+        } else {
+            println!(
+                "  {} Python stub generation was requested but no stub output was produced",
+                "⚠".yellow()
+            );
+        }
     }
 
     // Display statistics
     println!("\n{}", "Generation Statistics:".bold());
-    println!("  Transport Class: {}", format_transport_class(&result.analysis.overall_class));
+    println!(
+        "  Transport Class: {}",
+        format_transport_class(&result.analysis.overall_class)
+    );
 
     let zero_copy_pct = if result.stats.total_fields > 0 {
         (result.stats.zero_copy_fields as f64 / result.stats.total_fields as f64) * 100.0
@@ -74,15 +69,20 @@ pub fn run(
         0.0
     };
 
-    println!("  Zero-Copy Fields: {}/{} ({:.1}%)",
-        result.stats.zero_copy_fields,
-        result.stats.total_fields,
-        zero_copy_pct
+    println!(
+        "  Zero-Copy Fields: {}/{} ({:.1}%)",
+        result.stats.zero_copy_fields, result.stats.total_fields, zero_copy_pct
     );
-    println!("  JSON Fallback Fields: {}", result.stats.json_fallback_fields);
+    println!(
+        "  JSON Fallback Fields: {}",
+        result.stats.json_fallback_fields
+    );
 
     if result.stats.is_production_ready {
-        println!("\n  {} Production ready (>90% safe conversions)", "✓".green().bold());
+        println!(
+            "\n  {} Production ready (>90% safe conversions)",
+            "✓".green().bold()
+        );
     } else {
         let fallback_pct = if result.stats.total_fields > 0 {
             (result.stats.json_fallback_fields as f64 / result.stats.total_fields as f64) * 100.0
@@ -91,7 +91,10 @@ pub fn run(
         };
 
         if fallback_pct > 20.0 {
-            println!("\n  {} Needs optimization (>20% JSON fallback)", "⚠".yellow().bold());
+            println!(
+                "\n  {} Needs optimization (>20% JSON fallback)",
+                "⚠".yellow().bold()
+            );
             println!("    Run 'protocol-squisher optimize' for suggestions");
         }
     }
@@ -99,7 +102,9 @@ pub fn run(
     Ok(())
 }
 
-fn format_transport_class(class: &protocol_squisher_transport_primitives::TransportClass) -> String {
+fn format_transport_class(
+    class: &protocol_squisher_transport_primitives::TransportClass,
+) -> String {
     use protocol_squisher_transport_primitives::TransportClass;
 
     match class {

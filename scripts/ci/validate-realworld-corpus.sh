@@ -4,6 +4,7 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+jq_dir="${repo_root}/scripts/ci/jq"
 protocol_squisher_bin="${PROTOCOL_SQUISHER_BIN:-${repo_root}/target/release/protocol-squisher}"
 min_success=100
 max_files=220
@@ -24,7 +25,7 @@ Options:
   --min-success <n>         Minimum successful analyses required (default: 100)
   --max-files <n>           Max candidate files to attempt (default: 220)
   --output <path>           Write JSON report to path
-  --no-strict-json-schema   Include all *.json files (default checks for "\$schema")
+  --no-strict-json-schema   Include all *.json files (default checks for schema metadata key)
   -h, --help                Show this help
 USAGE
 }
@@ -99,6 +100,10 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 if ! command -v rg >/dev/null 2>&1; then
     echo "error: rg is required." >&2
+    exit 127
+fi
+if [[ ! -f "${jq_dir}/realworld-per-format-add.jq" || ! -f "${jq_dir}/realworld-report.jq" ]]; then
+    echo "error: jq filters missing in ${jq_dir}" >&2
     exit 127
 fi
 
@@ -269,12 +274,8 @@ for format in "${formats[@]}"; do
             --argjson successful "${successful_by_format["${format}"]:-0}" \
             --argjson parse_failures "${parse_failures_by_format["${format}"]:-0}" \
             --argjson invariant_violations "${violations_by_format["${format}"]:-0}" \
-            '. + {($format): {
-                attempted: $attempted,
-                successful: $successful,
-                parse_failures: $parse_failures,
-                invariant_violations: $invariant_violations
-            }}' <<<"${per_format_json}"
+            -f "${jq_dir}/realworld-per-format-add.jq" \
+            <<<"${per_format_json}"
     )"
 done
 
@@ -294,28 +295,7 @@ jq -n \
     --argjson parse_failures "${parse_failures}" \
     --argjson invariant_violations "${invariant_violations}" \
     --argjson per_format "${per_format_json}" \
-    '{
-        generated_at_utc: $generated_at,
-        protocol_squisher_bin: $bin,
-        roots: $roots,
-        strict_json_schema: $strict_json_schema,
-        thresholds: {
-            min_success: $min_success,
-            max_files: $max_files
-        },
-        totals: {
-            candidates_discovered: $total_candidates,
-            attempted: $attempted,
-            successful_analyses: $successful,
-            parse_failures: $parse_failures,
-            invariant_violations: $invariant_violations
-        },
-        per_format: $per_format,
-        gates: {
-            real_world_target_met: ($successful >= $min_success),
-            invariant_target_met: ($invariant_violations == 0)
-        }
-    }' >"${report_file}"
+    -f "${jq_dir}/realworld-report.jq" >"${report_file}"
 
 if [[ -n "${output_path}" ]]; then
     mkdir -p "$(dirname "${output_path}")"

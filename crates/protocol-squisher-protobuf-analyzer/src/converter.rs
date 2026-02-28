@@ -128,7 +128,7 @@ impl ProtoConverter {
                 // In proto3, all scalar fields have implicit defaults
                 // We treat them as non-optional unless explicitly marked
                 field.label == FieldLabel::Optional
-            }
+            },
         };
 
         let ty = if is_repeated {
@@ -175,12 +175,12 @@ impl ProtoConverter {
             "map" => {
                 // Map types are handled separately in convert_map_type
                 Ok(IrType::Special(protocol_squisher_ir::SpecialType::Any))
-            }
+            },
             type_name => {
                 // Reference to another message or enum
                 let ref_name = normalize_type_name(type_name);
                 Ok(IrType::Reference(ref_name))
-            }
+            },
         }
     }
 
@@ -251,7 +251,11 @@ impl ProtoConverter {
     }
 
     /// Convert a oneof to IR enum
-    fn convert_oneof(&self, message_name: &str, oneof: &ProtoOneof) -> Result<EnumDef, AnalyzerError> {
+    fn convert_oneof(
+        &self,
+        message_name: &str,
+        oneof: &ProtoOneof,
+    ) -> Result<EnumDef, AnalyzerError> {
         let full_name = format!("{}_{}", message_name, to_pascal_case(&oneof.name));
 
         let variants: Result<Vec<VariantDef>, AnalyzerError> = oneof

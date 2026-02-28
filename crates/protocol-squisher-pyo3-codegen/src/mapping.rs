@@ -70,12 +70,8 @@ impl PyO3Type {
             | PrimitiveType::U64
             | PrimitiveType::U128
             | PrimitiveType::BigInt => PyO3Type::Primitive(PyO3Primitive::Int),
-            PrimitiveType::F32 | PrimitiveType::F64 => {
-                PyO3Type::Primitive(PyO3Primitive::Float)
-            }
-            PrimitiveType::Char | PrimitiveType::String => {
-                PyO3Type::Primitive(PyO3Primitive::Str)
-            }
+            PrimitiveType::F32 | PrimitiveType::F64 => PyO3Type::Primitive(PyO3Primitive::Float),
+            PrimitiveType::Char | PrimitiveType::String => PyO3Type::Primitive(PyO3Primitive::Str),
             PrimitiveType::Bytes => PyO3Type::Primitive(PyO3Primitive::Bytes),
             // Temporal and special primitives - represent as strings
             PrimitiveType::DateTime
@@ -97,7 +93,7 @@ impl PyO3Type {
                 } else {
                     PyO3Type::List(Box::new(PyO3Type::from_ir(inner)))
                 }
-            }
+            },
             ContainerType::Array(inner, _size) => {
                 // Special case: [u8; N] -> bytes
                 if matches!(inner.as_ref(), IrType::Primitive(PrimitiveType::U8)) {
@@ -105,24 +101,20 @@ impl PyO3Type {
                 } else {
                     PyO3Type::List(Box::new(PyO3Type::from_ir(inner)))
                 }
-            }
-            ContainerType::Set(inner) => {
-                PyO3Type::Set(Box::new(PyO3Type::from_ir(inner)))
-            }
+            },
+            ContainerType::Set(inner) => PyO3Type::Set(Box::new(PyO3Type::from_ir(inner))),
             ContainerType::Map(key, value) => PyO3Type::Dict(
                 Box::new(PyO3Type::from_ir(key)),
                 Box::new(PyO3Type::from_ir(value)),
             ),
-            ContainerType::Option(inner) => {
-                PyO3Type::Optional(Box::new(PyO3Type::from_ir(inner)))
-            }
+            ContainerType::Option(inner) => PyO3Type::Optional(Box::new(PyO3Type::from_ir(inner))),
             ContainerType::Tuple(items) => {
                 PyO3Type::Tuple(items.iter().map(PyO3Type::from_ir).collect())
-            }
+            },
             ContainerType::Result(ok, _err) => {
                 // Result<T, E> maps to just T in Python (exceptions for errors)
                 PyO3Type::from_ir(ok)
-            }
+            },
         }
     }
 
@@ -142,8 +134,12 @@ impl PyO3Type {
             PyO3Type::Primitive(p) => p.python_name().to_string(),
             PyO3Type::List(inner) => format!("list[{}]", inner.python_annotation()),
             PyO3Type::Dict(key, value) => {
-                format!("dict[{}, {}]", key.python_annotation(), value.python_annotation())
-            }
+                format!(
+                    "dict[{}, {}]",
+                    key.python_annotation(),
+                    value.python_annotation()
+                )
+            },
             PyO3Type::Set(inner) => format!("set[{}]", inner.python_annotation()),
             PyO3Type::Tuple(items) => {
                 if items.is_empty() {
@@ -152,7 +148,7 @@ impl PyO3Type {
                     let inner: Vec<_> = items.iter().map(|t| t.python_annotation()).collect();
                     format!("tuple[{}]", inner.join(", "))
                 }
-            }
+            },
             PyO3Type::Optional(inner) => format!("{} | None", inner.python_annotation()),
             PyO3Type::Class(name) => name.clone(),
             PyO3Type::Any => "Any".to_string(),
@@ -166,11 +162,15 @@ impl PyO3Type {
             PyO3Type::Primitive(p) => p.rust_type().to_string(),
             PyO3Type::List(inner) => format!("Vec<{}>", inner.rust_type()),
             PyO3Type::Dict(key, value) => {
-                format!("std::collections::HashMap<{}, {}>", key.rust_type(), value.rust_type())
-            }
+                format!(
+                    "std::collections::HashMap<{}, {}>",
+                    key.rust_type(),
+                    value.rust_type()
+                )
+            },
             PyO3Type::Set(inner) => {
                 format!("std::collections::HashSet<{}>", inner.rust_type())
-            }
+            },
             PyO3Type::Tuple(items) => {
                 if items.is_empty() {
                     "()".to_string()
@@ -178,7 +178,7 @@ impl PyO3Type {
                     let inner: Vec<_> = items.iter().map(|t| t.rust_type()).collect();
                     format!("({})", inner.join(", "))
                 }
-            }
+            },
             PyO3Type::Optional(inner) => format!("Option<{}>", inner.rust_type()),
             PyO3Type::Class(name) => name.clone(),
             PyO3Type::Any => "pyo3::PyObject".to_string(),
@@ -309,13 +309,17 @@ mod tests {
 
     #[test]
     fn test_python_annotation() {
-        assert_eq!(PyO3Type::Primitive(PyO3Primitive::Int).python_annotation(), "int");
+        assert_eq!(
+            PyO3Type::Primitive(PyO3Primitive::Int).python_annotation(),
+            "int"
+        );
         assert_eq!(
             PyO3Type::List(Box::new(PyO3Type::Primitive(PyO3Primitive::Str))).python_annotation(),
             "list[str]"
         );
         assert_eq!(
-            PyO3Type::Optional(Box::new(PyO3Type::Primitive(PyO3Primitive::Int))).python_annotation(),
+            PyO3Type::Optional(Box::new(PyO3Type::Primitive(PyO3Primitive::Int)))
+                .python_annotation(),
             "int | None"
         );
     }

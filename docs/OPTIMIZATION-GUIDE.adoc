@@ -70,7 +70,7 @@ class SensorReading(BaseModel):
 **Analysis:**
 [source,bash]
 ----
-$ protocol-squish check --rust src/lib.rs --python models.py
+$ protocol-squisher check --rust src/lib.rs --python models.py
 
 Transport Classes:
   timestamp: Concorde (i64 → i64) ✓
@@ -108,7 +108,7 @@ class SensorReading(BaseModel):
 **Result:**
 [source,bash]
 ----
-$ protocol-squish check --rust src/lib.rs --python models.py
+$ protocol-squisher check --rust src/lib.rs --python models.py
 
 Transport Classes:
   timestamp: Concorde (i64 → i64) ✓
@@ -294,7 +294,7 @@ class Dataset(BaseModel):
 
 [source,bash]
 ----
-$ protocol-squish analyze --rust src/lib.rs --python models.py
+$ protocol-squisher analyze --rust src/lib.rs --python models.py
 
 Schema: MyStruct
   Fields: 5
@@ -309,7 +309,7 @@ Schema: MyStruct
 
 [source,bash]
 ----
-$ protocol-squish optimize --rust src/lib.rs --python models.py
+$ protocol-squisher optimize --rust src/lib.rs --python models.py
 
 Optimization Suggestions (sorted by impact):
 
@@ -354,7 +354,7 @@ struct MyStruct {
 
 [source,bash]
 ----
-$ protocol-squish check --rust src/lib.rs --python models.py
+$ protocol-squisher check --rust src/lib.rs --python models.py
 
 Transport Classes:
   value: Concorde ✓
@@ -489,7 +489,7 @@ class Config(BaseModel):
 **❌ Don't:**
 [source,bash]
 ----
-$ protocol-squish generate --rust lib.rs --python models.py
+$ protocol-squisher generate --rust lib.rs --python models.py
 
 ⚠ WARNING: 40% Wheelbarrow transport
 ⚠ WARNING: Production readiness: 60% (needs >90%)
@@ -500,10 +500,10 @@ $ protocol-squish generate --rust lib.rs --python models.py
 **✅ Do:**
 [source,bash]
 ----
-$ protocol-squish optimize --rust lib.rs --python models.py
+$ protocol-squisher optimize --rust lib.rs --python models.py
 
 # Read suggestions, apply fixes, verify
-$ protocol-squish check --rust lib.rs --python models.py
+$ protocol-squisher check --rust lib.rs --python models.py
 # Production ready: YES ✓
 ----
 
@@ -549,10 +549,12 @@ $ protocol-squish check --rust lib.rs --python models.py
 [source,bash]
 ----
 # During development
-$ protocol-squish check --rust src/lib.rs --python models.py
+$ protocol-squisher check --rust src/lib.rs --python models.py
 
-# Fail CI if production readiness < 90%
-$ protocol-squish check --rust src/lib.rs --python models.py --min-quality 90
+# CI gate example: fail when output reports significant compatibility issues
+$ output="$(protocol-squisher check --rust src/lib.rs --python models.py)"
+$ echo "$output"
+$ echo "$output" | grep -q "Significant compatibility issues" && exit 1
 ----
 
 === 2. Optimize High-Traffic Paths First
@@ -593,9 +595,10 @@ struct Config {
 ----
 # .git/hooks/pre-commit
 #!/bin/bash
-protocol-squish check --rust src/lib.rs --python models.py --min-quality 90
-if [ $? -ne 0 ]; then
-    echo "⚠ Schema quality below 90% - run 'protocol-squish optimize'"
+output="$(protocol-squisher check --rust src/lib.rs --python models.py)"
+echo "$output"
+if echo "$output" | grep -q "Significant compatibility issues"; then
+    echo "⚠ Schema quality below 90% - run 'protocol-squisher optimize'"
     exit 1
 fi
 ----
@@ -652,7 +655,7 @@ struct UserV2 {
 **Solution:**
 [source,bash]
 ----
-$ protocol-squish analyze --rust lib.rs --python models.py --field my_field
+$ protocol-squisher analyze --rust lib.rs --python models.py --field my_field
 
 Field: my_field
   Rust: i64
@@ -666,7 +669,7 @@ Field: my_field
 **Check impact:**
 [source,bash]
 ----
-$ protocol-squish optimize --rust lib.rs --python models.py
+$ protocol-squisher optimize --rust lib.rs --python models.py
 
 # Look for "improvement" percentage
 # HIGH IMPACT: >40% improvement

@@ -38,7 +38,7 @@ impl OptimizationSummary {
                 OptimizationLevel::DirectCast => direct_cast += 1,
                 OptimizationLevel::StructuralMatch | OptimizationLevel::ContainerMatch => {
                     structural += 1
-                }
+                },
                 OptimizationLevel::Fallback => fallback += 1,
             }
         }
@@ -103,7 +103,9 @@ pub fn generate_report(source: &IrSchema, target: &IrSchema) -> AnalysisReport {
             OptimizationLevel::ZeroCopy => "Types are identical, no conversion needed".to_string(),
             OptimizationLevel::DirectCast => "Simple type cast available".to_string(),
             OptimizationLevel::StructuralMatch => "Field-by-field conversion possible".to_string(),
-            OptimizationLevel::ContainerMatch => "Container element conversion possible".to_string(),
+            OptimizationLevel::ContainerMatch => {
+                "Container element conversion possible".to_string()
+            },
             OptimizationLevel::Fallback => "Must use JSON serialization".to_string(),
         };
 
@@ -130,9 +132,8 @@ pub fn generate_report(source: &IrSchema, target: &IrSchema) -> AnalysisReport {
 
     // Generate recommendations
     if result.fallback_types.len() > result.optimized_types.len() {
-        recommendations.push(
-            "Most types require fallback - consider aligning schema designs".to_string(),
-        );
+        recommendations
+            .push("Most types require fallback - consider aligning schema designs".to_string());
     }
 
     if summary.zero_copy_count == 0 && summary.total_types > 0 {

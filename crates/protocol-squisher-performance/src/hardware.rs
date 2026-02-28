@@ -39,7 +39,8 @@ pub fn checksum_with_backend(bytes: &[u8], backend: HardwareBackend) -> u8 {
 
 pub fn xor_checksum_parallel(bytes: &[u8]) -> u8 {
     const CHUNK_SIZE: usize = 32 * 1024;
-    bytes.par_chunks(CHUNK_SIZE)
+    bytes
+        .par_chunks(CHUNK_SIZE)
         .map(xor_checksum_scalar)
         .reduce(|| 0u8, |a, b| a ^ b)
 }

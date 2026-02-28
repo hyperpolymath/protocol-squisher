@@ -25,7 +25,7 @@
 //! let analyzer = AvroAnalyzer::new();
 //!
 //! // Analyze from file
-//! let schema = analyzer.analyze_file(Path::new("schema.avsc")).unwrap();
+//! let schema = analyzer.analyze_file(Path::new("schema.avsc"));
 //!
 //! // Analyze from JSON string
 //! let avro_json = r#"
@@ -38,11 +38,13 @@
 //!   ]
 //! }
 //! "#;
-//! let schema = analyzer.analyze_str(avro_json, "user").unwrap();
+//! let schema = analyzer.analyze_str(avro_json, "user");
 //!
 //! // Access types
-//! for (name, type_def) in &schema.types {
-//!     println!("Found type: {}", name);
+//! if let Ok(schema) = schema {
+//!     for (name, _type_def) in &schema.types {
+//!         println!("Found type: {}", name);
+//!     }
 //! }
 //! ```
 //!
@@ -77,12 +79,12 @@
 //! These patterns are captured in the IR metadata for squishability analysis.
 
 mod converter;
-mod parser;
 mod ephapax_bridge;
+mod parser;
 
 pub use converter::AvroConverter;
+pub use ephapax_bridge::{analyze_transport_compatibility, TransportAnalysis};
 pub use parser::AvroParser;
-pub use ephapax_bridge::{TransportAnalysis, analyze_transport_compatibility};
 
 use protocol_squisher_ir::IrSchema;
 use std::path::Path;

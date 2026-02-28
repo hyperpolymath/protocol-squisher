@@ -7,7 +7,6 @@ use crate::parser::{
     FieldModifier, ParsedThrift, ThriftEnum, ThriftException, ThriftField, ThriftStruct,
 };
 use crate::AnalyzerError;
-use serde_json;
 use protocol_squisher_ir::{
     ContainerType, EnumDef, FieldDef, FieldMetadata, IrSchema, IrType, PrimitiveType, StructDef,
     TagStyle, TypeDef, TypeMetadata, VariantDef, VariantMetadata,
@@ -87,10 +86,7 @@ impl ThriftConverter {
     }
 
     /// Convert a Thrift exception to IR struct
-    fn convert_exception(
-        &self,
-        exception: &ThriftException,
-    ) -> Result<StructDef, AnalyzerError> {
+    fn convert_exception(&self, exception: &ThriftException) -> Result<StructDef, AnalyzerError> {
         let fields = exception
             .fields
             .iter()
@@ -128,9 +124,9 @@ impl ThriftConverter {
         // Convert default value string to JSON value
         let default_json = field.default_value.as_ref().and_then(|v| {
             // Try to parse as JSON, or wrap as string if it fails
-            serde_json::from_str(v).ok().or_else(|| {
-                Some(serde_json::Value::String(v.trim_matches('"').to_string()))
-            })
+            serde_json::from_str(v)
+                .ok()
+                .or_else(|| Some(serde_json::Value::String(v.trim_matches('"').to_string())))
         });
 
         Ok(FieldDef {
@@ -314,10 +310,7 @@ mod tests {
             "string"
         );
         assert_eq!(extract_generic_type("list<i32>", "list").unwrap(), "i32");
-        assert_eq!(
-            extract_generic_type("set<User>", "set").unwrap(),
-            "User"
-        );
+        assert_eq!(extract_generic_type("set<User>", "set").unwrap(), "User");
     }
 
     #[test]

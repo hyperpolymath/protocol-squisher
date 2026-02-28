@@ -7,9 +7,7 @@
 
 use crate::compare::compare_types;
 use crate::transport::{ConversionLoss, LossKind, LossSeverity, TransportClass};
-use protocol_squisher_ir::{
-    EnumDef, FieldDef, IrSchema, StructDef, TypeDef, VariantDef,
-};
+use protocol_squisher_ir::{EnumDef, FieldDef, IrSchema, StructDef, TypeDef, VariantDef};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashSet};
 
@@ -150,8 +148,11 @@ pub fn compare_schemas(source: &IrSchema, target: &IrSchema) -> SchemaComparison
 
     // Compare types that exist in both
     for name in source_types.intersection(&target_types) {
-        let source_type = source.types.get(*name).unwrap();
-        let target_type = target.types.get(*name).unwrap();
+        let (Some(source_type), Some(target_type)) =
+            (source.types.get(*name), target.types.get(*name))
+        else {
+            continue;
+        };
 
         let type_cmp = compare_type_defs(source_type, target_type, name);
         result.class = result.class.combine(type_cmp.class);
@@ -165,12 +166,8 @@ pub fn compare_schemas(source: &IrSchema, target: &IrSchema) -> SchemaComparison
 /// Compare two type definitions
 fn compare_type_defs(source: &TypeDef, target: &TypeDef, name: &str) -> TypeDefComparison {
     match (source, target) {
-        (TypeDef::Struct(src), TypeDef::Struct(tgt)) => {
-            compare_structs(src, tgt, name)
-        }
-        (TypeDef::Enum(src), TypeDef::Enum(tgt)) => {
-            compare_enums(src, tgt, name)
-        }
+        (TypeDef::Struct(src), TypeDef::Struct(tgt)) => compare_structs(src, tgt, name),
+        (TypeDef::Enum(src), TypeDef::Enum(tgt)) => compare_enums(src, tgt, name),
         (TypeDef::Alias(src), TypeDef::Alias(tgt)) => {
             let cmp = compare_types(&src.target, &tgt.target, name);
             TypeDefComparison {
@@ -180,7 +177,7 @@ fn compare_type_defs(source: &TypeDef, target: &TypeDef, name: &str) -> TypeDefC
                 field_comparisons: vec![],
                 variant_comparisons: vec![],
             }
-        }
+        },
         (TypeDef::Newtype(src), TypeDef::Newtype(tgt)) => {
             let cmp = compare_types(&src.inner, &tgt.inner, name);
             TypeDefComparison {
@@ -190,7 +187,7 @@ fn compare_type_defs(source: &TypeDef, target: &TypeDef, name: &str) -> TypeDefC
                 field_comparisons: vec![],
                 variant_comparisons: vec![],
             }
-        }
+        },
         // Struct to Newtype (unwrapping)
         (TypeDef::Struct(src), TypeDef::Newtype(tgt)) if src.fields.len() == 1 => {
             let field = &src.fields[0];
@@ -209,7 +206,7 @@ fn compare_type_defs(source: &TypeDef, target: &TypeDef, name: &str) -> TypeDefC
                 field_comparisons: vec![],
                 variant_comparisons: vec![],
             }
-        }
+        },
         // Newtype to Struct (wrapping)
         (TypeDef::Newtype(src), TypeDef::Struct(tgt)) if tgt.fields.len() == 1 => {
             let field = &tgt.fields[0];
@@ -228,7 +225,7 @@ fn compare_type_defs(source: &TypeDef, target: &TypeDef, name: &str) -> TypeDefC
                 field_comparisons: vec![],
                 variant_comparisons: vec![],
             }
-        }
+        },
         // Incompatible type kinds
         _ => TypeDefComparison {
             name: name.to_string(),
@@ -270,12 +267,8 @@ fn compare_structs(source: &StructDef, target: &StructDef, name: &str) -> TypeDe
         variant_comparisons: Vec::new(),
     };
 
-    let source_fields: BTreeMap<_, _> = source.fields.iter()
-        .map(|f| (&f.name, f))
-        .collect();
-    let target_fields: BTreeMap<_, _> = target.fields.iter()
-        .map(|f| (&f.name, f))
-        .collect();
+    let source_fields: BTreeMap<_, _> = source.fields.iter().map(|f| (&f.name, f)).collect();
+    let target_fields: BTreeMap<_, _> = target.fields.iter().map(|f| (&f.name, f)).collect();
 
     // Check for missing fields in target
     for (field_name, field) in &source_fields {
@@ -368,15 +361,11 @@ fn compare_enums(source: &EnumDef, target: &EnumDef, name: &str) -> TypeDefCompa
         variant_comparisons: Vec::new(),
     };
 
-    let source_variants: BTreeMap<_, _> = source.variants.iter()
-        .map(|v| (&v.name, v))
-        .collect();
-    let target_variants: BTreeMap<_, _> = target.variants.iter()
-        .map(|v| (&v.name, v))
-        .collect();
+    let source_variants: BTreeMap<_, _> = source.variants.iter().map(|v| (&v.name, v)).collect();
+    let target_variants: BTreeMap<_, _> = target.variants.iter().map(|v| (&v.name, v)).collect();
 
     // Check for missing variants in target
-    for (variant_name, _) in &source_variants {
+    for variant_name in source_variants.keys() {
         if !target_variants.contains_key(*variant_name) {
             result.losses.push(ConversionLoss {
                 kind: LossKind::VariantDropped,
@@ -509,18 +498,21 @@ fn compare_variants(source: &VariantDef, target: &VariantDef, parent: &str) -> V
 #[cfg(test)]
 mod tests {
     use super::*;
-    use protocol_squisher_ir::{IrType, PrimitiveType, TypeMetadata, FieldMetadata};
+    use protocol_squisher_ir::{FieldMetadata, IrType, PrimitiveType, TypeMetadata};
 
     fn make_struct(name: &str, fields: Vec<(&str, IrType, bool)>) -> TypeDef {
         TypeDef::Struct(StructDef {
             name: name.to_string(),
-            fields: fields.into_iter().map(|(n, ty, opt)| FieldDef {
-                name: n.to_string(),
-                ty,
-                optional: opt,
-                constraints: vec![],
-                metadata: FieldMetadata::default(),
-            }).collect(),
+            fields: fields
+                .into_iter()
+                .map(|(n, ty, opt)| FieldDef {
+                    name: n.to_string(),
+                    ty,
+                    optional: opt,
+                    constraints: vec![],
+                    metadata: FieldMetadata::default(),
+                })
+                .collect(),
             metadata: TypeMetadata::default(),
         })
     }
@@ -528,10 +520,16 @@ mod tests {
     #[test]
     fn test_identical_schemas() {
         let mut source = IrSchema::new("test", "test");
-        source.add_type("User".to_string(), make_struct("User", vec![
-            ("id", IrType::Primitive(PrimitiveType::I64), false),
-            ("name", IrType::Primitive(PrimitiveType::String), false),
-        ]));
+        source.add_type(
+            "User".to_string(),
+            make_struct(
+                "User",
+                vec![
+                    ("id", IrType::Primitive(PrimitiveType::I64), false),
+                    ("name", IrType::Primitive(PrimitiveType::String), false),
+                ],
+            ),
+        );
 
         let target = source.clone();
         let cmp = compare_schemas(&source, &target);
@@ -543,14 +541,22 @@ mod tests {
     #[test]
     fn test_field_widening() {
         let mut source = IrSchema::new("source", "test");
-        source.add_type("User".to_string(), make_struct("User", vec![
-            ("id", IrType::Primitive(PrimitiveType::I32), false),
-        ]));
+        source.add_type(
+            "User".to_string(),
+            make_struct(
+                "User",
+                vec![("id", IrType::Primitive(PrimitiveType::I32), false)],
+            ),
+        );
 
         let mut target = IrSchema::new("target", "test");
-        target.add_type("User".to_string(), make_struct("User", vec![
-            ("id", IrType::Primitive(PrimitiveType::I64), false),
-        ]));
+        target.add_type(
+            "User".to_string(),
+            make_struct(
+                "User",
+                vec![("id", IrType::Primitive(PrimitiveType::I64), false)],
+            ),
+        );
 
         let cmp = compare_schemas(&source, &target);
         assert_eq!(cmp.class, TransportClass::Concorde);
@@ -559,14 +565,22 @@ mod tests {
     #[test]
     fn test_field_narrowing() {
         let mut source = IrSchema::new("source", "test");
-        source.add_type("User".to_string(), make_struct("User", vec![
-            ("id", IrType::Primitive(PrimitiveType::I64), false),
-        ]));
+        source.add_type(
+            "User".to_string(),
+            make_struct(
+                "User",
+                vec![("id", IrType::Primitive(PrimitiveType::I64), false)],
+            ),
+        );
 
         let mut target = IrSchema::new("target", "test");
-        target.add_type("User".to_string(), make_struct("User", vec![
-            ("id", IrType::Primitive(PrimitiveType::I32), false),
-        ]));
+        target.add_type(
+            "User".to_string(),
+            make_struct(
+                "User",
+                vec![("id", IrType::Primitive(PrimitiveType::I32), false)],
+            ),
+        );
 
         let cmp = compare_schemas(&source, &target);
         assert_eq!(cmp.class, TransportClass::Economy);
@@ -576,15 +590,25 @@ mod tests {
     #[test]
     fn test_missing_field() {
         let mut source = IrSchema::new("source", "test");
-        source.add_type("User".to_string(), make_struct("User", vec![
-            ("id", IrType::Primitive(PrimitiveType::I64), false),
-            ("name", IrType::Primitive(PrimitiveType::String), false),
-        ]));
+        source.add_type(
+            "User".to_string(),
+            make_struct(
+                "User",
+                vec![
+                    ("id", IrType::Primitive(PrimitiveType::I64), false),
+                    ("name", IrType::Primitive(PrimitiveType::String), false),
+                ],
+            ),
+        );
 
         let mut target = IrSchema::new("target", "test");
-        target.add_type("User".to_string(), make_struct("User", vec![
-            ("id", IrType::Primitive(PrimitiveType::I64), false),
-        ]));
+        target.add_type(
+            "User".to_string(),
+            make_struct(
+                "User",
+                vec![("id", IrType::Primitive(PrimitiveType::I64), false)],
+            ),
+        );
 
         let cmp = compare_schemas(&source, &target);
         assert_eq!(cmp.class, TransportClass::Wheelbarrow);
@@ -593,15 +617,25 @@ mod tests {
     #[test]
     fn test_missing_optional_field() {
         let mut source = IrSchema::new("source", "test");
-        source.add_type("User".to_string(), make_struct("User", vec![
-            ("id", IrType::Primitive(PrimitiveType::I64), false),
-            ("nickname", IrType::Primitive(PrimitiveType::String), true),
-        ]));
+        source.add_type(
+            "User".to_string(),
+            make_struct(
+                "User",
+                vec![
+                    ("id", IrType::Primitive(PrimitiveType::I64), false),
+                    ("nickname", IrType::Primitive(PrimitiveType::String), true),
+                ],
+            ),
+        );
 
         let mut target = IrSchema::new("target", "test");
-        target.add_type("User".to_string(), make_struct("User", vec![
-            ("id", IrType::Primitive(PrimitiveType::I64), false),
-        ]));
+        target.add_type(
+            "User".to_string(),
+            make_struct(
+                "User",
+                vec![("id", IrType::Primitive(PrimitiveType::I64), false)],
+            ),
+        );
 
         let cmp = compare_schemas(&source, &target);
         // Optional field dropped is less severe
@@ -611,17 +645,29 @@ mod tests {
     #[test]
     fn test_missing_type() {
         let mut source = IrSchema::new("source", "test");
-        source.add_type("User".to_string(), make_struct("User", vec![
-            ("id", IrType::Primitive(PrimitiveType::I64), false),
-        ]));
-        source.add_type("Order".to_string(), make_struct("Order", vec![
-            ("id", IrType::Primitive(PrimitiveType::I64), false),
-        ]));
+        source.add_type(
+            "User".to_string(),
+            make_struct(
+                "User",
+                vec![("id", IrType::Primitive(PrimitiveType::I64), false)],
+            ),
+        );
+        source.add_type(
+            "Order".to_string(),
+            make_struct(
+                "Order",
+                vec![("id", IrType::Primitive(PrimitiveType::I64), false)],
+            ),
+        );
 
         let mut target = IrSchema::new("target", "test");
-        target.add_type("User".to_string(), make_struct("User", vec![
-            ("id", IrType::Primitive(PrimitiveType::I64), false),
-        ]));
+        target.add_type(
+            "User".to_string(),
+            make_struct(
+                "User",
+                vec![("id", IrType::Primitive(PrimitiveType::I64), false)],
+            ),
+        );
 
         let cmp = compare_schemas(&source, &target);
         assert!(!cmp.source_only.is_empty());

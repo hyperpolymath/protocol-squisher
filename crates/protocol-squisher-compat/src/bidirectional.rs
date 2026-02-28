@@ -85,9 +85,15 @@ pub fn bidirectional_compare(source: &IrSchema, target: &IrSchema) -> Bidirectio
         if let Some(rev_cmp) = reverse.type_comparisons.get(type_name) {
             if fwd_cmp.class != rev_cmp.class {
                 let (bottleneck_direction, additional_losses) = if fwd_cmp.class > rev_cmp.class {
-                    (Direction::Forward, fwd_cmp.losses.len().saturating_sub(rev_cmp.losses.len()))
+                    (
+                        Direction::Forward,
+                        fwd_cmp.losses.len().saturating_sub(rev_cmp.losses.len()),
+                    )
                 } else {
-                    (Direction::Reverse, rev_cmp.losses.len().saturating_sub(fwd_cmp.losses.len()))
+                    (
+                        Direction::Reverse,
+                        rev_cmp.losses.len().saturating_sub(fwd_cmp.losses.len()),
+                    )
                 };
 
                 asymmetries.push(TypeAsymmetry {
@@ -181,7 +187,10 @@ mod tests {
         assert!(result.forward_class < result.reverse_class);
 
         // Round-trip is the worse of the two
-        assert_eq!(result.round_trip_class, result.forward_class.join(result.reverse_class));
+        assert_eq!(
+            result.round_trip_class,
+            result.forward_class.join(result.reverse_class)
+        );
         assert!(!result.is_round_trip_lossless());
     }
 

@@ -27,8 +27,16 @@ jobs:
       
       - name: Check TODO/FIXME
         run: |
-          echo "=== TODOs ==="
-          grep -rn "TODO\|FIXME\|HACK\|XXX" --include="*.rs" --include="*.res" --include="*.py" --include="*.ex" . | head -20 || echo "None found"
+          echo "=== TODO/FIXME/HACK/XXX scan ==="
+          matches="$(grep -RInE "TODO|FIXME|HACK|XXX" \
+            --include="*.rs" --include="*.res" --include="*.py" --include="*.ex" \
+            crates ephapax-ir ffi scripts src docs examples 2>/dev/null || true)"
+          if [ -n "${matches}" ]; then
+            echo "${matches}" | head -20
+            echo "::error::Found TODO/FIXME/HACK/XXX markers."
+            exit 1
+          fi
+          echo "None found"
       
       - name: Check for large files
         run: |

@@ -13,7 +13,10 @@ use std::collections::HashSet;
 #[derive(Debug, Clone, PartialEq)]
 pub enum SchemaError {
     /// A type reference points to an undefined type
-    UndefinedReference { type_id: TypeId, referenced_by: String },
+    UndefinedReference {
+        type_id: TypeId,
+        referenced_by: String,
+    },
 
     /// A root type is not defined
     UndefinedRoot { type_id: TypeId },
@@ -35,20 +38,23 @@ impl std::fmt::Display for SchemaError {
                 type_id,
                 referenced_by,
             } => {
-                write!(f, "Undefined type reference '{type_id}' in '{referenced_by}'")
-            }
+                write!(
+                    f,
+                    "Undefined type reference '{type_id}' in '{referenced_by}'"
+                )
+            },
             SchemaError::UndefinedRoot { type_id } => {
                 write!(f, "Root type '{type_id}' is not defined")
-            }
+            },
             SchemaError::CircularReference { path } => {
                 write!(f, "Circular type reference: {}", path.join(" -> "))
-            }
+            },
             SchemaError::DuplicateType { type_id } => {
                 write!(f, "Duplicate type definition: '{type_id}'")
-            }
+            },
             SchemaError::InvalidStructure { message } => {
                 write!(f, "Invalid schema structure: {message}")
-            }
+            },
         }
     }
 }
@@ -92,7 +98,7 @@ fn check_references(
             for field in &s.fields {
                 check_type_references(&field.ty, context, types, errors);
             }
-        }
+        },
         TypeDef::Enum(e) => {
             for variant in &e.variants {
                 if let Some(payload) = &variant.payload {
@@ -101,27 +107,27 @@ fn check_references(
                             for ty in tys {
                                 check_type_references(ty, context, types, errors);
                             }
-                        }
+                        },
                         crate::types::VariantPayload::Struct(fields) => {
                             for field in fields {
                                 check_type_references(&field.ty, context, types, errors);
                             }
-                        }
+                        },
                     }
                 }
             }
-        }
+        },
         TypeDef::Union(u) => {
             for ty in &u.variants {
                 check_type_references(ty, context, types, errors);
             }
-        }
+        },
         TypeDef::Alias(a) => {
             check_type_references(&a.target, context, types, errors);
-        }
+        },
         TypeDef::Newtype(n) => {
             check_type_references(&n.inner, context, types, errors);
-        }
+        },
     }
 }
 
@@ -140,7 +146,7 @@ fn check_type_references(
                     referenced_by: context.to_string(),
                 });
             }
-        }
+        },
         IrType::Container(c) => {
             if let Some(inner) = c.inner_type() {
                 check_type_references(inner, context, types, errors);
@@ -161,8 +167,8 @@ fn check_type_references(
                 check_type_references(ok, context, types, errors);
                 check_type_references(err, context, types, errors);
             }
-        }
-        _ => {}
+        },
+        _ => {},
     }
 }
 
@@ -177,29 +183,29 @@ fn collect_references(ty: &IrType, refs: &mut HashSet<TypeId>) {
     match ty {
         IrType::Reference(id) => {
             refs.insert(id.clone());
-        }
+        },
         IrType::Container(c) => match c {
             crate::types::ContainerType::Option(t)
             | crate::types::ContainerType::Vec(t)
             | crate::types::ContainerType::Array(t, _)
             | crate::types::ContainerType::Set(t) => {
                 collect_references(t, refs);
-            }
+            },
             crate::types::ContainerType::Map(k, v) => {
                 collect_references(k, refs);
                 collect_references(v, refs);
-            }
+            },
             crate::types::ContainerType::Tuple(tys) => {
                 for t in tys {
                     collect_references(t, refs);
                 }
-            }
+            },
             crate::types::ContainerType::Result(ok, err) => {
                 collect_references(ok, refs);
                 collect_references(err, refs);
-            }
+            },
         },
-        _ => {}
+        _ => {},
     }
 }
 
@@ -211,13 +217,7 @@ pub fn topological_sort(schema: &IrSchema) -> Result<Vec<TypeId>, SchemaError> {
 
     for type_id in schema.types.keys() {
         if !visited.contains(type_id) {
-            visit_type(
-                type_id,
-                schema,
-                &mut visited,
-                &mut in_progress,
-                &mut result,
-            )?;
+            visit_type(type_id, schema, &mut visited, &mut in_progress, &mut result)?;
         }
     }
 
@@ -267,7 +267,7 @@ fn get_type_def_references(type_def: &TypeDef) -> HashSet<TypeId> {
             for field in &s.fields {
                 refs.extend(get_referenced_types(&field.ty));
             }
-        }
+        },
         TypeDef::Enum(e) => {
             for variant in &e.variants {
                 if let Some(payload) = &variant.payload {
@@ -276,27 +276,27 @@ fn get_type_def_references(type_def: &TypeDef) -> HashSet<TypeId> {
                             for ty in tys {
                                 refs.extend(get_referenced_types(ty));
                             }
-                        }
+                        },
                         crate::types::VariantPayload::Struct(fields) => {
                             for field in fields {
                                 refs.extend(get_referenced_types(&field.ty));
                             }
-                        }
+                        },
                     }
                 }
             }
-        }
+        },
         TypeDef::Union(u) => {
             for ty in &u.variants {
                 refs.extend(get_referenced_types(ty));
             }
-        }
+        },
         TypeDef::Alias(a) => {
             refs.extend(get_referenced_types(&a.target));
-        }
+        },
         TypeDef::Newtype(n) => {
             refs.extend(get_referenced_types(&n.inner));
-        }
+        },
     }
 
     refs

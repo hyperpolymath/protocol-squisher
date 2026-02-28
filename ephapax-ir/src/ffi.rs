@@ -7,9 +7,9 @@
 
 use crate::{PrimitiveType, TransportClass};
 
-// TODO: These will link to the Idris2 refc-generated C library once we have
-// the Idris2 runtime properly set up. For now, we use pure Rust implementations
-// that match the Idris2 semantics.
+// The authoritative ABI is exported from Idris2 (`ephapax-ir/idris2/FFI.idr`)
+// and surfaced to consumers through the Zig bridge in `ffi/zig/`.
+// This Rust module remains a semantic fallback implementation for stub mode.
 
 /// Analyze compatibility between two primitive types
 ///

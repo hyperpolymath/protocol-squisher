@@ -23,14 +23,14 @@ use protocol_squisher_ir::{
 };
 use std::collections::HashMap;
 
-mod analysis;
 pub mod ai_assist;
+mod analysis;
 mod codegen;
 pub mod entropy;
 mod ephapax_optimizer;
 
-pub use analysis::*;
 pub use ai_assist::*;
+pub use analysis::*;
 pub use codegen::*;
 pub use entropy::analyze_schema_entropy;
 pub use ephapax_optimizer::*;

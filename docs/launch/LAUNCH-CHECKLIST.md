@@ -236,7 +236,7 @@
 
 ---
 
-## Post-Launch TODO (Day 7+)
+## Post-Launch Action Items (Day 7+)
 
 ### Week 2
 - [ ] Write follow-up blog post addressing common questions

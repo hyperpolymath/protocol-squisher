@@ -49,15 +49,37 @@ defmodule ProtocolSquisher.Explorer.CorpusAnalyzer do
   end
 
   defp run_cli(cli, tmp_path, format) do
-    {output, exit_code} =
-      System.cmd(cli, ["corpus-analyze", "--input", tmp_path, "--format", format],
-        stderr_to_stdout: true
-      )
+    args = ["corpus-analyze", "--input", tmp_path, "--format", format]
 
-    if exit_code == 0 do
-      {:ok, output}
-    else
-      {:error, {:corpus_analyze_failed, output}}
+    try do
+      port =
+        Port.open({:spawn_executable, String.to_charlist(cli)}, [
+          :binary,
+          :exit_status,
+          :stderr_to_stdout,
+          args: args
+        ])
+
+      collect_port_output(port, "")
+    rescue
+      _ -> {:error, :corpus_exec_failed}
+    end
+  end
+
+  defp collect_port_output(port, acc) do
+    receive do
+      {^port, {:data, data}} ->
+        collect_port_output(port, acc <> data)
+
+      {^port, {:exit_status, 0}} ->
+        {:ok, acc}
+
+      {^port, {:exit_status, _status}} ->
+        {:error, {:corpus_analyze_failed, acc}}
+    after
+      30_000 ->
+        Port.close(port)
+        {:error, :corpus_exec_timeout}
     end
   end
 

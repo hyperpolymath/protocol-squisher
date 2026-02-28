@@ -24,7 +24,7 @@
 //! let analyzer = ThriftAnalyzer::new();
 //!
 //! // Analyze from file
-//! let schema = analyzer.analyze_file(Path::new("schema.thrift")).unwrap();
+//! let schema = analyzer.analyze_file(Path::new("schema.thrift"));
 //!
 //! // Analyze from string
 //! let thrift = r#"
@@ -34,11 +34,13 @@
 //!         3: optional string email
 //!     }
 //! "#;
-//! let schema = analyzer.analyze_str(thrift, "user").unwrap();
+//! let schema = analyzer.analyze_str(thrift, "user");
 //!
 //! // Access types
-//! for (name, type_def) in &schema.types {
-//!     println!("Found type: {}", name);
+//! if let Ok(schema) = schema {
+//!     for (name, _type_def) in &schema.types {
+//!         println!("Found type: {}", name);
+//!     }
 //! }
 //! ```
 //!
@@ -59,12 +61,12 @@
 //! | `map<K,V>` | `Map<K,V>` | `Map<K,V>` with compatible K,V |
 
 mod converter;
-mod parser;
 mod ephapax_bridge;
+mod parser;
 
 pub use converter::ThriftConverter;
+pub use ephapax_bridge::{analyze_transport_compatibility, TransportAnalysis};
 pub use parser::ThriftParser;
-pub use ephapax_bridge::{TransportAnalysis, analyze_transport_compatibility};
 
 use protocol_squisher_ir::IrSchema;
 use std::path::Path;
@@ -247,11 +249,14 @@ mod tests {
         let ir = result.unwrap();
         let all_types = ir.types.get("AllTypes").unwrap();
 
-        if let protocol_squisher_ir::TypeDef::Struct(s) = all_types {
-            assert_eq!(s.fields.len(), 8);
-        } else {
-            panic!("Expected struct type");
-        }
+        assert!(
+            matches!(all_types, protocol_squisher_ir::TypeDef::Struct(_)),
+            "Expected struct type"
+        );
+        let protocol_squisher_ir::TypeDef::Struct(s) = all_types else {
+            unreachable!("asserted struct");
+        };
+        assert_eq!(s.fields.len(), 8);
     }
 
     #[test]

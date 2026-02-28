@@ -156,10 +156,15 @@ fn remove_comments(content: &str) -> String {
     result
 }
 
+fn compile_regex(pattern: &str) -> Result<Regex, AnalyzerError> {
+    Regex::new(pattern).map_err(|e| {
+        AnalyzerError::ParseError(format!("Internal parser regex error for '{pattern}': {e}"))
+    })
+}
+
 /// Parse all enums in the content
 fn parse_enums(content: &str) -> Result<Vec<BebopEnum>, AnalyzerError> {
-    // SAFETY: constant regex pattern, compile-time verified
-    let enum_regex = Regex::new(r"enum\s+(\w+)\s*\{([^}]+)\}").unwrap();
+    let enum_regex = compile_regex(r"enum\s+(\w+)\s*\{([^}]+)\}")?;
     let mut enums = Vec::new();
 
     for cap in enum_regex.captures_iter(content) {
@@ -176,13 +181,13 @@ fn parse_enums(content: &str) -> Result<Vec<BebopEnum>, AnalyzerError> {
 
 /// Parse enum values from the enum body
 fn parse_enum_values(body: &str) -> Result<Vec<BebopEnumValue>, AnalyzerError> {
-    // SAFETY: constant regex pattern, compile-time verified
-    let value_regex = Regex::new(r"(\w+)\s*=\s*(\d+)").unwrap();
+    let value_regex = compile_regex(r"(\w+)\s*=\s*(\d+)")?;
     let mut values = Vec::new();
 
     for cap in value_regex.captures_iter(body) {
         let name = cap[1].to_string();
-        let number = cap[2].parse::<i32>()
+        let number = cap[2]
+            .parse::<i32>()
             .map_err(|e| AnalyzerError::ParseError(format!("Invalid enum value: {}", e)))?;
 
         values.push(BebopEnumValue { name, number });
@@ -193,8 +198,7 @@ fn parse_enum_values(body: &str) -> Result<Vec<BebopEnumValue>, AnalyzerError> {
 
 /// Parse all structs in the content
 fn parse_structs(content: &str) -> Result<Vec<BebopStruct>, AnalyzerError> {
-    // SAFETY: constant regex pattern, compile-time verified
-    let struct_regex = Regex::new(r"(readonly\s+)?struct\s+(\w+)\s*\{([^}]+)\}").unwrap();
+    let struct_regex = compile_regex(r"(readonly\s+)?struct\s+(\w+)\s*\{([^}]+)\}")?;
     let mut structs = Vec::new();
 
     for cap in struct_regex.captures_iter(content) {
@@ -235,8 +239,7 @@ fn parse_struct_fields(body: &str) -> Result<Vec<BebopField>, AnalyzerError> {
 
 /// Parse all messages in the content
 fn parse_messages(content: &str) -> Result<Vec<BebopMessage>, AnalyzerError> {
-    // SAFETY: constant regex pattern, compile-time verified
-    let message_regex = Regex::new(r"(readonly\s+)?message\s+(\w+)\s*\{([^}]+)\}").unwrap();
+    let message_regex = compile_regex(r"(readonly\s+)?message\s+(\w+)\s*\{([^}]+)\}")?;
     let mut messages = Vec::new();
 
     for cap in message_regex.captures_iter(content) {
@@ -294,10 +297,15 @@ fn parse_field(line: &str, is_message: bool) -> Result<Option<BebopField>, Analy
     if is_message {
         let parts: Vec<&str> = line.split("->").collect();
         if parts.len() != 2 {
-            return Err(AnalyzerError::ParseError(format!("Invalid message field format: {}", line)));
+            return Err(AnalyzerError::ParseError(format!(
+                "Invalid message field format: {}",
+                line
+            )));
         }
 
-        let number = parts[0].trim().parse::<i32>()
+        let number = parts[0]
+            .trim()
+            .parse::<i32>()
             .map_err(|e| AnalyzerError::ParseError(format!("Invalid field number: {}", e)))?;
 
         let type_and_name = parts[1].trim();
@@ -309,10 +317,13 @@ fn parse_field(line: &str, is_message: bool) -> Result<Option<BebopField>, Analy
 }
 
 /// Parse type and field name
-fn parse_type_and_name(input: &str, number: Option<i32>, deprecated: bool) -> Result<Option<BebopField>, AnalyzerError> {
+fn parse_type_and_name(
+    input: &str,
+    number: Option<i32>,
+    deprecated: bool,
+) -> Result<Option<BebopField>, AnalyzerError> {
     // Check for array type: array[T]
-    // SAFETY: constant regex pattern, compile-time verified
-    let array_regex = Regex::new(r"array\[([^\]]+)\]\s+(\w+)").unwrap();
+    let array_regex = compile_regex(r"array\[([^\]]+)\]\s+(\w+)")?;
     if let Some(cap) = array_regex.captures(input) {
         let element_type = cap[1].to_string();
         let name = cap[2].to_string();
@@ -329,8 +340,7 @@ fn parse_type_and_name(input: &str, number: Option<i32>, deprecated: bool) -> Re
     }
 
     // Check for map type: map[K, V]
-    // SAFETY: constant regex pattern, compile-time verified
-    let map_regex = Regex::new(r"map\[([^,]+),\s*([^\]]+)\]\s+(\w+)").unwrap();
+    let map_regex = compile_regex(r"map\[([^,]+),\s*([^\]]+)\]\s+(\w+)")?;
     if let Some(cap) = map_regex.captures(input) {
         let key_type = cap[1].trim().to_string();
         let value_type = cap[2].trim().to_string();
@@ -350,7 +360,10 @@ fn parse_type_and_name(input: &str, number: Option<i32>, deprecated: bool) -> Re
     // Regular field: type name or type? name
     let parts: Vec<&str> = input.split_whitespace().collect();
     if parts.len() != 2 {
-        return Err(AnalyzerError::ParseError(format!("Invalid field format: {}", input)));
+        return Err(AnalyzerError::ParseError(format!(
+            "Invalid field format: {}",
+            input
+        )));
     }
 
     let field_type = parts[0];

@@ -63,11 +63,11 @@ fn main() {
         match type_def {
             TypeDef::Struct(s) => {
                 println!("  • struct {} ({} fields)", name, s.fields.len());
-            }
+            },
             TypeDef::Enum(e) => {
                 println!("  • enum {} ({} variants)", name, e.variants.len());
-            }
-            _ => {}
+            },
+            _ => {},
         }
     }
 
@@ -137,7 +137,9 @@ fn main() {
     }"#;
 
     let python_analyzer = protocol_squisher_python_analyzer::PythonAnalyzer::new();
-    let python_schema = python_analyzer.analyze_json(python_introspection_json).unwrap();
+    let python_schema = python_analyzer
+        .analyze_json(python_introspection_json)
+        .unwrap();
 
     println!("\nPython Pydantic models analyzed successfully!");
     println!("Found {} types:", python_schema.types.len());
@@ -145,11 +147,11 @@ fn main() {
         match type_def {
             TypeDef::Struct(s) => {
                 println!("  • class {} ({} fields)", name, s.fields.len());
-            }
+            },
             TypeDef::Enum(e) => {
                 println!("  • Enum {} ({} variants)", name, e.variants.len());
-            }
-            _ => {}
+            },
+            _ => {},
         }
     }
 
@@ -177,7 +179,10 @@ fn main() {
     if !comparison.all_losses.is_empty() {
         println!("\nConversion notes:");
         for loss in &comparison.all_losses {
-            println!("  • {}: {} ({:?})", loss.path, loss.description, loss.severity);
+            println!(
+                "  • {}: {} ({:?})",
+                loss.path, loss.description, loss.severity
+            );
         }
     }
 

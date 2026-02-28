@@ -25,6 +25,17 @@ pub struct ListingFilter {
     pub tag: Option<String>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PublishListingRequest {
+    pub id: String,
+    pub name: String,
+    pub from_format: String,
+    pub to_format: String,
+    pub version: String,
+    pub description: String,
+    pub tags: Vec<String>,
+}
+
 #[derive(Debug, Clone)]
 pub struct AdapterMarketplace {
     root: PathBuf,
@@ -39,34 +50,26 @@ impl AdapterMarketplace {
         &self.root
     }
 
-    pub fn publish(
-        &self,
-        id: &str,
-        name: &str,
-        from_format: &str,
-        to_format: &str,
-        version: &str,
-        description: &str,
-        tags: Vec<String>,
-    ) -> Result<AdapterListing> {
+    pub fn publish(&self, request: PublishListingRequest) -> Result<AdapterListing> {
         let listing = AdapterListing {
-            id: id.to_string(),
-            name: name.to_string(),
-            from_format: from_format.to_string(),
-            to_format: to_format.to_string(),
-            version: version.to_string(),
-            description: description.to_string(),
-            tags,
+            id: request.id,
+            name: request.name,
+            from_format: request.from_format,
+            to_format: request.to_format,
+            version: request.version,
+            description: request.description,
+            tags: request.tags,
             published_at_utc: unix_timestamp_utc(),
         };
 
-        let path = self.listing_path(id);
+        let path = self.listing_path(&listing.id);
         if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent)
-                .with_context(|| format!("Failed to create marketplace dir {}", parent.display()))?;
+            fs::create_dir_all(parent).with_context(|| {
+                format!("Failed to create marketplace dir {}", parent.display())
+            })?;
         }
-        let data =
-            serde_json::to_string_pretty(&listing).context("Failed to serialize marketplace item")?;
+        let data = serde_json::to_string_pretty(&listing)
+            .context("Failed to serialize marketplace item")?;
         fs::write(&path, data)
             .with_context(|| format!("Failed to write marketplace item {}", path.display()))?;
         Ok(listing)
@@ -108,7 +111,9 @@ impl AdapterMarketplace {
     }
 
     fn listing_path(&self, id: &str) -> PathBuf {
-        self.root.join("listings").join(format!("{}.json", sanitize(id)))
+        self.root
+            .join("listings")
+            .join(format!("{}.json", sanitize(id)))
     }
 }
 
@@ -162,15 +167,15 @@ mod tests {
         let root = temp_market_dir();
         let market = AdapterMarketplace::new(&root);
         market
-            .publish(
-                "rust-to-python-v1",
-                "Rust to Python Adapter",
-                "rust",
-                "python",
-                "1.0.0",
-                "Safe adapter",
-                vec!["safe".to_string(), "prod".to_string()],
-            )
+            .publish(PublishListingRequest {
+                id: "rust-to-python-v1".to_string(),
+                name: "Rust to Python Adapter".to_string(),
+                from_format: "rust".to_string(),
+                to_format: "python".to_string(),
+                version: "1.0.0".to_string(),
+                description: "Safe adapter".to_string(),
+                tags: vec!["safe".to_string(), "prod".to_string()],
+            })
             .expect("publish listing");
 
         let only_rust = market

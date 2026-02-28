@@ -5,8 +5,8 @@
 
 use crate::FallbackConfig;
 use protocol_squisher_ir::{
-    ContainerType, EnumDef, FieldDef, IrSchema, IrType, PrimitiveType, SpecialType,
-    StructDef, TagStyle, TypeDef, TypeId, VariantPayload,
+    ContainerType, EnumDef, FieldDef, IrSchema, IrType, PrimitiveType, SpecialType, StructDef,
+    TagStyle, TypeDef, TypeId, VariantPayload,
 };
 
 /// Generate Rust code for JSON serialization/deserialization
@@ -47,11 +47,7 @@ fn generate_type_def(type_def: &TypeDef, config: &FallbackConfig) -> String {
     match type_def {
         TypeDef::Struct(s) => generate_struct(s, config),
         TypeDef::Enum(e) => generate_enum(e, config),
-        TypeDef::Alias(a) => format!(
-            "pub type {} = {};\n",
-            a.name,
-            ir_type_to_rust(&a.target)
-        ),
+        TypeDef::Alias(a) => format!("pub type {} = {};\n", a.name, ir_type_to_rust(&a.target)),
         TypeDef::Newtype(n) => format!(
             "#[derive(Debug, Clone, Serialize, Deserialize)]\npub struct {}(pub {});\n",
             n.name,
@@ -70,7 +66,7 @@ fn generate_type_def(type_def: &TypeDef, config: &FallbackConfig) -> String {
                 u.name,
                 variants.join(",\n")
             )
-        }
+        },
     }
 }
 
@@ -89,11 +85,12 @@ fn generate_struct(s: &StructDef, _config: &FallbackConfig) -> String {
 }
 
 fn generate_field(field: &FieldDef) -> String {
-    let rust_type = if field.optional && !matches!(&field.ty, IrType::Container(ContainerType::Option(_))) {
-        format!("Option<{}>", ir_type_to_rust(&field.ty))
-    } else {
-        ir_type_to_rust(&field.ty)
-    };
+    let rust_type =
+        if field.optional && !matches!(&field.ty, IrType::Container(ContainerType::Option(_))) {
+            format!("Option<{}>", ir_type_to_rust(&field.ty))
+        } else {
+            ir_type_to_rust(&field.ty)
+        };
 
     let mut attrs = Vec::new();
 
@@ -123,19 +120,22 @@ fn generate_enum(e: &EnumDef, _config: &FallbackConfig) -> String {
 
     // Add serde tag attributes
     match &e.tag_style {
-        TagStyle::External => {}
+        TagStyle::External => {},
         TagStyle::Internal { tag_field } => {
             code.push_str(&format!("#[serde(tag = \"{}\")]\n", tag_field));
-        }
-        TagStyle::Adjacent { tag_field, content_field } => {
+        },
+        TagStyle::Adjacent {
+            tag_field,
+            content_field,
+        } => {
             code.push_str(&format!(
                 "#[serde(tag = \"{}\", content = \"{}\")]\n",
                 tag_field, content_field
             ));
-        }
+        },
         TagStyle::Untagged => {
             code.push_str("#[serde(untagged)]\n");
-        }
+        },
     }
 
     code.push_str(&format!("pub enum {} {{\n", e.name));
@@ -158,7 +158,7 @@ fn generate_variant(variant: &protocol_squisher_ir::VariantDef) -> String {
                 let type_strs: Vec<String> = types.iter().map(ir_type_to_rust).collect();
                 format!("    {}({}),\n", variant.name, type_strs.join(", "))
             }
-        }
+        },
         Some(VariantPayload::Struct(fields)) => {
             let mut code = format!("    {} {{\n", variant.name);
             for field in fields {
@@ -170,7 +170,7 @@ fn generate_variant(variant: &protocol_squisher_ir::VariantDef) -> String {
             }
             code.push_str("    },\n");
             code
-        }
+        },
     }
 }
 
@@ -190,21 +190,21 @@ fn container_to_rust(c: &ContainerType) -> String {
         ContainerType::Array(inner, size) => format!("[{}; {}]", ir_type_to_rust(inner), size),
         ContainerType::Set(inner) => {
             format!("std::collections::HashSet<{}>", ir_type_to_rust(inner))
-        }
+        },
         ContainerType::Map(key, value) => {
             format!(
                 "std::collections::HashMap<{}, {}>",
                 ir_type_to_rust(key),
                 ir_type_to_rust(value)
             )
-        }
+        },
         ContainerType::Tuple(elements) => {
             let types: Vec<String> = elements.iter().map(ir_type_to_rust).collect();
             format!("({})", types.join(", "))
-        }
+        },
         ContainerType::Result(ok, err) => {
             format!("Result<{}, {}>", ir_type_to_rust(ok), ir_type_to_rust(err))
-        }
+        },
     }
 }
 
@@ -320,7 +320,9 @@ fn to_snake_case(s: &str) -> String {
             if i > 0 {
                 result.push('_');
             }
-            result.push(c.to_lowercase().next().unwrap());
+            for lower in c.to_lowercase() {
+                result.push(lower);
+            }
         } else {
             result.push(c);
         }

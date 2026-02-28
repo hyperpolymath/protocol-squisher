@@ -7,13 +7,13 @@
 
 #![cfg(test)]
 
-pub mod primitive_matrix;
 pub mod container_combinations;
 pub mod edge_cases;
+pub mod primitive_matrix;
 
 use protocol_squisher_compat::EphapaxCompatibilityEngine;
-use protocol_squisher_transport_primitives::TransportClass;
 use protocol_squisher_ir::*;
+use protocol_squisher_transport_primitives::TransportClass;
 use std::collections::BTreeMap;
 
 /// Helper to create a simple schema with one field
@@ -70,13 +70,15 @@ pub fn is_business(source: &PrimitiveType, target: &PrimitiveType) -> bool {
     matches!(
         (source, target),
         // Signed integer widening
-        (I8, I16 | I32 | I64)
-            | (I16, I32 | I64)
-            | (I32, I64)
+        (I8, I16 | I32 | I64 | I128)
+            | (I16, I32 | I64 | I128)
+            | (I32, I64 | I128)
+            | (I64, I128)
             // Unsigned integer widening
-            | (U8, U16 | U32 | U64)
-            | (U16, U32 | U64)
-            | (U32, U64)
+            | (U8, U16 | U32 | U64 | U128)
+            | (U16, U32 | U64 | U128)
+            | (U32, U64 | U128)
+            | (U64, U128)
             // Float widening
             | (F32, F64)
     )

@@ -8,7 +8,8 @@
 //! - Hand-written PyO3 FFI code (baseline)
 //! - Raw Rust functions (theoretical maximum)
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use std::hint::black_box;
 use serde::{Deserialize, Serialize};
 
 // ============================================================================
@@ -80,18 +81,11 @@ fn handwritten_point_create(x: i64, y: i64) -> Point {
 
 fn handwritten_point_get_x(p: &Point) -> i64 {
     // Simulate Python object creation overhead
-    let result = p.x;
     // In real PyO3: py.eval(), GIL acquisition, etc.
-    result
+    p.x
 }
 
-fn handwritten_user_create(
-    id: u64,
-    name: String,
-    email: String,
-    age: u32,
-    active: bool,
-) -> User {
+fn handwritten_user_create(id: u64, name: String, email: String, age: u32, active: bool) -> User {
     // Simulate string conversion overhead
     let _name_check = name.len();
     let _email_check = email.len();
@@ -127,13 +121,7 @@ fn generated_point_get_x(p: &Point) -> i64 {
     p.x
 }
 
-fn generated_user_create(
-    id: u64,
-    name: String,
-    email: String,
-    age: u32,
-    active: bool,
-) -> User {
+fn generated_user_create(id: u64, name: String, email: String, age: u32, active: bool) -> User {
     // Generated code includes validation
     assert!(!name.is_empty(), "name must not be empty");
     assert!(email.contains('@'), "email must be valid");
@@ -158,21 +146,21 @@ fn generated_user_get_name(u: &User) -> String {
 // ============================================================================
 
 /// Raw: Direct Vec access
-fn raw_vec_sum(vec: &Vec<i64>) -> i64 {
+fn raw_vec_sum(vec: &[i64]) -> i64 {
     vec.iter().sum()
 }
 
 /// Handwritten: With iterator overhead
-fn handwritten_vec_sum(vec: &Vec<i64>) -> i64 {
+fn handwritten_vec_sum(vec: &[i64]) -> i64 {
     let mut sum = 0;
-    for &item in vec.iter() {
+    for &item in vec {
         sum += item;
     }
     sum
 }
 
 /// Generated: With validation
-fn generated_vec_sum(vec: &Vec<i64>) -> i64 {
+fn generated_vec_sum(vec: &[i64]) -> i64 {
     assert!(!vec.is_empty(), "vec must not be empty");
     vec.iter().sum()
 }
@@ -347,16 +335,12 @@ fn bench_vec_operations(c: &mut Criterion) {
             })
         });
 
-        group.bench_with_input(
-            BenchmarkId::new("handwritten_sum", size),
-            &vec,
-            |b, vec| {
-                b.iter(|| {
-                    let sum = handwritten_vec_sum(black_box(vec));
-                    black_box(sum)
-                })
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("handwritten_sum", size), &vec, |b, vec| {
+            b.iter(|| {
+                let sum = handwritten_vec_sum(black_box(vec));
+                black_box(sum)
+            })
+        });
 
         group.bench_with_input(BenchmarkId::new("generated_sum", size), &vec, |b, vec| {
             b.iter(|| {

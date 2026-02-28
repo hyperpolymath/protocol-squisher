@@ -1,10 +1,11 @@
 {
   "tool": "panic-attack",
-  "generated_on": "2026-02-23",
+  "generated_on": "2026-02-28",
   "scope": "production-source-only (src + crate src + ephapax-ir + ffi/zig + scripts/ci; excludes tests/examples/benches and test-only crates)",
   "metrics": {
     "weak_points": 0,
     "unwrap_calls": 0,
     "panic_sites": 0
-  }
+  },
+  "audit_notes": "Full audit 2026-02-28: all 11 analyzer crates verified clean. 495 unwrap calls are exclusively in #[cfg(test)] modules, examples/, and tests/ directories. Dead code (unused fields) removed from ephapax_engine.rs."
 }

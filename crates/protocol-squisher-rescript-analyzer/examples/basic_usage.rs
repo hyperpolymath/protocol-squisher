@@ -3,10 +3,10 @@
 
 //! Basic usage example for ReScript analyzer
 
+use protocol_squisher_ir::{ContainerType, IrType, PrimitiveType};
 use protocol_squisher_rescript_analyzer::ReScriptAnalyzer;
-use protocol_squisher_transport_primitives::IRContext;
 use protocol_squisher_rescript_analyzer::TransportAnalysis;
-use protocol_squisher_ir::{IrType, PrimitiveType, ContainerType};
+use protocol_squisher_transport_primitives::IRContext;
 
 fn main() {
     println!("=== ReScript Analyzer Example ===\n");
@@ -170,12 +170,12 @@ fn example_transport_analysis() {
 
     // Container types
     println!("\nContainer Types:");
-    let rescript_array = IrType::Container(ContainerType::Vec(Box::new(
-        IrType::Primitive(PrimitiveType::String)
-    )));
-    let rust_vec = IrType::Container(ContainerType::Vec(Box::new(
-        IrType::Primitive(PrimitiveType::String)
-    )));
+    let rescript_array = IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(
+        PrimitiveType::String,
+    ))));
+    let rust_vec = IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(
+        PrimitiveType::String,
+    ))));
     let analysis = TransportAnalysis::new(&ctx, &rescript_array, &rust_vec).unwrap();
     println!("  ReScript array<string> → Rust Vec<String>");
     println!("  Zero-copy: {}", analysis.is_zero_copy());

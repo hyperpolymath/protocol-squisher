@@ -177,41 +177,41 @@ Proofs are automatically verified in `.github/workflows/formal-verification.yml`
 |✓ Verified
 |✓
 |✓
-|✓
-|—
+|Planned
+|Planned
 |—
 
 |Wheelbarrow Necessity
-|✓ Verified
-|✓
-|✓
-|✓
+|Partial
+|Partial (postulates at lines 43, 91)
 |—
+|Planned
+|Planned
 |—
 
 |Container Propagation
 |✓ Verified
 |✓
-|✓
-|✓
 |—
+|Planned
+|Planned
 |—
 
 |Carries Invariant
-|🚧 In Progress
-|🚧
-|🚧
-|🚧
-|🚧
+|Partial
+|Partial ({!!} hole at line 141)
+|—
+|Planned
+|Planned
 |—
 
 |Optimization Soundness
-|✓ Verified
-|—
-|✓
+|Planned
 |—
 |—
-|✓
+|—
+|—
+|Planned
 |===
 
 == Proof Development

@@ -81,7 +81,12 @@ fn main() {
 
                 match type_def {
                     protocol_squisher_ir::TypeDef::Struct(s) => {
-                        println!("{}📦 {} (struct with {} fields)", prefix, name, s.fields.len());
+                        println!(
+                            "{}📦 {} (struct with {} fields)",
+                            prefix,
+                            name,
+                            s.fields.len()
+                        );
 
                         // Show interesting fields
                         for field in &s.fields {
@@ -89,9 +94,14 @@ fn main() {
                                 println!("{}    └─ {} : {:?}", prefix, field.name, field.ty);
                             }
                         }
-                    }
+                    },
                     protocol_squisher_ir::TypeDef::Enum(e) => {
-                        println!("{}🔖 {} (enum with {} variants)", prefix, name, e.variants.len());
+                        println!(
+                            "{}🔖 {} (enum with {} variants)",
+                            prefix,
+                            name,
+                            e.variants.len()
+                        );
                         for variant in &e.variants {
                             print!("{}    ", prefix);
                             if variant.payload.is_some() {
@@ -100,21 +110,31 @@ fn main() {
                                 println!("└─ {}", variant.name);
                             }
                         }
-                    }
-                    _ => {}
+                    },
+                    _ => {},
                 }
             }
 
             println!("\n✓ Successfully analyzed {} types", schema.types.len());
-            println!("  - Structs: {}", schema.types.values()
-                .filter(|t| matches!(t, protocol_squisher_ir::TypeDef::Struct(_)))
-                .count());
-            println!("  - Enums: {}", schema.types.values()
-                .filter(|t| matches!(t, protocol_squisher_ir::TypeDef::Enum(_)))
-                .count());
-        }
+            println!(
+                "  - Structs: {}",
+                schema
+                    .types
+                    .values()
+                    .filter(|t| matches!(t, protocol_squisher_ir::TypeDef::Struct(_)))
+                    .count()
+            );
+            println!(
+                "  - Enums: {}",
+                schema
+                    .types
+                    .values()
+                    .filter(|t| matches!(t, protocol_squisher_ir::TypeDef::Enum(_)))
+                    .count()
+            );
+        },
         Err(e) => {
             eprintln!("Error: {}", e);
-        }
+        },
     }
 }

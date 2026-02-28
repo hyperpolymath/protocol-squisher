@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: PMPL-1.0-or-later
 
-use serde::de::DeserializeOwned;
 use once_cell::unsync::OnceCell;
+use serde::de::DeserializeOwned;
 
 /// Lazily-deserialized JSON payload.
 pub struct LazyJson<T> {
@@ -27,7 +27,8 @@ where
     T: DeserializeOwned,
 {
     pub fn decode(&self) -> Result<&T, serde_json::Error> {
-        self.decoded.get_or_try_init(|| serde_json::from_str(&self.raw))
+        self.decoded
+            .get_or_try_init(|| serde_json::from_str(&self.raw))
     }
 }
 

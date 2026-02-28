@@ -32,14 +32,20 @@ fn main() {
 
     let analyzer = ProtobufAnalyzer::new();
 
-    let source_schema = analyzer.analyze_str(source_proto, "source")
+    let source_schema = analyzer
+        .analyze_str(source_proto, "source")
         .expect("Failed to analyze source proto");
-    let target_schema = analyzer.analyze_str(target_proto, "target")
+    let target_schema = analyzer
+        .analyze_str(target_proto, "target")
         .expect("Failed to analyze target proto");
 
-    let source_type = source_schema.types.get("SourceData")
+    let source_type = source_schema
+        .types
+        .get("SourceData")
         .expect("SourceData not found");
-    let target_type = target_schema.types.get("TargetData")
+    let target_type = target_schema
+        .types
+        .get("TargetData")
         .expect("TargetData not found");
 
     println!("Transport Compatibility Analysis");
@@ -49,12 +55,13 @@ fn main() {
     if let (
         protocol_squisher_ir::TypeDef::Struct(source_struct),
         protocol_squisher_ir::TypeDef::Struct(target_struct),
-    ) = (source_type, target_type) {
+    ) = (source_type, target_type)
+    {
         let ctx = IRContext::new();
 
-        for (source_field, target_field) in source_struct.fields.iter()
-            .zip(target_struct.fields.iter()) {
-
+        for (source_field, target_field) in
+            source_struct.fields.iter().zip(target_struct.fields.iter())
+        {
             println!("Field: {} -> {}", source_field.name, target_field.name);
             println!("  Source type: {:?}", source_field.ty);
             println!("  Target type: {:?}", target_field.ty);
@@ -78,10 +85,10 @@ fn main() {
                     } else if analysis.requires_json_fallback() {
                         println!("  ⚠️  JSON fallback required (potential data loss)");
                     }
-                }
+                },
                 Err(e) => {
                     println!("  ❌ Analysis error: {}", e);
-                }
+                },
             }
             println!();
         }

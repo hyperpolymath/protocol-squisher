@@ -5,7 +5,8 @@
 //!
 //! Run with: cargo bench
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use std::hint::black_box;
 use serde::{Deserialize, Serialize};
 
 // === Sample Types ===
@@ -134,7 +135,7 @@ fn large_struct_conversion(c: &mut Criterion) {
         field2: "foo bar baz".to_string(),
         field3: 1234567890,
         field4: 9876543210,
-        field5: 3.14159265359,
+        field5: std::f64::consts::PI,
         field6: vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
         field7: Some("optional value".to_string()),
         field8: true,
@@ -165,16 +166,12 @@ fn vec_conversion(c: &mut Criterion) {
     for size in [10, 100, 1000, 10000].iter() {
         let vec: Vec<i32> = (0..*size).collect();
 
-        group.bench_with_input(
-            BenchmarkId::new("json_i32_to_i64", size),
-            &vec,
-            |b, vec| {
-                b.iter(|| {
-                    let result: Vec<i64> = json_convert(black_box(vec));
-                    black_box(result)
-                })
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("json_i32_to_i64", size), &vec, |b, vec| {
+            b.iter(|| {
+                let result: Vec<i64> = json_convert(black_box(vec));
+                black_box(result)
+            })
+        });
 
         group.bench_with_input(
             BenchmarkId::new("optimized_i32_to_i64", size),

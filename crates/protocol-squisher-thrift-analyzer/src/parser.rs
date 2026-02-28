@@ -197,10 +197,15 @@ fn remove_comments(content: &str) -> String {
     result
 }
 
+fn compile_regex(pattern: &str) -> Result<Regex, AnalyzerError> {
+    Regex::new(pattern).map_err(|e| {
+        AnalyzerError::ParseError(format!("Internal parser regex error for '{pattern}': {e}"))
+    })
+}
+
 /// Parse all constants in the content
 fn parse_constants(content: &str) -> Result<Vec<ThriftConst>, AnalyzerError> {
-    // SAFETY: constant regex pattern, compile-time verified
-    let const_regex = Regex::new(r"const\s+(\w+)\s+(\w+)\s*=\s*([^;\n]+)").unwrap();
+    let const_regex = compile_regex(r"const\s+(\w+)\s+(\w+)\s*=\s*([^;\n]+)")?;
     let mut constants = Vec::new();
 
     for cap in const_regex.captures_iter(content) {
@@ -220,8 +225,7 @@ fn parse_constants(content: &str) -> Result<Vec<ThriftConst>, AnalyzerError> {
 
 /// Parse all typedefs in the content
 fn parse_typedefs(content: &str) -> Result<Vec<ThriftTypedef>, AnalyzerError> {
-    // SAFETY: constant regex pattern, compile-time verified
-    let typedef_regex = Regex::new(r"typedef\s+([^\s]+)\s+(\w+)").unwrap();
+    let typedef_regex = compile_regex(r"typedef\s+([^\s]+)\s+(\w+)")?;
     let mut typedefs = Vec::new();
 
     for cap in typedef_regex.captures_iter(content) {
@@ -239,8 +243,7 @@ fn parse_typedefs(content: &str) -> Result<Vec<ThriftTypedef>, AnalyzerError> {
 
 /// Parse all enums in the content
 fn parse_enums(content: &str) -> Result<Vec<ThriftEnum>, AnalyzerError> {
-    // SAFETY: constant regex pattern, compile-time verified
-    let enum_regex = Regex::new(r"enum\s+(\w+)\s*\{([^}]+)\}").unwrap();
+    let enum_regex = compile_regex(r"enum\s+(\w+)\s*\{([^}]+)\}")?;
     let mut enums = Vec::new();
 
     for cap in enum_regex.captures_iter(content) {
@@ -257,13 +260,13 @@ fn parse_enums(content: &str) -> Result<Vec<ThriftEnum>, AnalyzerError> {
 
 /// Parse enum values from the enum body
 fn parse_enum_values(body: &str) -> Result<Vec<ThriftEnumValue>, AnalyzerError> {
-    // SAFETY: constant regex pattern, compile-time verified
-    let value_regex = Regex::new(r"(\w+)\s*=\s*(\d+)").unwrap();
+    let value_regex = compile_regex(r"(\w+)\s*=\s*(\d+)")?;
     let mut values = Vec::new();
 
     for cap in value_regex.captures_iter(body) {
         let name = cap[1].to_string();
-        let number = cap[2].parse::<i32>()
+        let number = cap[2]
+            .parse::<i32>()
             .map_err(|e| AnalyzerError::ParseError(format!("Invalid enum value: {}", e)))?;
 
         values.push(ThriftEnumValue { name, number });
@@ -274,8 +277,7 @@ fn parse_enum_values(body: &str) -> Result<Vec<ThriftEnumValue>, AnalyzerError> 
 
 /// Parse all structs in the content
 fn parse_structs(content: &str) -> Result<Vec<ThriftStruct>, AnalyzerError> {
-    // SAFETY: constant regex pattern, compile-time verified
-    let struct_regex = Regex::new(r"struct\s+(\w+)\s*\{([^}]+)\}").unwrap();
+    let struct_regex = compile_regex(r"struct\s+(\w+)\s*\{([^}]+)\}")?;
     let mut structs = Vec::new();
 
     for cap in struct_regex.captures_iter(content) {
@@ -292,8 +294,7 @@ fn parse_structs(content: &str) -> Result<Vec<ThriftStruct>, AnalyzerError> {
 
 /// Parse all exceptions in the content
 fn parse_exceptions(content: &str) -> Result<Vec<ThriftException>, AnalyzerError> {
-    // SAFETY: constant regex pattern, compile-time verified
-    let exception_regex = Regex::new(r"exception\s+(\w+)\s*\{([^}]+)\}").unwrap();
+    let exception_regex = compile_regex(r"exception\s+(\w+)\s*\{([^}]+)\}")?;
     let mut exceptions = Vec::new();
 
     for cap in exception_regex.captures_iter(content) {
@@ -347,12 +348,13 @@ fn parse_field(line: &str) -> Result<Option<ThriftField>, AnalyzerError> {
     //   5: map<string, string> settings
 
     // Updated regex to handle generic types like map<K,V>, list<T>, set<T>
-    let field_regex = Regex::new(
-        r"^(\d+):\s*(required|optional)?\s*([^\s]+(?:<[^>]+>)?)\s+(\w+)(?:\s*=\s*(.+))?$"
-    ).unwrap();
+    let field_regex = compile_regex(
+        r"^(\d+):\s*(required|optional)?\s*([^\s]+(?:<[^>]+>)?)\s+(\w+)(?:\s*=\s*(.+))?$",
+    )?;
 
     if let Some(cap) = field_regex.captures(line) {
-        let number = cap[1].parse::<i32>()
+        let number = cap[1]
+            .parse::<i32>()
             .map_err(|e| AnalyzerError::ParseError(format!("Invalid field number: {}", e)))?;
 
         let modifier_str = cap.get(2).map(|m| m.as_str());
@@ -376,6 +378,9 @@ fn parse_field(line: &str) -> Result<Option<ThriftField>, AnalyzerError> {
             default_value,
         }))
     } else {
-        Err(AnalyzerError::ParseError(format!("Invalid field format: {}", line)))
+        Err(AnalyzerError::ParseError(format!(
+            "Invalid field format: {}",
+            line
+        )))
     }
 }

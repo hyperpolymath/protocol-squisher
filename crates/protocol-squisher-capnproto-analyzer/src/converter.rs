@@ -3,7 +3,9 @@
 
 //! Converter from parsed Cap'n Proto to protocol-squisher IR
 
-use crate::parser::{CapnProtoEnum, CapnProtoField, CapnProtoStruct, CapnProtoUnion, ParsedCapnProto};
+use crate::parser::{
+    CapnProtoEnum, CapnProtoField, CapnProtoStruct, CapnProtoUnion, ParsedCapnProto,
+};
 use crate::AnalyzerError;
 use protocol_squisher_ir::{
     ContainerType, EnumDef, FieldDef, FieldMetadata, IrSchema, IrType, PrimitiveType, SpecialType,
@@ -88,14 +90,17 @@ impl CapnProtoConverter {
     /// Note: Cap'n Proto inline unions should ideally be represented as a discriminated union,
     /// but for simplicity we convert each variant to an optional field.
     /// A better approach would be to create a synthetic enum type.
-    fn convert_inline_union_to_fields(&self, union: &CapnProtoUnion) -> Result<Vec<FieldDef>, AnalyzerError> {
+    fn convert_inline_union_to_fields(
+        &self,
+        union: &CapnProtoUnion,
+    ) -> Result<Vec<FieldDef>, AnalyzerError> {
         // For now, convert each union variant to an optional field
         // This is a simplification - real Cap'n Proto has a discriminant
         let fields: Result<Vec<FieldDef>, AnalyzerError> = union
             .variants
             .iter()
             .map(|field| -> Result<FieldDef, AnalyzerError> {
-                let field_type = self.capnp_type_to_ir(&field.field_type)?;
+                let field_type = Self::capnp_type_to_ir(&field.field_type)?;
                 Ok(FieldDef {
                     name: field.name.clone(),
                     ty: IrType::Container(ContainerType::Option(Box::new(field_type))),
@@ -126,7 +131,8 @@ impl CapnProtoConverter {
         // Convert default value string to JSON value
         let default = field.default_value.as_ref().and_then(|v| {
             // Try to parse as JSON, or wrap as string
-            serde_json::from_str(v).ok()
+            serde_json::from_str(v)
+                .ok()
                 .or_else(|| Some(serde_json::Value::String(v.clone())))
         });
 
@@ -148,15 +154,17 @@ impl CapnProtoConverter {
 
     /// Convert a Cap'n Proto field type string to IR type
     fn convert_field_type(&self, field: &CapnProtoField) -> Result<IrType, AnalyzerError> {
-        self.capnp_type_to_ir(&field.field_type)
+        Self::capnp_type_to_ir(&field.field_type)
     }
 
     /// Convert a Cap'n Proto type string to IR type
-    fn capnp_type_to_ir(&self, type_str: &str) -> Result<IrType, AnalyzerError> {
+    fn capnp_type_to_ir(type_str: &str) -> Result<IrType, AnalyzerError> {
         // Handle generic types first (List(T))
         if let Some(list_inner) = extract_list_type(type_str) {
-            let element_type = self.capnp_type_to_ir(list_inner)?;
-            return Ok(IrType::Container(ContainerType::Vec(Box::new(element_type))));
+            let element_type = Self::capnp_type_to_ir(list_inner)?;
+            return Ok(IrType::Container(ContainerType::Vec(Box::new(
+                element_type,
+            ))));
         }
 
         match type_str {
@@ -216,12 +224,15 @@ impl CapnProtoConverter {
     }
 
     /// Convert a Cap'n Proto union to IR enum with variants
-    fn convert_union_to_enum(&self, capnp_union: &CapnProtoUnion) -> Result<EnumDef, AnalyzerError> {
+    fn convert_union_to_enum(
+        &self,
+        capnp_union: &CapnProtoUnion,
+    ) -> Result<EnumDef, AnalyzerError> {
         let variants: Result<Vec<VariantDef>, AnalyzerError> = capnp_union
             .variants
             .iter()
             .map(|field| -> Result<VariantDef, AnalyzerError> {
-                let payload_type = self.capnp_type_to_ir(&field.field_type)?;
+                let payload_type = Self::capnp_type_to_ir(&field.field_type)?;
                 Ok(VariantDef {
                     name: to_pascal_case(&field.name),
                     payload: Some(VariantPayload::Tuple(vec![payload_type])),
@@ -237,7 +248,9 @@ impl CapnProtoConverter {
         Ok(EnumDef {
             name: capnp_union.name.clone(),
             variants: variants?,
-            tag_style: TagStyle::Internal { tag_field: "type".to_string() },
+            tag_style: TagStyle::Internal {
+                tag_field: "type".to_string(),
+            },
             metadata: TypeMetadata::default(),
         })
     }
@@ -293,26 +306,24 @@ mod tests {
 
     #[test]
     fn test_capnp_type_to_ir() {
-        let converter = CapnProtoConverter::new();
-
         assert!(matches!(
-            converter.capnp_type_to_ir("Text").unwrap(),
+            CapnProtoConverter::capnp_type_to_ir("Text").unwrap(),
             IrType::Primitive(PrimitiveType::String)
         ));
         assert!(matches!(
-            converter.capnp_type_to_ir("Int32").unwrap(),
+            CapnProtoConverter::capnp_type_to_ir("Int32").unwrap(),
             IrType::Primitive(PrimitiveType::I32)
         ));
         assert!(matches!(
-            converter.capnp_type_to_ir("Bool").unwrap(),
+            CapnProtoConverter::capnp_type_to_ir("Bool").unwrap(),
             IrType::Primitive(PrimitiveType::Bool)
         ));
         assert!(matches!(
-            converter.capnp_type_to_ir("Void").unwrap(),
+            CapnProtoConverter::capnp_type_to_ir("Void").unwrap(),
             IrType::Special(SpecialType::Unit)
         ));
         assert!(matches!(
-            converter.capnp_type_to_ir("MyStruct").unwrap(),
+            CapnProtoConverter::capnp_type_to_ir("MyStruct").unwrap(),
             IrType::Reference(_)
         ));
     }
@@ -349,7 +360,10 @@ mod tests {
         let struct_def = result.unwrap();
         assert_eq!(struct_def.name, "Person");
         assert_eq!(struct_def.fields.len(), 2);
-        assert_eq!(struct_def.metadata.extra.get("zero_copy"), Some(&"true".to_string()));
+        assert_eq!(
+            struct_def.metadata.extra.get("zero_copy"),
+            Some(&"true".to_string())
+        );
     }
 
     #[test]
@@ -469,6 +483,9 @@ mod tests {
         assert!(result.is_ok());
 
         let field_def = result.unwrap();
-        assert_eq!(field_def.metadata.default, Some(serde_json::Value::Number(30.into())));
+        assert_eq!(
+            field_def.metadata.default,
+            Some(serde_json::Value::Number(30.into()))
+        );
     }
 }

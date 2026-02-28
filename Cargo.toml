@@ -12,11 +12,8 @@ rust-version = "1.86"
 autobins = false
 
 [dependencies]
-# Phase 0: Core dependencies
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-
-# Phase 2: Protocol analyzers
 protocol-squisher-meta-analysis = { path = "crates/protocol-squisher-meta-analysis" }
 protocol-squisher-avro-analyzer = { path = "crates/protocol-squisher-avro-analyzer" }
 protocol-squisher-thrift-analyzer = { path = "crates/protocol-squisher-thrift-analyzer" }

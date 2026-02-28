@@ -39,22 +39,20 @@
 
 use protocol_squisher_ir::IrSchema;
 
-pub mod transport;
-pub mod compare;
-pub mod schema;
-pub mod ephapax_engine;
 pub mod bidirectional;
+pub mod compare;
+pub mod ephapax_engine;
+pub mod schema;
+pub mod transport;
 
-pub use transport::{TransportClass, ConversionLoss, LossKind, LossSeverity};
+pub use bidirectional::{bidirectional_compare, BidirectionalResult, Direction, TypeAsymmetry};
 pub use compare::{compare_types, TypeComparison};
-pub use schema::{compare_schemas, SchemaComparison, TypeDefComparison, ComparisonSummary};
 pub use ephapax_engine::{
-    EphapaxCompatibilityEngine, SchemaCompatibilityResult, TypeCompatibilityAnalysis,
-    FieldCompatibility, ConversionSummary,
+    ConversionSummary, EphapaxCompatibilityEngine, FieldCompatibility, SchemaCompatibilityResult,
+    TypeCompatibilityAnalysis,
 };
-pub use bidirectional::{
-    bidirectional_compare, BidirectionalResult, TypeAsymmetry, Direction,
-};
+pub use schema::{compare_schemas, ComparisonSummary, SchemaComparison, TypeDefComparison};
+pub use transport::{ConversionLoss, LossKind, LossSeverity, TransportClass};
 
 /// Compatibility analyzer for IR schemas
 pub struct CompatibilityAnalyzer {
@@ -97,7 +95,9 @@ impl CompatibilityAnalyzer {
 
         // Filter out info-level losses if not wanted
         if !self.include_info {
-            result.all_losses.retain(|loss| loss.severity != LossSeverity::Info);
+            result
+                .all_losses
+                .retain(|loss| loss.severity != LossSeverity::Info);
             for tc in result.type_comparisons.values_mut() {
                 tc.losses.retain(|loss| loss.severity != LossSeverity::Info);
             }
@@ -139,8 +139,8 @@ pub fn detailed_compare(source: &IrSchema, target: &IrSchema) -> SchemaCompariso
 mod tests {
     use super::*;
     use protocol_squisher_ir::{
-        ContainerType, FieldDef, FieldMetadata, IrType, PrimitiveType,
-        StructDef, TypeDef, TypeMetadata,
+        ContainerType, FieldDef, FieldMetadata, IrType, PrimitiveType, StructDef, TypeDef,
+        TypeMetadata,
     };
 
     fn make_simple_schema(name: &str, field_type: PrimitiveType) -> IrSchema {
@@ -245,9 +245,9 @@ mod tests {
                 name: "Record".to_string(),
                 fields: vec![FieldDef {
                     name: "value".to_string(),
-                    ty: IrType::Container(ContainerType::Set(
-                        Box::new(IrType::Primitive(PrimitiveType::String))
-                    )),
+                    ty: IrType::Container(ContainerType::Set(Box::new(IrType::Primitive(
+                        PrimitiveType::String,
+                    )))),
                     optional: false,
                     constraints: vec![],
                     metadata: FieldMetadata::default(),
@@ -263,9 +263,9 @@ mod tests {
                 name: "Record".to_string(),
                 fields: vec![FieldDef {
                     name: "value".to_string(),
-                    ty: IrType::Container(ContainerType::Vec(
-                        Box::new(IrType::Primitive(PrimitiveType::String))
-                    )),
+                    ty: IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(
+                        PrimitiveType::String,
+                    )))),
                     optional: false,
                     constraints: vec![],
                     metadata: FieldMetadata::default(),

@@ -120,9 +120,7 @@ fn remove_comments(content: &str) -> String {
 
     for line in content.lines() {
         let mut cleaned_line = String::new();
-        let mut chars = line.chars().peekable();
-
-        while let Some(c) = chars.next() {
+        for c in line.chars() {
             if c == '"' {
                 in_string = !in_string;
                 cleaned_line.push(c);
@@ -143,10 +141,15 @@ fn remove_comments(content: &str) -> String {
     result
 }
 
+fn compile_regex(pattern: &str) -> Result<Regex, AnalyzerError> {
+    Regex::new(pattern).map_err(|e| {
+        AnalyzerError::ParseError(format!("Internal parser regex error for '{pattern}': {e}"))
+    })
+}
+
 /// Parse all enums in the content
 fn parse_enums(content: &str) -> Result<Vec<CapnProtoEnum>, AnalyzerError> {
-    // SAFETY: constant regex pattern, compile-time verified
-    let enum_regex = Regex::new(r"enum\s+(\w+)\s*\{([^}]+)\}").unwrap();
+    let enum_regex = compile_regex(r"enum\s+(\w+)\s*\{([^}]+)\}")?;
     let mut enums = Vec::new();
 
     for cap in enum_regex.captures_iter(content) {
@@ -167,13 +170,13 @@ fn parse_enums(content: &str) -> Result<Vec<CapnProtoEnum>, AnalyzerError> {
 
 /// Parse enum values from the enum body
 fn parse_enum_values(body: &str) -> Result<Vec<CapnProtoEnumValue>, AnalyzerError> {
-    // SAFETY: constant regex pattern, compile-time verified
-    let value_regex = Regex::new(r"(\w+)\s+@(\d+)").unwrap();
+    let value_regex = compile_regex(r"(\w+)\s+@(\d+)")?;
     let mut values = Vec::new();
 
     for cap in value_regex.captures_iter(body) {
         let name = cap[1].to_string();
-        let number = cap[2].parse::<u32>()
+        let number = cap[2]
+            .parse::<u32>()
             .map_err(|e| AnalyzerError::ParseError(format!("Invalid enum value number: {}", e)))?;
 
         values.push(CapnProtoEnumValue {
@@ -195,13 +198,13 @@ fn parse_structs(content: &str) -> Result<Vec<CapnProtoStruct>, AnalyzerError> {
 
     while i < lines.len() {
         let line = lines[i].trim();
-        if line.starts_with("struct ") {
+        if let Some(stripped) = line.strip_prefix("struct ") {
             // Parse struct name (handle both "struct Name {" on same line or separate lines)
-            let name = if let Some(name_end) = line.find('{') {
-                line[7..name_end].trim().to_string()
+            let name = if let Some(name_end) = stripped.find('{') {
+                stripped[..name_end].trim().to_string()
             } else {
                 // Name is on this line, brace on next
-                let name = line[7..].trim().to_string();
+                let name = stripped.trim().to_string();
                 i += 1;
                 if i >= lines.len() {
                     break;
@@ -264,8 +267,7 @@ fn parse_structs(content: &str) -> Result<Vec<CapnProtoStruct>, AnalyzerError> {
 
 /// Parse inline union from struct body
 fn parse_inline_union(body: &str) -> Result<Option<CapnProtoUnion>, AnalyzerError> {
-    // SAFETY: constant regex pattern, compile-time verified
-    let union_regex = Regex::new(r"union\s*\{([^}]+)\}").unwrap();
+    let union_regex = compile_regex(r"union\s*\{([^}]+)\}")?;
 
     if let Some(cap) = union_regex.captures(body) {
         let union_body = &cap[1];
@@ -281,13 +283,15 @@ fn parse_inline_union(body: &str) -> Result<Option<CapnProtoUnion>, AnalyzerErro
 }
 
 /// Parse struct fields from the struct body
-fn parse_struct_fields(body: &str, has_inline_union: bool) -> Result<Vec<CapnProtoField>, AnalyzerError> {
+fn parse_struct_fields(
+    body: &str,
+    has_inline_union: bool,
+) -> Result<Vec<CapnProtoField>, AnalyzerError> {
     let mut fields = Vec::new();
 
     // Remove inline union from body if present
     let body = if has_inline_union {
-        // SAFETY: constant regex pattern, compile-time verified
-        let union_regex = Regex::new(r"union\s*\{[^}]+\}").unwrap();
+        let union_regex = compile_regex(r"union\s*\{[^}]+\}")?;
         union_regex.replace(body, "").to_string()
     } else {
         body.to_string()
@@ -321,12 +325,12 @@ fn parse_field(line: &str) -> Result<Option<CapnProtoField>, AnalyzerError> {
 
     // Field format: name @N :Type
     // or: name @N :Type = defaultValue
-    // SAFETY: constant regex pattern, compile-time verified
-    let field_regex = Regex::new(r"(\w+)\s+@(\d+)\s*:\s*([^=;]+)(?:\s*=\s*(.+))?").unwrap();
+    let field_regex = compile_regex(r"(\w+)\s+@(\d+)\s*:\s*([^=;]+)(?:\s*=\s*(.+))?")?;
 
     if let Some(cap) = field_regex.captures(line) {
         let name = cap[1].to_string();
-        let number = cap[2].parse::<u32>()
+        let number = cap[2]
+            .parse::<u32>()
             .map_err(|e| AnalyzerError::ParseError(format!("Invalid field number: {}", e)))?;
         let field_type = cap[3].trim().to_string();
         let default_value = cap.get(4).map(|m| m.as_str().trim().to_string());
@@ -346,8 +350,7 @@ fn parse_field(line: &str) -> Result<Option<CapnProtoField>, AnalyzerError> {
 /// Parse standalone unions
 fn parse_unions(content: &str) -> Result<Vec<CapnProtoUnion>, AnalyzerError> {
     // Standalone unions have format: union UnionName { ... }
-    // SAFETY: constant regex pattern, compile-time verified
-    let union_regex = Regex::new(r"union\s+(\w+)\s*\{([^}]+)\}").unwrap();
+    let union_regex = compile_regex(r"union\s+(\w+)\s*\{([^}]+)\}")?;
     let mut unions = Vec::new();
 
     for cap in union_regex.captures_iter(content) {
@@ -479,8 +482,14 @@ mod tests {
         assert!(result.is_ok());
 
         let parsed = result.unwrap();
-        assert_eq!(parsed.structs[0].fields[0].default_value, Some("30".to_string()));
-        assert_eq!(parsed.structs[0].fields[1].default_value, Some("true".to_string()));
+        assert_eq!(
+            parsed.structs[0].fields[0].default_value,
+            Some("30".to_string())
+        );
+        assert_eq!(
+            parsed.structs[0].fields[1].default_value,
+            Some("true".to_string())
+        );
     }
 
     #[test]

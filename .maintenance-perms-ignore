@@ -1,0 +1,2 @@
+# Approved executable artifacts that do not have a shebang.
+^tools/ephapax-cli$

@@ -5,9 +5,9 @@
 //! This module converts Pydantic model types into ephapax IR types
 //! for transport class analysis.
 
-use protocol_squisher_transport_primitives::{IRContext, PrimitiveType, TransportClass};
-use protocol_squisher_ir::IrType;
 use crate::AnalyzerError;
+use protocol_squisher_ir::IrType;
+use protocol_squisher_transport_primitives::{IRContext, PrimitiveType, TransportClass};
 
 /// Convert protocol-squisher IR type to ephapax primitive type
 ///
@@ -34,14 +34,17 @@ pub fn to_ephapax_primitive(ir_type: &IrType) -> Option<PrimitiveType> {
                 IrPrim::Char => Some(PrimitiveType::Char),
                 IrPrim::String => Some(PrimitiveType::String),
                 // Types not yet supported in ephapax IR
-                IrPrim::Bytes |
-                IrPrim::DateTime | IrPrim::Date | IrPrim::Time | IrPrim::Duration |
-                IrPrim::Uuid | IrPrim::Decimal | IrPrim::BigInt => None,
+                IrPrim::Bytes
+                | IrPrim::DateTime
+                | IrPrim::Date
+                | IrPrim::Time
+                | IrPrim::Duration
+                | IrPrim::Uuid
+                | IrPrim::Decimal
+                | IrPrim::BigInt => None,
             }
-        }
-        IrType::Special(protocol_squisher_ir::SpecialType::Unit) => {
-            Some(PrimitiveType::Unit)
-        }
+        },
+        IrType::Special(protocol_squisher_ir::SpecialType::Unit) => Some(PrimitiveType::Unit),
         // Containers and other complex types don't map to primitives
         _ => None,
     }
@@ -60,25 +63,28 @@ pub fn analyze_transport_compatibility(
 
     match (pydantic_type, rust_type) {
         // Primitive types - use ephapax analysis
-        (IrType::Primitive(_), IrType::Primitive(_)) |
-        (IrType::Special(_), IrType::Special(_)) => {
-            let pydantic_prim = to_ephapax_primitive(pydantic_type)
-                .ok_or_else(|| AnalyzerError::UnsupportedType(
-                    format!("Unsupported primitive type: {:?}", pydantic_type)
-                ))?;
+        (IrType::Primitive(_), IrType::Primitive(_)) | (IrType::Special(_), IrType::Special(_)) => {
+            let pydantic_prim = to_ephapax_primitive(pydantic_type).ok_or_else(|| {
+                AnalyzerError::UnsupportedType(format!(
+                    "Unsupported primitive type: {:?}",
+                    pydantic_type
+                ))
+            })?;
 
-            let rust_prim = to_ephapax_primitive(rust_type)
-                .ok_or_else(|| AnalyzerError::UnsupportedType(
-                    format!("Unsupported primitive type: {:?}", rust_type)
-                ))?;
+            let rust_prim = to_ephapax_primitive(rust_type).ok_or_else(|| {
+                AnalyzerError::UnsupportedType(format!(
+                    "Unsupported primitive type: {:?}",
+                    rust_type
+                ))
+            })?;
 
             Ok(ctx.analyze_compatibility(pydantic_prim, rust_prim))
-        }
+        },
 
         // Container types - recursive analysis
         (IrType::Container(pydantic_container), IrType::Container(rust_container)) => {
             analyze_container_compatibility(ctx, pydantic_container, rust_container)
-        }
+        },
 
         // Mismatched types (primitive vs container) - always Wheelbarrow
         _ => Ok(TransportClass::Wheelbarrow),
@@ -98,14 +104,14 @@ fn analyze_container_compatibility(
         (ContainerType::Option(pydantic_inner), ContainerType::Option(rust_inner)) => {
             // Option container itself is zero-overhead, propagate inner type's class
             analyze_transport_compatibility(ctx, pydantic_inner, rust_inner)
-        }
+        },
 
         // Vec<T> / List<T> analysis
         (ContainerType::Vec(pydantic_inner), ContainerType::Vec(rust_inner)) => {
             // Vec has minor overhead even for identical types, but propagate inner class
             let inner_class = analyze_transport_compatibility(ctx, pydantic_inner, rust_inner)?;
             Ok(inner_class) // Propagate inner type's transport class
-        }
+        },
 
         // Map<K, V> / Dict<K, V> analysis
         (ContainerType::Map(pydantic_k, pydantic_v), ContainerType::Map(rust_k, rust_v)) => {
@@ -115,7 +121,7 @@ fn analyze_container_compatibility(
 
             // Return the worst transport class
             Ok(worst_transport_class(key_class, val_class))
-        }
+        },
 
         // Tuple analysis
         (ContainerType::Tuple(pydantic_elems), ContainerType::Tuple(rust_elems)) => {
@@ -131,7 +137,7 @@ fn analyze_container_compatibility(
                 worst_class = worst_transport_class(worst_class, elem_class);
             }
             Ok(worst_class)
-        }
+        },
 
         // Mismatched container types (Vec vs Option, etc.) - always Wheelbarrow
         _ => Ok(TransportClass::Wheelbarrow),
@@ -182,7 +188,10 @@ impl PyRustTransportAnalysis {
 
     /// Check if this is a safe conversion (Concorde or Business)
     pub fn is_safe(&self) -> bool {
-        matches!(self.class, TransportClass::Concorde | TransportClass::Business)
+        matches!(
+            self.class,
+            TransportClass::Concorde | TransportClass::Business
+        )
     }
 
     /// Check if JSON fallback is required (Wheelbarrow)
@@ -212,7 +221,7 @@ mod tests {
     fn test_python_int_to_rust_i64() {
         // Python int → Rust i64 (common pattern)
         let ctx = IRContext::new();
-        let py_int = IrType::Primitive(IrPrim::I64);  // Python int maps to i64
+        let py_int = IrType::Primitive(IrPrim::I64); // Python int maps to i64
         let rust_i64 = IrType::Primitive(IrPrim::I64);
 
         let analysis = PyRustTransportAnalysis::new(&ctx, &py_int, &rust_i64).unwrap();
@@ -228,7 +237,7 @@ mod tests {
     fn test_python_int_to_rust_i32() {
         // Python int → Rust i32 (potential overflow, but common)
         let ctx = IRContext::new();
-        let py_int = IrType::Primitive(IrPrim::I64);  // Python int maps to i64
+        let py_int = IrType::Primitive(IrPrim::I64); // Python int maps to i64
         let rust_i32 = IrType::Primitive(IrPrim::I32);
 
         let analysis = PyRustTransportAnalysis::new(&ctx, &py_int, &rust_i32).unwrap();
@@ -300,12 +309,12 @@ mod tests {
         use protocol_squisher_ir::ContainerType;
 
         let ctx = IRContext::new();
-        let py_optional = IrType::Container(ContainerType::Option(Box::new(
-            IrType::Primitive(IrPrim::I64)
-        )));
-        let rust_option = IrType::Container(ContainerType::Option(Box::new(
-            IrType::Primitive(IrPrim::I32)
-        )));
+        let py_optional = IrType::Container(ContainerType::Option(Box::new(IrType::Primitive(
+            IrPrim::I64,
+        ))));
+        let rust_option = IrType::Container(ContainerType::Option(Box::new(IrType::Primitive(
+            IrPrim::I32,
+        ))));
 
         let class = analyze_transport_compatibility(&ctx, &py_optional, &rust_option).unwrap();
         assert_eq!(class, TransportClass::Wheelbarrow);
@@ -329,12 +338,10 @@ mod tests {
         use protocol_squisher_ir::ContainerType;
 
         let ctx = IRContext::new();
-        let py_list = IrType::Container(ContainerType::Vec(Box::new(
-            IrType::Primitive(IrPrim::I64)
-        )));
-        let rust_vec = IrType::Container(ContainerType::Vec(Box::new(
-            IrType::Primitive(IrPrim::I32)
-        )));
+        let py_list =
+            IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(IrPrim::I64))));
+        let rust_vec =
+            IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(IrPrim::I32))));
 
         let class = analyze_transport_compatibility(&ctx, &py_list, &rust_vec).unwrap();
         assert_eq!(class, TransportClass::Wheelbarrow);

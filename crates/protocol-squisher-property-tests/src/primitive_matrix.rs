@@ -10,16 +10,18 @@ use proptest::prelude::*;
 use protocol_squisher_ir::PrimitiveType;
 
 /// All primitive types we support in ephapax IR
-/// (I128/U128 not yet implemented in ephapax, so excluded from tests)
+/// Includes 128-bit integers now that widening/narrowing coverage exists.
 const ALL_PRIMITIVES: &[PrimitiveType] = &[
     PrimitiveType::I8,
     PrimitiveType::I16,
     PrimitiveType::I32,
     PrimitiveType::I64,
+    PrimitiveType::I128,
     PrimitiveType::U8,
     PrimitiveType::U16,
     PrimitiveType::U32,
     PrimitiveType::U64,
+    PrimitiveType::U128,
     PrimitiveType::F32,
     PrimitiveType::F64,
     PrimitiveType::Bool,
@@ -117,11 +119,10 @@ fn test_i64_to_all() {
     test_conversions_from(PrimitiveType::I64);
 }
 
-// I128 not yet implemented in ephapax IR
-// #[test]
-// fn test_i128_to_all() {
-//     test_conversions_from(PrimitiveType::I128);
-// }
+#[test]
+fn test_i128_to_all() {
+    test_conversions_from(PrimitiveType::I128);
+}
 
 #[test]
 fn test_u8_to_all() {
@@ -143,11 +144,10 @@ fn test_u64_to_all() {
     test_conversions_from(PrimitiveType::U64);
 }
 
-// U128 not yet implemented in ephapax IR
-// #[test]
-// fn test_u128_to_all() {
-//     test_conversions_from(PrimitiveType::U128);
-// }
+#[test]
+fn test_u128_to_all() {
+    test_conversions_from(PrimitiveType::U128);
+}
 
 #[test]
 fn test_f32_to_all() {
@@ -177,10 +177,7 @@ fn test_string_to_all() {
 /// Test conversions from one type to all 15 target types
 fn test_conversions_from(source: PrimitiveType) {
     for target in ALL_PRIMITIVES {
-        let class = analyze_transport_class(
-            IrType::Primitive(source),
-            IrType::Primitive(*target),
-        );
+        let class = analyze_transport_class(IrType::Primitive(source), IrType::Primitive(*target));
 
         // Verify the classification is correct
         let expected = if is_concorde(&source, target) {

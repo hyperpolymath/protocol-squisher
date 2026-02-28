@@ -48,7 +48,9 @@ use serde::{Deserialize, Serialize};
 /// - BusinessClass: Minor overhead, full fidelity
 /// - Economy: Moderate overhead, documented losses
 /// - Wheelbarrow: It works, but barely
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Default,
+)]
 pub enum TransportClass {
     /// Zero-copy compatible, full fidelity
     ///
@@ -78,6 +80,7 @@ pub enum TransportClass {
     ///
     /// The types are fundamentally incompatible and no reasonable
     /// conversion exists.
+    #[default]
     Incompatible,
 }
 
@@ -89,7 +92,10 @@ impl TransportClass {
 
     /// Returns true if conversion preserves all information
     pub fn is_lossless(&self) -> bool {
-        matches!(self, TransportClass::Concorde | TransportClass::BusinessClass)
+        matches!(
+            self,
+            TransportClass::Concorde | TransportClass::BusinessClass
+        )
     }
 
     /// Returns a human-readable description
@@ -274,12 +280,6 @@ pub struct TransportBounds {
     pub convertible: bool,
 }
 
-impl Default for TransportClass {
-    fn default() -> Self {
-        TransportClass::Incompatible
-    }
-}
-
 impl std::fmt::Display for TransportClass {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -430,7 +430,13 @@ mod tests {
     fn test_join_is_commutative() {
         for &a in &TransportClass::ALL {
             for &b in &TransportClass::ALL {
-                assert_eq!(a.join(b), b.join(a), "join({:?}, {:?}) not commutative", a, b);
+                assert_eq!(
+                    a.join(b),
+                    b.join(a),
+                    "join({:?}, {:?}) not commutative",
+                    a,
+                    b
+                );
             }
         }
     }
@@ -443,7 +449,10 @@ mod tests {
                     assert_eq!(
                         a.join(b).join(c),
                         a.join(b.join(c)),
-                        "join not associative for ({:?}, {:?}, {:?})", a, b, c
+                        "join not associative for ({:?}, {:?}, {:?})",
+                        a,
+                        b,
+                        c
                     );
                 }
             }
@@ -461,7 +470,13 @@ mod tests {
     fn test_meet_is_commutative() {
         for &a in &TransportClass::ALL {
             for &b in &TransportClass::ALL {
-                assert_eq!(a.meet(b), b.meet(a), "meet({:?}, {:?}) not commutative", a, b);
+                assert_eq!(
+                    a.meet(b),
+                    b.meet(a),
+                    "meet({:?}, {:?}) not commutative",
+                    a,
+                    b
+                );
             }
         }
     }
@@ -474,7 +489,10 @@ mod tests {
                     assert_eq!(
                         a.meet(b).meet(c),
                         a.meet(b.meet(c)),
-                        "meet not associative for ({:?}, {:?}, {:?})", a, b, c
+                        "meet not associative for ({:?}, {:?}, {:?})",
+                        a,
+                        b,
+                        c
                     );
                 }
             }
@@ -488,12 +506,18 @@ mod tests {
         for &a in &TransportClass::ALL {
             for &b in &TransportClass::ALL {
                 assert_eq!(
-                    a.join(a.meet(b)), a,
-                    "absorption law 1 failed for ({:?}, {:?})", a, b
+                    a.join(a.meet(b)),
+                    a,
+                    "absorption law 1 failed for ({:?}, {:?})",
+                    a,
+                    b
                 );
                 assert_eq!(
-                    a.meet(a.join(b)), a,
-                    "absorption law 2 failed for ({:?}, {:?})", a, b
+                    a.meet(a.join(b)),
+                    a,
+                    "absorption law 2 failed for ({:?}, {:?})",
+                    a,
+                    b
                 );
             }
         }
@@ -527,17 +551,31 @@ mod tests {
             assert!(
                 recovered <= c,
                 "Galois roundtrip: from_measurements(bounds({:?})) = {:?}, expected <= {:?}",
-                c, recovered, c
+                c,
+                recovered,
+                c
             );
         }
     }
 
     #[test]
     fn test_from_measurements_classification() {
-        assert_eq!(TransportClass::from_measurements(100, 0), TransportClass::Concorde);
-        assert_eq!(TransportClass::from_measurements(100, 5), TransportClass::BusinessClass);
-        assert_eq!(TransportClass::from_measurements(85, 30), TransportClass::Economy);
-        assert_eq!(TransportClass::from_measurements(50, 80), TransportClass::Wheelbarrow);
+        assert_eq!(
+            TransportClass::from_measurements(100, 0),
+            TransportClass::Concorde
+        );
+        assert_eq!(
+            TransportClass::from_measurements(100, 5),
+            TransportClass::BusinessClass
+        );
+        assert_eq!(
+            TransportClass::from_measurements(85, 30),
+            TransportClass::Economy
+        );
+        assert_eq!(
+            TransportClass::from_measurements(50, 80),
+            TransportClass::Wheelbarrow
+        );
     }
 
     #[test]
@@ -548,8 +586,10 @@ mod tests {
             assert!(
                 classes[i].min_fidelity() >= classes[i + 1].min_fidelity(),
                 "Fidelity not monotonic: {:?} ({}) < {:?} ({})",
-                classes[i], classes[i].min_fidelity(),
-                classes[i + 1], classes[i + 1].min_fidelity()
+                classes[i],
+                classes[i].min_fidelity(),
+                classes[i + 1],
+                classes[i + 1].min_fidelity()
             );
         }
     }
@@ -562,8 +602,10 @@ mod tests {
             assert!(
                 classes[i].max_overhead() <= classes[i + 1].max_overhead(),
                 "Overhead not monotonic: {:?} ({}) > {:?} ({})",
-                classes[i], classes[i].max_overhead(),
-                classes[i + 1], classes[i + 1].max_overhead()
+                classes[i],
+                classes[i].max_overhead(),
+                classes[i + 1],
+                classes[i + 1].max_overhead()
             );
         }
     }
@@ -575,7 +617,8 @@ mod tests {
             assert!(
                 classes[i].entropy_preservation() >= classes[i + 1].entropy_preservation(),
                 "Entropy preservation not monotonic: {:?} > {:?}",
-                classes[i], classes[i + 1]
+                classes[i],
+                classes[i + 1]
             );
         }
     }
@@ -585,8 +628,10 @@ mod tests {
         for &c in &TransportClass::ALL {
             if c.is_lossless() {
                 assert_eq!(
-                    c.entropy_preservation(), 1.0,
-                    "Lossless class {:?} should preserve 100% entropy", c
+                    c.entropy_preservation(),
+                    1.0,
+                    "Lossless class {:?} should preserve 100% entropy",
+                    c
                 );
             }
         }

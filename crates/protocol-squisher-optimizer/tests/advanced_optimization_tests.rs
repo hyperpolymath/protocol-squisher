@@ -4,9 +4,9 @@
 //! Advanced optimization tests covering complex scenarios
 
 use protocol_squisher_compat::EphapaxCompatibilityEngine;
-use protocol_squisher_transport_primitives::TransportClass;
 use protocol_squisher_ir::*;
 use protocol_squisher_optimizer::*;
+use protocol_squisher_transport_primitives::TransportClass;
 use std::collections::BTreeMap;
 
 /// Helper to create a field
@@ -94,13 +94,19 @@ fn test_nested_struct_optimization() {
     // Should suggest widening for Outer.id
     // Note: Inner.value won't be suggested because optimizer currently only
     // analyzes root-level types, not nested type references
-    assert!(!result.suggestions.is_empty(), "Should have optimization suggestions");
+    assert!(
+        !result.suggestions.is_empty(),
+        "Should have optimization suggestions"
+    );
 
     let outer_id_suggestion = result
         .suggestions
         .iter()
         .find(|s| s.target.contains("Outer.id"));
-    assert!(outer_id_suggestion.is_some(), "Should suggest widening Outer.id");
+    assert!(
+        outer_id_suggestion.is_some(),
+        "Should suggest widening Outer.id"
+    );
 }
 
 #[test]
@@ -157,7 +163,10 @@ fn test_vec_element_narrowing_optimization() {
         .suggestions
         .iter()
         .find(|s| s.target.contains("values"));
-    assert!(vec_suggestion.is_some(), "Should suggest widening Vec element type");
+    assert!(
+        vec_suggestion.is_some(),
+        "Should suggest widening Vec element type"
+    );
 
     if let Some(suggestion) = vec_suggestion {
         assert_eq!(
@@ -218,13 +227,19 @@ fn test_option_narrowing_optimization() {
     let result = optimizer.analyze_and_suggest(&source, &target);
 
     // Should suggest widening Option<i32> → Option<i64>
-    assert!(!result.suggestions.is_empty(), "Should have optimization suggestions");
+    assert!(
+        !result.suggestions.is_empty(),
+        "Should have optimization suggestions"
+    );
 
     let opt_suggestion = result
         .suggestions
         .iter()
         .find(|s| s.target.contains("maybe_value"));
-    assert!(opt_suggestion.is_some(), "Should suggest widening Option inner type");
+    assert!(
+        opt_suggestion.is_some(),
+        "Should suggest widening Option inner type"
+    );
 }
 
 #[test]
@@ -279,8 +294,14 @@ fn test_map_key_value_narrowing() {
     );
 
     // Should suggest widening the value type
-    let map_suggestion = result.suggestions.iter().find(|s| s.target.contains("data"));
-    assert!(map_suggestion.is_some(), "Should suggest widening Map value type");
+    let map_suggestion = result
+        .suggestions
+        .iter()
+        .find(|s| s.target.contains("data"));
+    assert!(
+        map_suggestion.is_some(),
+        "Should suggest widening Map value type"
+    );
 }
 
 #[test]
@@ -381,15 +402,24 @@ fn test_mixed_transport_class_optimization() {
         .suggestions
         .iter()
         .find(|s| s.target.contains("narrowing"));
-    assert!(narrowing_suggestion.is_some(), "Should suggest widening narrowing field");
+    assert!(
+        narrowing_suggestion.is_some(),
+        "Should suggest widening narrowing field"
+    );
 
     // Should NOT suggest anything for perfect or string fields (already Concorde)
     assert!(
-        !result.suggestions.iter().any(|s| s.target.contains("perfect")),
+        !result
+            .suggestions
+            .iter()
+            .any(|s| s.target.contains("perfect")),
         "Should not suggest changes for perfect match field"
     );
     assert!(
-        !result.suggestions.iter().any(|s| s.target.contains("string")),
+        !result
+            .suggestions
+            .iter()
+            .any(|s| s.target.contains("string")),
         "Should not suggest changes for perfect match string field"
     );
 
@@ -458,7 +488,10 @@ fn test_single_field_struct_optimization() {
 
     // Should suggest widening the single field (and possibly making it optional)
     // Optimizer generates both "widen type" and "make optional" suggestions
-    assert!(!result.suggestions.is_empty(), "Should have optimization suggestions");
+    assert!(
+        !result.suggestions.is_empty(),
+        "Should have optimization suggestions"
+    );
 
     // Find the widening suggestion (should be first due to higher impact)
     let widen_suggestion = result
@@ -482,7 +515,13 @@ fn test_single_field_struct_optimization() {
 fn test_large_struct_impact_calculation() {
     // Large struct with many fields
     let fields: Vec<FieldDef> = (0..20)
-        .map(|i| field(&format!("field{}", i), IrType::Primitive(PrimitiveType::I64), false))
+        .map(|i| {
+            field(
+                &format!("field{}", i),
+                IrType::Primitive(PrimitiveType::I64),
+                false,
+            )
+        })
         .collect();
 
     let mut source_types = BTreeMap::new();
@@ -504,8 +543,14 @@ fn test_large_struct_impact_calculation() {
     let result = optimizer.analyze_and_suggest(&source, &target);
 
     // Should suggest widening field0
-    let field0_suggestion = result.suggestions.iter().find(|s| s.target.contains("field0"));
-    assert!(field0_suggestion.is_some(), "Should suggest widening field0");
+    let field0_suggestion = result
+        .suggestions
+        .iter()
+        .find(|s| s.target.contains("field0"));
+    assert!(
+        field0_suggestion.is_some(),
+        "Should suggest widening field0"
+    );
 
     if let Some(suggestion) = field0_suggestion {
         // Impact should be 1/20 = 5%
@@ -601,7 +646,10 @@ fn test_deeply_nested_container_optimization() {
     );
 
     // Should suggest widening
-    assert!(!result.suggestions.is_empty(), "Should have suggestions for nested narrowing");
+    assert!(
+        !result.suggestions.is_empty(),
+        "Should have suggestions for nested narrowing"
+    );
 }
 
 #[test]
@@ -645,7 +693,10 @@ fn test_suggestion_impact_sorting() {
 
     // Should suggest widening for a, b, c (optimizer also generates "make optional" suggestions)
     // Total: 3 widen + 3 make-optional = 6 suggestions
-    assert!(result.suggestions.len() >= 3, "Should have at least 3 suggestions");
+    assert!(
+        result.suggestions.len() >= 3,
+        "Should have at least 3 suggestions"
+    );
 
     // Filter for widening suggestions only
     let widen_suggestions: Vec<_> = result
@@ -654,7 +705,11 @@ fn test_suggestion_impact_sorting() {
         .filter(|s| matches!(s.kind, SuggestionKind::WidenType { .. }))
         .collect();
 
-    assert_eq!(widen_suggestions.len(), 3, "Should suggest widening 3 fields");
+    assert_eq!(
+        widen_suggestions.len(),
+        3,
+        "Should suggest widening 3 fields"
+    );
 
     // All widening suggestions should have equal impact (25% each for 4-field struct)
     for suggestion in &widen_suggestions {

@@ -12,10 +12,10 @@
 //! The generated code automatically selects the best conversion strategy for each field.
 
 use protocol_squisher_compat::{
-    EphapaxCompatibilityEngine, SchemaCompatibilityResult, FieldCompatibility,
+    EphapaxCompatibilityEngine, FieldCompatibility, SchemaCompatibilityResult,
 };
-use protocol_squisher_transport_primitives::TransportClass;
 use protocol_squisher_ir::IrSchema;
+use protocol_squisher_transport_primitives::TransportClass;
 
 #[cfg(test)]
 use protocol_squisher_ir::{IrType, PrimitiveType};
@@ -171,7 +171,7 @@ impl OptimizedPyO3Generator {
 
         // Generate type conversions based on transport class
         for type_analysis in &analysis.type_analyses {
-            rust_code.push_str(&self.generate_type_conversion(&type_analysis, rust_schema));
+            rust_code.push_str(&self.generate_type_conversion(type_analysis, rust_schema));
         }
 
         // Add module registration
@@ -202,14 +202,13 @@ impl OptimizedPyO3Generator {
     }
 
     fn generate_header(&self) -> String {
-        format!(
-            "// SPDX-License-Identifier: PMPL-1.0-or-later\n\
+        "// SPDX-License-Identifier: PMPL-1.0-or-later\n\
              // Auto-generated PyO3 bindings with ephapax optimization\n\
              // DO NOT EDIT - regenerate using protocol-squisher\n\n\
              use pyo3::prelude::*;\n\
-             use pyo3::types::{{PyDict, PyList}};\n\
-             use serde::{{Serialize, Deserialize}};\n\n"
-        )
+             use pyo3::types::{PyDict, PyList};\n\
+             use serde::{Serialize, Deserialize};\n\n"
+            .to_string()
     }
 
     fn generate_type_conversion(
@@ -243,7 +242,9 @@ impl OptimizedPyO3Generator {
         code.push_str("}\n\n");
 
         // Generate PyO3 methods
-        code.push_str(&self.generate_pymethods(&type_analysis.type_name, &type_analysis.field_analyses));
+        code.push_str(
+            &self.generate_pymethods(&type_analysis.type_name, &type_analysis.field_analyses),
+        );
 
         code
     }
@@ -274,21 +275,21 @@ impl OptimizedPyO3Generator {
                     "    #[pyo3(get, set)]\n    pub {}: {},\n",
                     field.field_name, rust_type
                 ));
-            }
+            },
             TransportClass::Business | TransportClass::Economy => {
                 // Efficient conversion: use getter/setter with validation
                 field_code.push_str(&format!(
                     "    #[pyo3(get, set)]\n    pub {}: {},\n",
                     field.field_name, rust_type
                 ));
-            }
+            },
             TransportClass::Wheelbarrow => {
                 // JSON fallback: use serde_json for conversion
                 field_code.push_str(&format!(
                     "    // WARNING: Uses JSON fallback (potential data loss)\n    #[pyo3(get, set)]\n    pub {}: {},\n",
                     field.field_name, rust_type
                 ));
-            }
+            },
         }
 
         field_code
@@ -316,13 +317,20 @@ impl OptimizedPyO3Generator {
 
         // Generate __repr__
         code.push_str("    fn __repr__(&self) -> String {\n");
-        code.push_str(&format!("        format!(\"{}({{:?}})\", self)\n", type_name));
+        code.push_str(&format!(
+            "        format!(\"{}({{:?}})\", self)\n",
+            type_name
+        ));
         code.push_str("    }\n\n");
 
         // Generate to_dict for Wheelbarrow fields
-        let has_wheelbarrow = fields.iter().any(|f| matches!(f.class, TransportClass::Wheelbarrow));
+        let has_wheelbarrow = fields
+            .iter()
+            .any(|f| matches!(f.class, TransportClass::Wheelbarrow));
         if has_wheelbarrow {
-            code.push_str("    /// Convert to Python dict (uses JSON fallback for unsafe fields)\n");
+            code.push_str(
+                "    /// Convert to Python dict (uses JSON fallback for unsafe fields)\n",
+            );
             code.push_str("    pub fn to_dict(&self, py: Python) -> PyResult<PyObject> {\n");
             code.push_str("        let dict = PyDict::new(py);\n");
             for field in fields {
@@ -364,7 +372,11 @@ impl OptimizedPyO3Generator {
         code
     }
 
-    fn generate_python_stub(&self, analysis: &SchemaCompatibilityResult, _python_schema: &IrSchema) -> String {
+    fn generate_python_stub(
+        &self,
+        analysis: &SchemaCompatibilityResult,
+        _python_schema: &IrSchema,
+    ) -> String {
         let mut stub = String::new();
 
         stub.push_str("# Auto-generated Python type stub\n");
@@ -381,8 +393,14 @@ impl OptimizedPyO3Generator {
 
             stub.push_str(&format!(
                 "\n    def __init__(self, {}) -> None: ...\n    def __repr__(self) -> str: ...\n\n",
-                type_analysis.field_analyses.iter()
-                    .map(|f| format!("{}: {}", f.field_name, self.extract_python_type(&f.target_type)))
+                type_analysis
+                    .field_analyses
+                    .iter()
+                    .map(|f| format!(
+                        "{}: {}",
+                        f.field_name,
+                        self.extract_python_type(&f.target_type)
+                    ))
                     .collect::<Vec<_>>()
                     .join(", ")
             ));

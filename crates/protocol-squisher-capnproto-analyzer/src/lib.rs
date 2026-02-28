@@ -25,7 +25,7 @@
 //! let analyzer = CapnProtoAnalyzer::new();
 //!
 //! // Analyze from file
-//! let schema = analyzer.analyze_file(Path::new("schema.capnp")).unwrap();
+//! let schema = analyzer.analyze_file(Path::new("schema.capnp"));
 //!
 //! // Analyze from string
 //! let capnp = r#"
@@ -34,11 +34,13 @@
 //!         name @1 :Text;
 //!     }
 //! "#;
-//! let schema = analyzer.analyze_str(capnp, "user").unwrap();
+//! let schema = analyzer.analyze_str(capnp, "user");
 //!
 //! // Access types
-//! for (name, type_def) in &schema.types {
-//!     println!("Found type: {}", name);
+//! if let Ok(schema) = schema {
+//!     for (name, _type_def) in &schema.types {
+//!         println!("Found type: {}", name);
+//!     }
 //! }
 //! ```
 //!
@@ -70,12 +72,12 @@
 //! - **Generics**: Cap'n Proto supports generic types `List(T)`, `Pair(K,V)`
 
 mod converter;
-mod parser;
 mod ephapax_bridge;
+mod parser;
 
 pub use converter::CapnProtoConverter;
+pub use ephapax_bridge::{analyze_transport_compatibility, TransportAnalysis};
 pub use parser::CapnProtoParser;
-pub use ephapax_bridge::{TransportAnalysis, analyze_transport_compatibility};
 
 use protocol_squisher_ir::IrSchema;
 use std::path::Path;
@@ -236,11 +238,14 @@ mod tests {
         let ir = result.unwrap();
         let all_types = ir.types.get("AllTypes").unwrap();
 
-        if let protocol_squisher_ir::TypeDef::Struct(s) = all_types {
-            assert_eq!(s.fields.len(), 14);
-        } else {
-            panic!("Expected struct type");
-        }
+        assert!(
+            matches!(all_types, protocol_squisher_ir::TypeDef::Struct(_)),
+            "Expected struct type"
+        );
+        let protocol_squisher_ir::TypeDef::Struct(s) = all_types else {
+            unreachable!("asserted struct");
+        };
+        assert_eq!(s.fields.len(), 14);
     }
 
     #[test]
