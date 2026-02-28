@@ -9,8 +9,8 @@
 //! - Raw Rust functions (theoretical maximum)
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use std::hint::black_box;
 use serde::{Deserialize, Serialize};
+use std::hint::black_box;
 
 // ============================================================================
 // Test Structures

@@ -10,8 +10,8 @@
 //! - Wheelbarrow: 100-1000ns (JSON serialization fallback)
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use std::hint::black_box;
 use serde::{Deserialize, Serialize};
+use std::hint::black_box;
 
 // ============================================================================
 // Concorde: Zero-copy, full fidelity
