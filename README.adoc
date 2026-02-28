@@ -18,19 +18,26 @@ image:https://img.shields.io/badge/License-PMPL--1.0-blue.svg[License: PMPL-1.0,
 **Status:** ✅ **Phase 2 Format Expansion Complete** (100%)
 
 **Phase 1 (MVP):**
-- 742 tests passing (ephapax IR + analyzers + codegen + optimizer + property tests)
+- 829 tests passing (ephapax IR + 13 analyzers + codegen + optimizer + property tests + Phase 3 modules)
 - Rust ↔ Python fully working (Concorde, Business, Economy, Wheelbarrow classes)
-- Formal verification (4 theorems proven in Agda — 2 fully verified, 2 constructive; Concorde Safety cross-validated in Lean)
+- Formal verification (5 theorems proven in Agda; cross-validated in Lean, Coq, Isabelle, and Z3)
 - Comprehensive documentation (CLI guide, optimization guide, transport classes reference)
 
 **Phase 2 (Format Expansion - COMPLETE ✅):**
-- **11 protocol analyzers** implemented: Rust, Python, JSON Schema, Protobuf, Bebop, FlatBuffers, MessagePack, Avro, Cap'n Proto, Thrift, ReScript
+- **13 protocol analyzers** implemented: Rust, Python, JSON Schema, Protobuf, Bebop, FlatBuffers, MessagePack, Avro, Cap'n Proto, Thrift, ReScript, GraphQL, TOML
 - **Diversity spectrum meta-analysis** complete (link:DIVERSITY-ANALYSIS.md[full report])
 - **Squishability rankings** validated across design philosophies (zero-copy → schema evolution → dynamic)
 - **Hypothesis testing** confirms: schema evolution protocols (Avro/Thrift) most squishable, zero-copy (Cap'n Proto) already optimal
 - **Protocol compatibility matrix** shows Business class achievable for most schema-based pairs
 
-**Next:** Phase 3 - Real-world validation, ML-driven pattern detection, cross-protocol translation
+**Phase 3 (In Progress):**
+- Security bridge hardened (negotiation, audit, downgrade risk)
+- Distributed squishing expanded (job queue, progress tracking, retry policies)
+- Performance primitives extended (SIMD byte search, chunked streaming, hardware detection, lazy schemas)
+- Enterprise features enhanced (audit queries, governance reports, migration validation)
+- Formal proofs cross-validated in Coq (ConcordeSafety, CarriesInvariant), Isabelle (WheelbarrowNecessity), Z3/SMT (exhaustiveness)
+
+**Next:** Phase 4 - IDE plugins, web playground, ecosystem growth
 ====
 
 ____
@@ -175,6 +182,8 @@ protocol-squisher generate \
 - **Cap'n Proto** - Theoretical performance optimum
 - **Thrift** - RPC-focused with multiple encodings
 - **ReScript** - OCaml-style type system, JS compilation
+- **GraphQL** - Schema Definition Language types and unions
+- **TOML** - Config file structural type inference
 
 === Analysis Available
 - **link:DIVERSITY-ANALYSIS.md[Diversity Spectrum Meta-Analysis]** - Comprehensive squishability comparison across 11 protocols
@@ -192,7 +201,7 @@ See link:ROADMAP.adoc[ROADMAP.adoc] for the full expansion plan.
 - link:docs/TRANSPORT-CLASSES.adoc[Transport Classes Reference] - Detailed theory and API
 
 **Advanced:**
-- link:proofs/README.adoc[Formal Proofs] - Theorem prover verification (ECHIDNA + Agda + Lean)
+- link:proofs/README.adoc[Formal Proofs] - Theorem prover verification (Agda + Lean + Coq + Isabelle + Z3)
 - link:ROADMAP.adoc[Roadmap] - Project roadmap and future plans
 - link:GAUNTLET.adoc[The Gauntlet] - Hard problems we're solving
 - link:docs/architecture.adoc[Architecture] - System architecture

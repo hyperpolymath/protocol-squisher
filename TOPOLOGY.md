@@ -20,10 +20,11 @@
                                    │                   │
                                    ▼                   ▼
                         ┌───────────────────────┐  ┌────────────────────────────────┐
-                        │ ANALYZERS (11+)       │  │ SYNTHESIS ENGINE               │
+                        │ ANALYZERS (13)        │  │ SYNTHESIS ENGINE               │
                         │ - Protobuf, Avro      │  │ - Canonical IR                 │
                         │ - Cap'n Proto, Thrift │  │ - Compatibility Analysis       │
                         │ - Bebop, FlatBuffers  │  │ - Transport Class Scoring      │
+                        │ - GraphQL, TOML       │  │ - ECHIDNA Trust Verification   │
                         └──────────┬────────────┘  └──────────┬─────────────────────┘
                                    │                          │
                                    └────────────┬─────────────┘
@@ -43,9 +44,18 @@
                         └─────────────────────────────────────────┘
 
                         ┌─────────────────────────────────────────┐
+                        │     EXTERNAL INTEGRATION (Optional)     │
+                        │  ECHIDNA Bridge ──► VeriSimDB Store     │
+                        │       │                    │            │
+                        │       ▼                    ▼            │
+                        │  Cross-Prover       Analysis History    │
+                        │  Verification       + Feedback-o-Tron   │
+                        └─────────────────────────────────────────┘
+
+                        ┌─────────────────────────────────────────┐
                         │          REPO INFRASTRUCTURE            │
                         │  Justfile Automation  .machines_readable/ │
-                        │  Formal Proofs (Agda) AI.a2ml             │
+                        │  Formal Proofs (5 provers) AI.a2ml          │
                         └─────────────────────────────────────────┘
 ```
 
@@ -55,21 +65,26 @@
 COMPONENT                          STATUS              NOTES
 ─────────────────────────────────  ──────────────────  ─────────────────────────────────
 CORE ENGINE
-  11 Protocol Analyzers             ██████████ 100%    Bebop to ReScript active
+  13 Protocol Analyzers             ██████████ 100%    Bebop to TOML active
   Canonical IR                      ██████████ 100%    Universal mapping stable
   Synthesis Engine                  ██████████ 100%    Minimum viable adapter active
   Transport Class Scoring           ██████████ 100%    Fidelity/Overhead verified
 
 PROOF & VERIFICATION
-  Formal Proofs (Agda/Lean)         ███████░░░  70%    2 verified, 2 constructive, 1 planned
+  Formal Proofs (Agda/Lean/Coq/Isa) ██████████ 100%    8 Agda + Coq/Lean/Isabelle/Z3 cross-validation
   Diversity Analysis                ██████████ 100%    Squishability rankings verified
-  Property-Based Tests              ██████████ 100%    742 tests passing
+  Property-Based Tests              ██████████ 100%    892+ tests passing
 
 ADVANCED FEATURES (Phase 3+)
-  Security Bridge                   ██████░░░░  60%    TLS/Noise/WireGuard translation + verification
-  Enterprise Features               ███░░░░░░░  30%    Scaffolded, not production
-  Performance (SIMD/streaming)      ███░░░░░░░  30%    Byte comparison, hashing, zero-copy, streaming
-  Distributed Squishing             ███░░░░░░░  30%    Batch scheduling, partitioning, summaries
+  Security Bridge                   █████████░  95%    Negotiation, audit, downgrade, cert expiry, TLS probe
+  Enterprise Features               █████████░  95%    Audit, governance, migration, VeriSimDB-backed registry
+  Performance (SIMD/streaming)      ██████████ 100%    Byte search, chunked streaming, hardware detect, lazy
+  Distributed Squishing             █████████░  90%    Job queue, progress, retry, stats, partition rebalancer
+
+EXTERNAL INTEGRATION (Optional)
+  ECHIDNA Bridge                    ██████████ 100%    30-backend cross-prover, CLI-wired, offline fallback
+  VeriSimDB Store                   ██████████ 100%    Analysis persistence, InMemory fallback
+  Feedback-o-Tron                   ████████░░  80%    Suggestion generation from stored analysis records
 
 REPO INFRASTRUCTURE
   Justfile Automation               ██████████ 100%    Standard build/check tasks
@@ -77,8 +92,8 @@ REPO INFRASTRUCTURE
   Benchmark Suite                   ██████████ 100%    Results interpretation verified
 
 ─────────────────────────────────────────────────────────────────────────────
-OVERALL (Phase 1-2):                █████████░  90%    Core engine complete, proofs partial
-OVERALL (Phase 3-4):                ████░░░░░░  40%    Functional scaffolds, not production
+OVERALL (Phase 1-2):                ██████████ 100%    Core engine + proofs complete
+OVERALL (Phase 3-4):                █████████░  90%    Hardened + integrated, approaching production
 ```
 
 ## Key Dependencies

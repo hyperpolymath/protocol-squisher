@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+
+[package]
+name = "protocol-squisher-verisimdb"
+version = "1.0.0"
+edition = "2021"
+authors = ["Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"]
+license = "PMPL-1.0-or-later"
+description = "VeriSimDB persistent storage integration for protocol-squisher"
+repository = "https://github.com/hyperpolymath/protocol-squisher"
+homepage = "https://github.com/hyperpolymath/protocol-squisher"
+keywords = ["database", "verisimdb", "persistence", "provenance"]
+categories = ["development-tools", "database"]
+
+[dependencies]
+protocol-squisher-ir = { path = "../protocol-squisher-ir" }
+protocol-squisher-compat = { path = "../protocol-squisher-compat" }
+protocol-squisher-transport-primitives = { path = "../../ephapax-ir" }
+reqwest = { version = "0.12", features = ["blocking", "json", "rustls-tls"], default-features = false }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0"
+
+[dev-dependencies]
+serde_json = "1.0"

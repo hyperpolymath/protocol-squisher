@@ -404,6 +404,329 @@ mod tests {
         );
     }
 
+    // ── ECHIDNA / VeriSimDB integration tests ──────────────────────────────
+
+    #[test]
+    fn test_e2e_analysis_to_verisimdb_storage() {
+        use protocol_squisher_verisimdb::{AnalysisRecord, AnalysisStore, InMemoryStore};
+        use std::collections::HashMap;
+
+        let rust = create_rust_user_schema();
+        let python = create_python_user_schema();
+
+        // Analyze schemas.
+        let engine = EphapaxCompatibilityEngine::new();
+        let result = engine.analyze_schemas(&rust, &python);
+
+        // Store the analysis result.
+        let mut store = InMemoryStore::new();
+        let record = AnalysisRecord {
+            id: "e2e-001".to_string(),
+            source_type: rust.name.clone(),
+            target_type: python.name.clone(),
+            transport_class: format!("{:?}", result.overall_class),
+            fidelity: 100.0,
+            overhead: 0.0,
+            format: "serde".to_string(),
+            analyzer_version: "1.0.0".to_string(),
+            proof_certificate_id: None,
+            trust_level: None,
+            embedding: None,
+            timestamp: "2026-02-28T12:00:00Z".to_string(),
+            metadata: HashMap::new(),
+        };
+
+        let id = store.store_analysis(record).unwrap();
+        assert_eq!(id, "e2e-001");
+
+        let retrieved = store.get_analysis("e2e-001").unwrap();
+        assert_eq!(retrieved.source_type, "rust_user");
+        assert_eq!(retrieved.transport_class, "Concorde");
+    }
+
+    #[test]
+    fn test_e2e_proof_goal_generation() {
+        use protocol_squisher_echidna_bridge::ProofGoalGenerator;
+        use protocol_squisher_echidna_bridge::types::ProverKind;
+        use protocol_squisher_ir::PrimitiveType;
+
+        // Generate Coq and Z3 goals for I32 → I64 widening.
+        let coq_goal = ProofGoalGenerator::widening_is_lossless(
+            &PrimitiveType::I32,
+            &PrimitiveType::I64,
+            ProverKind::Coq,
+        );
+        let z3_goal = ProofGoalGenerator::widening_is_lossless(
+            &PrimitiveType::I32,
+            &PrimitiveType::I64,
+            ProverKind::Z3,
+        );
+
+        // Coq goal should be a valid theorem string.
+        assert!(coq_goal.contains("Theorem"));
+        assert!(coq_goal.contains("Int32"));
+        assert!(coq_goal.contains("widening_lossless"));
+
+        // Z3 goal should be a valid SMT assertion.
+        assert!(z3_goal.contains("assert"));
+        assert!(z3_goal.contains("Int32"));
+        assert!(z3_goal.contains("check-sat"));
+    }
+
+    #[test]
+    fn test_e2e_cross_prover_mock() {
+        use protocol_squisher_echidna_bridge::{cross_validate, TrustLevel};
+        use protocol_squisher_echidna_bridge::types::{ProofResponse, ProofStatus, ProverKind};
+
+        // Simulate 3 successful proof responses.
+        let responses = vec![
+            ProofResponse {
+                proof_id: "pf-coq".to_string(),
+                status: ProofStatus::Success,
+                goal: "test_goal".to_string(),
+                prover: ProverKind::Coq,
+                result: Some("Qed.".to_string()),
+                diagnostics: vec![],
+                duration_ms: Some(50),
+            },
+            ProofResponse {
+                proof_id: "pf-z3".to_string(),
+                status: ProofStatus::Success,
+                goal: "test_goal".to_string(),
+                prover: ProverKind::Z3,
+                result: Some("sat".to_string()),
+                diagnostics: vec![],
+                duration_ms: Some(10),
+            },
+            ProofResponse {
+                proof_id: "pf-lean".to_string(),
+                status: ProofStatus::Success,
+                goal: "test_goal".to_string(),
+                prover: ProverKind::Lean4,
+                result: Some("exact rfl".to_string()),
+                diagnostics: vec![],
+                duration_ms: Some(30),
+            },
+        ];
+
+        let result = cross_validate("test_goal", responses);
+        assert!(result.consensus);
+        assert_eq!(result.trust_level, TrustLevel::Level3);
+    }
+
+    #[test]
+    fn test_e2e_tactic_to_weight_pipeline() {
+        use protocol_squisher_echidna_bridge::{
+            boost_suggestion_from_proof, map_tactics_to_weights,
+        };
+        use protocol_squisher_echidna_bridge::types::{ProofStatus, TacticSuggestion};
+
+        let tactics = vec![
+            TacticSuggestion {
+                name: "omega".to_string(),
+                args: vec![],
+                confidence: 0.95,
+            },
+            TacticSuggestion {
+                name: "ring".to_string(),
+                args: vec![],
+                confidence: 0.8,
+            },
+        ];
+
+        let mut weights = map_tactics_to_weights(&tactics);
+        let widen_weight = weights.get("WidenType").copied().unwrap_or(1.0);
+        assert!(widen_weight > 1.5, "High-confidence tactics should boost WidenType");
+
+        // Boost from a successful proof.
+        boost_suggestion_from_proof(&mut weights, ProofStatus::Success, "WidenType");
+        let boosted = weights.get("WidenType").copied().unwrap_or(1.0);
+        assert!(boosted >= widen_weight, "Proof success should boost or maintain weight");
+    }
+
+    #[test]
+    fn test_e2e_feedback_from_stored_records() {
+        use protocol_squisher_verisimdb::{AnalysisRecord, AnalysisStore, InMemoryStore};
+        use std::collections::HashMap;
+
+        let mut store = InMemoryStore::new();
+
+        // Store 3 analysis records.
+        for i in 0..3 {
+            let record = AnalysisRecord {
+                id: format!("fb-{i:03}"),
+                source_type: "User.id".to_string(),
+                target_type: "UserDTO.id".to_string(),
+                transport_class: "Business".to_string(),
+                fidelity: 98.0,
+                overhead: 5.0,
+                format: "protobuf".to_string(),
+                analyzer_version: "1.0.0".to_string(),
+                proof_certificate_id: None,
+                trust_level: None,
+                embedding: None,
+                timestamp: format!("2026-0{}-01T00:00:00Z", i + 1),
+                metadata: HashMap::new(),
+            };
+            store.store_analysis(record).unwrap();
+        }
+
+        // Query and convert to reports.
+        let records = store.query_similar("User.id", "UserDTO.id", 10).unwrap();
+        assert_eq!(records.len(), 3);
+
+        // Conversion to SquishabilityReport would happen in the integration facade.
+        // Here we verify the records are retrievable and have correct data.
+        assert!(records.iter().all(|r| r.transport_class == "Business"));
+    }
+
+    #[test]
+    fn test_e2e_full_pipeline_offline() {
+        use protocol_squisher_verisimdb::{AnalysisRecord, AnalysisStore, InMemoryStore};
+        use std::collections::HashMap;
+
+        let rust = create_rust_user_schema();
+        let python = create_python_user_schema();
+
+        // Step 1: Parse (already have schemas).
+        // Step 2: Analyze.
+        let engine = EphapaxCompatibilityEngine::new();
+        let result = engine.analyze_schemas(&rust, &python);
+
+        // Step 3: Prove (offline → skip).
+        // ECHIDNA unavailable; proof returns None.
+
+        // Step 4: Store in InMemoryStore.
+        let mut store = InMemoryStore::new();
+        let record = AnalysisRecord {
+            id: "pipeline-001".to_string(),
+            source_type: rust.name.clone(),
+            target_type: python.name.clone(),
+            transport_class: format!("{:?}", result.overall_class),
+            fidelity: 100.0,
+            overhead: 0.0,
+            format: "serde".to_string(),
+            analyzer_version: "1.0.0".to_string(),
+            proof_certificate_id: None,
+            trust_level: None,
+            embedding: None,
+            timestamp: "2026-02-28T12:00:00Z".to_string(),
+            metadata: HashMap::new(),
+        };
+        store.store_analysis(record).unwrap();
+
+        // Step 5: Verify end-to-end.
+        let retrieved = store.get_analysis("pipeline-001").unwrap();
+        assert_eq!(retrieved.transport_class, "Concorde");
+        assert_eq!(retrieved.source_type, "rust_user");
+    }
+
+    #[test]
+    fn test_e2e_compatibility_trend() {
+        use protocol_squisher_verisimdb::{AnalysisRecord, AnalysisStore, InMemoryStore};
+        use std::collections::HashMap;
+
+        let mut store = InMemoryStore::new();
+
+        // Store 5 records for the same type pair over time.
+        for i in 0..5 {
+            let record = AnalysisRecord {
+                id: format!("trend-{i:03}"),
+                source_type: "Order.total".to_string(),
+                target_type: "OrderDTO.total".to_string(),
+                transport_class: if i < 3 { "Wheelbarrow" } else { "Business" }.to_string(),
+                fidelity: if i < 3 { 50.0 } else { 98.0 },
+                overhead: if i < 3 { 80.0 } else { 5.0 },
+                format: "protobuf".to_string(),
+                analyzer_version: "1.0.0".to_string(),
+                proof_certificate_id: None,
+                trust_level: None,
+                embedding: None,
+                timestamp: format!("2026-0{}-15T12:00:00Z", i + 1),
+                metadata: HashMap::new(),
+            };
+            store.store_analysis(record).unwrap();
+        }
+
+        let trend = store
+            .compatibility_trend("Order.total", "OrderDTO.total")
+            .unwrap();
+        assert_eq!(trend.len(), 5);
+        // Chronologically ordered.
+        for window in trend.windows(2) {
+            assert!(window[0].timestamp <= window[1].timestamp);
+        }
+        // First 3 are Wheelbarrow, last 2 are Business (improvement trend).
+        assert_eq!(trend[0].transport_class, "Wheelbarrow");
+        assert_eq!(trend[4].transport_class, "Business");
+    }
+
+    #[test]
+    fn test_e2e_schema_version_tracking() {
+        use protocol_squisher_verisimdb::{AnalysisStore, InMemoryStore, SchemaVersionEntry};
+
+        let mut store = InMemoryStore::new();
+
+        let mut version_count = 0;
+        for i in 0..3 {
+            let entry = SchemaVersionEntry {
+                schema_name: "User".to_string(),
+                version: format!("{}.0.0", i + 1),
+                format: "protobuf".to_string(),
+                type_count: 5 + i,
+                field_count: 20 + i * 5,
+                first_seen: format!("2026-0{}-01T00:00:00Z", i + 1),
+                content_hash: Some(format!("sha256:{i:064x}")),
+            };
+            store.record_schema_version(entry).unwrap();
+            version_count += 1;
+        }
+
+        // Verify all 3 schema versions were stored successfully.
+        assert_eq!(version_count, 3);
+    }
+
+    #[test]
+    fn test_e2e_suggestion_logging() {
+        use protocol_squisher_verisimdb::{AnalysisStore, InMemoryStore, SuggestionLogEntry};
+
+        let mut store = InMemoryStore::new();
+
+        let entries = vec![
+            SuggestionLogEntry {
+                id: "sg-001".to_string(),
+                analysis_id: "ar-001".to_string(),
+                target_repo: "github.com/org/schema".to_string(),
+                title: "Use Int64 for id field".to_string(),
+                body: "Enables Business-class transport".to_string(),
+                platform: "github".to_string(),
+                dry_run: true,
+                timestamp: "2026-02-28T12:00:00Z".to_string(),
+                external_ref: None,
+            },
+            SuggestionLogEntry {
+                id: "sg-002".to_string(),
+                analysis_id: "ar-002".to_string(),
+                target_repo: "github.com/org/schema".to_string(),
+                title: "Remove unnecessary Option wrapper".to_string(),
+                body: "Field is always present".to_string(),
+                platform: "github".to_string(),
+                dry_run: false,
+                timestamp: "2026-02-28T12:01:00Z".to_string(),
+                external_ref: Some("https://github.com/org/schema/issues/42".to_string()),
+            },
+        ];
+
+        let mut suggestion_count = 0;
+        for entry in entries {
+            store.log_suggestion(entry).unwrap();
+            suggestion_count += 1;
+        }
+
+        // Verify both suggestions were logged successfully.
+        assert_eq!(suggestion_count, 2);
+    }
+
     #[test]
     fn test_e2e_transport_class_consistency() {
         // Verify that all components agree on transport classes

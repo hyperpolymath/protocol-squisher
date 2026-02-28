@@ -88,6 +88,27 @@ pub fn run(
                 }
             }
         }
+
+        // ECHIDNA proof attempt (non-fatal).
+        let mut ctx = crate::integration::IntegrationContext::new();
+        if let Some((proven_class, trust_level)) =
+            ctx.try_prove_transport_class(source, target)
+        {
+            println!(
+                "  ECHIDNA Trust: {:?} (proven class: {:?})",
+                trust_level, proven_class
+            );
+        }
+
+        // Store analysis result in VeriSimDB (non-fatal).
+        let _ = ctx.store_analysis_record(
+            &source.name,
+            &target.name,
+            &format!("{:?}", result.overall_class),
+            100.0,
+            0.0,
+            &source.source_format,
+        );
     }
 
     Ok(())

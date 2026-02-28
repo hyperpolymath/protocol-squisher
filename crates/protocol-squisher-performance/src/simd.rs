@@ -110,6 +110,192 @@ pub fn fast_hash(bytes: &[u8]) -> u64 {
     hash
 }
 
+/// Find the first occurrence of a byte value in a slice, using lane-parallel
+/// scanning.
+///
+/// Returns the index of the first matching byte, or `None` if not found.
+pub fn find_byte(haystack: &[u8], needle: u8) -> Option<usize> {
+    // Process in 16-byte lanes for potential auto-vectorization.
+    let mut chunks = haystack.chunks_exact(LANES);
+    let mut base = 0;
+
+    for chunk in &mut chunks {
+        for (i, &byte) in chunk.iter().enumerate() {
+            if byte == needle {
+                return Some(base + i);
+            }
+        }
+        base += LANES;
+    }
+
+    // Check remainder.
+    for (i, &byte) in chunks.remainder().iter().enumerate() {
+        if byte == needle {
+            return Some(base + i);
+        }
+    }
+
+    None
+}
+
+/// Compute the sum of a `u32` slice, returning `u64` to avoid overflow.
+///
+/// Uses lane-parallel accumulation for auto-vectorization potential.
+pub fn sum_u32(values: &[u32]) -> u64 {
+    const U32_LANES: usize = 8;
+    let mut lane_acc = [0u64; U32_LANES];
+    let mut chunks = values.chunks_exact(U32_LANES);
+
+    for chunk in &mut chunks {
+        for i in 0..U32_LANES {
+            lane_acc[i] += chunk[i] as u64;
+        }
+    }
+
+    let mut total: u64 = lane_acc.iter().sum();
+    total += chunks.remainder().iter().map(|&v| v as u64).sum::<u64>();
+    total
+}
+
+/// XOR two byte slices element-wise, returning the result.
+///
+/// The output length is the minimum of the two input lengths.
+pub fn xor_bytes(a: &[u8], b: &[u8]) -> Vec<u8> {
+    let len = a.len().min(b.len());
+    let mut result = Vec::with_capacity(len);
+
+    let mut chunks_a = a[..len].chunks_exact(LANES);
+    let mut chunks_b = b[..len].chunks_exact(LANES);
+
+    for (ca, cb) in chunks_a.by_ref().zip(chunks_b.by_ref()) {
+        let mut lane = [0u8; LANES];
+        for i in 0..LANES {
+            lane[i] = ca[i] ^ cb[i];
+        }
+        result.extend_from_slice(&lane);
+    }
+
+    for (&ba, &bb) in chunks_a
+        .remainder()
+        .iter()
+        .zip(chunks_b.remainder().iter())
+    {
+        result.push(ba ^ bb);
+    }
+
+    result
+}
+
+/// SIMD-accelerated byte equality check with runtime feature detection.
+///
+/// On x86_64, attempts SSE2-accelerated comparison when available at runtime.
+/// On aarch64, uses NEON-style processing. Falls back to the portable
+/// `bytes_equal()` on unsupported platforms.
+pub fn simd_bytes_equal(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+
+    #[cfg(target_arch = "x86_64")]
+    {
+        if is_x86_feature_detected!("sse2") {
+            // SAFETY: We verified SSE2 is available via runtime detection.
+            // The function only reads from valid slices and performs no writes.
+            return unsafe { simd_bytes_equal_sse2(a, b) };
+        }
+    }
+
+    #[cfg(target_arch = "aarch64")]
+    {
+        // aarch64 always has NEON; use the lane-parallel path directly.
+        return bytes_equal(a, b);
+    }
+
+    // Scalar fallback for other architectures.
+    bytes_equal(a, b)
+}
+
+/// SSE2-accelerated byte equality (x86_64 only).
+///
+/// Processes 16 bytes at a time using SSE2 compare-and-mask operations.
+#[cfg(target_arch = "x86_64")]
+#[target_feature(enable = "sse2")]
+// SAFETY: Caller must verify SSE2 is available via `is_x86_feature_detected!`.
+// This function only reads from the provided slices within bounds.
+unsafe fn simd_bytes_equal_sse2(a: &[u8], b: &[u8]) -> bool {
+    use std::arch::x86_64::*;
+
+    let len = a.len();
+    let mut offset = 0;
+
+    // Process 16-byte chunks using SSE2.
+    while offset + 16 <= len {
+        let va = _mm_loadu_si128(a.as_ptr().add(offset) as *const __m128i);
+        let vb = _mm_loadu_si128(b.as_ptr().add(offset) as *const __m128i);
+        let cmp = _mm_cmpeq_epi8(va, vb);
+        let mask = _mm_movemask_epi8(cmp);
+        if mask != 0xFFFF {
+            return false;
+        }
+        offset += 16;
+    }
+
+    // Handle remaining bytes.
+    a[offset..] == b[offset..]
+}
+
+/// SIMD-accelerated XOR checksum with runtime feature detection.
+///
+/// On x86_64 with SSE2, uses 128-bit XOR reduction. Falls back to the
+/// portable `xor_checksum()` on other platforms.
+pub fn simd_checksum(bytes: &[u8]) -> u8 {
+    #[cfg(target_arch = "x86_64")]
+    {
+        if is_x86_feature_detected!("sse2") {
+            // SAFETY: We verified SSE2 is available via runtime detection.
+            // The function only reads from the provided slice.
+            return unsafe { simd_checksum_sse2(bytes) };
+        }
+    }
+
+    // Portable fallback.
+    xor_checksum(bytes)
+}
+
+/// SSE2-accelerated XOR checksum (x86_64 only).
+#[cfg(target_arch = "x86_64")]
+#[target_feature(enable = "sse2")]
+// SAFETY: Caller must verify SSE2 is available via `is_x86_feature_detected!`.
+// This function only reads from the provided slice within bounds.
+unsafe fn simd_checksum_sse2(bytes: &[u8]) -> u8 {
+    use std::arch::x86_64::*;
+
+    let mut acc = _mm_setzero_si128();
+    let mut offset = 0;
+
+    while offset + 16 <= bytes.len() {
+        let chunk = _mm_loadu_si128(bytes.as_ptr().add(offset) as *const __m128i);
+        acc = _mm_xor_si128(acc, chunk);
+        offset += 16;
+    }
+
+    // Fold the 128-bit accumulator down to 8 bits.
+    let mut lane_bytes = [0u8; 16];
+    _mm_storeu_si128(lane_bytes.as_mut_ptr() as *mut __m128i, acc);
+
+    let mut result = 0u8;
+    for &b in &lane_bytes {
+        result ^= b;
+    }
+
+    // XOR in the remaining bytes.
+    for &b in &bytes[offset..] {
+        result ^= b;
+    }
+
+    result
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -187,5 +373,77 @@ mod tests {
         assert_eq!(count_differences(&[], &[]), 0);
         assert!(bytes_equal(&[], &[]));
         assert_eq!(fast_hash(&[]), 0xcbf29ce484222325); // FNV offset basis
+    }
+
+    #[test]
+    fn find_byte_returns_first_position() {
+        let data = b"hello world";
+        assert_eq!(find_byte(data, b'o'), Some(4));
+        assert_eq!(find_byte(data, b'z'), None);
+        assert_eq!(find_byte(b"", b'a'), None);
+    }
+
+    #[test]
+    fn find_byte_large_buffer() {
+        let mut data = vec![0u8; 1000];
+        data[999] = 42;
+        assert_eq!(find_byte(&data, 42), Some(999));
+    }
+
+    #[test]
+    fn sum_u32_produces_correct_total() {
+        let values = vec![1u32, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+        assert_eq!(sum_u32(&values), 55);
+        assert_eq!(sum_u32(&[]), 0);
+    }
+
+    #[test]
+    fn sum_u32_large_array() {
+        let values: Vec<u32> = (1..=10_000).collect();
+        let expected: u64 = (1..=10_000u64).sum();
+        assert_eq!(sum_u32(&values), expected);
+    }
+
+    #[test]
+    fn xor_bytes_produces_correct_result() {
+        let a = vec![0xFFu8, 0x00, 0xAA, 0x55];
+        let b = vec![0x0Fu8, 0xF0, 0x55, 0xAA];
+        let result = xor_bytes(&a, &b);
+        assert_eq!(result, vec![0xF0, 0xF0, 0xFF, 0xFF]);
+    }
+
+    #[test]
+    fn xor_bytes_different_lengths() {
+        let a = vec![0xFF, 0x00];
+        let b = vec![0x0F, 0xF0, 0xAA];
+        let result = xor_bytes(&a, &b);
+        // Only processes common length (2 bytes).
+        assert_eq!(result, vec![0xF0, 0xF0]);
+    }
+
+    // ── Platform SIMD tests ──────────────────────────────────────────
+
+    #[test]
+    fn simd_bytes_equal_identical() {
+        let data: Vec<u8> = (0..500).map(|i| (i % 256) as u8).collect();
+        assert!(simd_bytes_equal(&data, &data));
+    }
+
+    #[test]
+    fn simd_bytes_equal_different() {
+        let a: Vec<u8> = (0..500).map(|i| (i % 256) as u8).collect();
+        let mut b = a.clone();
+        b[499] = b[499].wrapping_add(1);
+        assert!(!simd_bytes_equal(&a, &b));
+    }
+
+    #[test]
+    fn simd_checksum_deterministic() {
+        let data: Vec<u8> = (0..10_000).map(|i| (i % 251) as u8).collect();
+        let c1 = simd_checksum(&data);
+        let c2 = simd_checksum(&data);
+        assert_eq!(c1, c2);
+        // Should match the portable version.
+        assert_eq!(c1, xor_checksum(&data));
     }
 }

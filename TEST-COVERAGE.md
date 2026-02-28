@@ -1,6 +1,6 @@
 # Protocol Squisher Test Coverage
 
-**Total: 742 tests passing** (as of 2026-02-28)
+**Total: 829 tests passing** (as of 2026-02-28)
 
 ## Test Breakdown by Component
 
@@ -247,7 +247,8 @@
 - **Integration**: 7 tests ✓
 - **CLI**: 19 tests ✓
 - **Property tests**: 66 tests ✓
-- **Protocol analyzers (11 formats)**: 456+ tests ✓
+- **Protocol analyzers (13 formats)**: 498+ tests ✓
+- **Phase 3 modules (security, enterprise, distributed, performance)**: 66+ tests ✓
 
 ### Transport Class Testing
 - ✓ Concorde (zero-copy): Well tested

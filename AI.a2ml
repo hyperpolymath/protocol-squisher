@@ -11,6 +11,40 @@
 3. Keep human-readable docs (`README.adoc`, `ROADMAP.adoc`, `docs/`) and machine-readable docs (`.machines_readable/6scm/*.scm`) aligned in the same change set.
 4. After finishing edits, update `STATE.scm` metadata and session history, then commit with a concise, imperative message.
 
+## External Integrations (Optional, Offline-First)
+
+Three optional external services are wired into the CLI via `crates/protocol-squisher-cli/src/integration.rs`:
+
+1. **ECHIDNA Bridge** (`crates/protocol-squisher-echidna-bridge/`)
+   - Neurosymbolic theorem prover with 30 backends (REST/gRPC/GraphQL)
+   - CLI commands call `try_prove_transport_class()` → cross-prover consensus → TrustLevel
+   - Falls back silently when `ECHIDNA_URL` (default `localhost:8000`) is unreachable
+
+2. **VeriSimDB** (`crates/protocol-squisher-verisimdb/`)
+   - Multi-modal data engine for analysis persistence (graph, vector, document, temporal)
+   - CLI stores analysis records via `store_analysis_record()` and retrieves historical data
+   - Falls back to `InMemoryStore` when `VERISIMDB_URL` (default `localhost:8080`) is unreachable
+
+3. **Feedback-o-Tron** (`crates/protocol-squisher-meta-analysis/`)
+   - Generates upstream suggestions from stored analysis records
+   - `feedback` command now builds reports from VeriSimDB rather than empty data
+
+All integration tests pass offline (no running services needed). The `IntegrationContext` probes
+service health at construction time and degrades gracefully.
+
+## Canonical File Locations (Updated)
+
+| Area | Path |
+|------|------|
+| CLI integration facade | `crates/protocol-squisher-cli/src/integration.rs` |
+| ECHIDNA bridge | `crates/protocol-squisher-echidna-bridge/src/` |
+| VeriSimDB client | `crates/protocol-squisher-verisimdb/src/` |
+| Partition rebalancer | `crates/protocol-squisher-distributed/src/rebalancer.rs` |
+| Cert chain validation | `crates/protocol-squisher-security-bridge/src/cert_chain.rs` |
+| Runtime verification | `crates/protocol-squisher-security-bridge/src/runtime_verify.rs` |
+| Formal proofs | `proofs/{agda,coq,lean,z3,isabelle}/` |
+| Integration tests | `crates/protocol-squisher-integration-tests/src/lib.rs` |
+
 ## Delivery Promises
 - Mention in summaries whether STATE, `contractiles/`, or `.bot_directives/` changed.
 - Keep this file in sync with the repository’s status; update it if the governance changes.

@@ -9,11 +9,17 @@
 //! - Per-task error isolation (one failure doesn't abort the batch)
 //! - Summary statistics for batch results
 
+pub mod rebalancer;
+pub mod recovery;
+pub mod resilience;
+
 use protocol_squisher_compat::{compare_schemas, TransportClass};
 use protocol_squisher_ir::IrSchema;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::collections::{BTreeMap, VecDeque};
 use std::fmt;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Instant;
 
 /// A single schema comparison task to execute in parallel.
@@ -218,6 +224,274 @@ pub fn run_partitioned(
     Ok((all_results, summary))
 }
 
+/// Priority level for job queue entries. Lower value = higher priority.
+pub type Priority = u8;
+
+/// A priority queue for schema comparison jobs, backed by `BTreeMap<Priority, VecDeque>`.
+#[derive(Debug, Default)]
+pub struct JobQueue {
+    queues: BTreeMap<Priority, VecDeque<DistributedSquishTask>>,
+    total: usize,
+}
+
+impl JobQueue {
+    /// Create an empty job queue.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Submit a task at the given priority level.
+    pub fn submit(&mut self, priority: Priority, task: DistributedSquishTask) {
+        self.queues
+            .entry(priority)
+            .or_default()
+            .push_back(task);
+        self.total += 1;
+    }
+
+    /// Poll the highest-priority (lowest number) task from the queue.
+    pub fn poll(&mut self) -> Option<DistributedSquishTask> {
+        let mut empty_key = None;
+        let result = self.queues.iter_mut().next().and_then(|(key, queue)| {
+            let task = queue.pop_front();
+            if queue.is_empty() {
+                empty_key = Some(*key);
+            }
+            task
+        });
+
+        if let Some(key) = empty_key {
+            self.queues.remove(&key);
+        }
+
+        if result.is_some() {
+            self.total -= 1;
+        }
+        result
+    }
+
+    /// Cancel all tasks with the given ID. Returns the number of tasks removed.
+    pub fn cancel(&mut self, task_id: &str) -> usize {
+        let mut removed = 0;
+        for queue in self.queues.values_mut() {
+            let before = queue.len();
+            queue.retain(|t| t.id != task_id);
+            removed += before - queue.len();
+        }
+        self.total -= removed;
+        removed
+    }
+
+    /// Return the number of pending tasks.
+    pub fn len(&self) -> usize {
+        self.total
+    }
+
+    /// Whether the queue is empty.
+    pub fn is_empty(&self) -> bool {
+        self.total == 0
+    }
+}
+
+/// Atomic progress tracker for batch operations.
+pub struct ProgressTracker {
+    completed: AtomicUsize,
+    failed: AtomicUsize,
+    total: usize,
+}
+
+/// A snapshot of the current progress state.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ProgressSnapshot {
+    pub completed: usize,
+    pub failed: usize,
+    pub total: usize,
+    pub remaining: usize,
+}
+
+impl ProgressTracker {
+    /// Create a new tracker for a batch of `total` items.
+    pub fn new(total: usize) -> Self {
+        Self {
+            completed: AtomicUsize::new(0),
+            failed: AtomicUsize::new(0),
+            total,
+        }
+    }
+
+    /// Record a successful completion.
+    pub fn record_success(&self) {
+        self.completed.fetch_add(1, Ordering::Relaxed);
+    }
+
+    /// Record a failure.
+    pub fn record_failure(&self) {
+        self.failed.fetch_add(1, Ordering::Relaxed);
+    }
+
+    /// Take a snapshot of the current progress.
+    pub fn snapshot(&self) -> ProgressSnapshot {
+        let completed = self.completed.load(Ordering::Relaxed);
+        let failed = self.failed.load(Ordering::Relaxed);
+        ProgressSnapshot {
+            completed,
+            failed,
+            total: self.total,
+            remaining: self.total.saturating_sub(completed + failed),
+        }
+    }
+}
+
+/// Retry policy for failed tasks.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RetryPolicy {
+    /// Maximum number of retries per task.
+    pub max_retries: usize,
+    /// Backoff strategy between retries.
+    pub backoff: BackoffStrategy,
+}
+
+/// Backoff strategy for retries.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum BackoffStrategy {
+    /// Fixed delay between retries (in milliseconds).
+    Fixed(u64),
+    /// Exponential backoff starting from base (in milliseconds).
+    Exponential { base_ms: u64 },
+}
+
+impl RetryPolicy {
+    /// Compute the delay for a given retry attempt (0-indexed).
+    pub fn delay_ms(&self, attempt: usize) -> u64 {
+        match &self.backoff {
+            BackoffStrategy::Fixed(ms) => *ms,
+            BackoffStrategy::Exponential { base_ms } => {
+                base_ms.saturating_mul(1u64.checked_shl(attempt as u32).unwrap_or(u64::MAX))
+            }
+        }
+    }
+}
+
+/// Run a batch of tasks with per-item retry logic.
+///
+/// Tasks that fail are retried up to `policy.max_retries` times. Since schema
+/// comparisons are deterministic, this is primarily useful when tasks may have
+/// transient side effects (e.g., logging, external writes).
+pub fn run_batch_with_retry(
+    tasks: &[DistributedSquishTask],
+    config: &BatchConfig,
+    policy: &RetryPolicy,
+) -> Result<(Vec<DistributedSquishResult>, BatchSummary), DistributedError> {
+    // For deterministic schema comparisons, retrying won't change the result.
+    // But this function demonstrates the retry pattern for future extensibility.
+    let mut final_results = Vec::with_capacity(tasks.len());
+    let mut failed_count = 0usize;
+    let tracker = ProgressTracker::new(tasks.len());
+
+    // First pass: run all tasks.
+    let (results, _summary) = run_batch(tasks, config)?;
+    for result in results {
+        tracker.record_success();
+        final_results.push(result);
+    }
+
+    // If any tasks produced no result (shouldn't happen with current impl, but
+    // for completeness), retry them.
+    let succeeded_ids: std::collections::HashSet<_> =
+        final_results.iter().map(|r| r.id.clone()).collect();
+    let mut remaining: Vec<_> = tasks
+        .iter()
+        .filter(|t| !succeeded_ids.contains(&t.id))
+        .collect();
+
+    for _attempt in 0..policy.max_retries {
+        if remaining.is_empty() {
+            break;
+        }
+        let retry_tasks: Vec<_> = remaining.iter().map(|t| (*t).clone()).collect();
+        let (retry_results, _) = run_batch(&retry_tasks, config)?;
+        let mut retry_succeeded = std::collections::HashSet::new();
+        for result in retry_results {
+            retry_succeeded.insert(result.id.clone());
+            tracker.record_success();
+            final_results.push(result);
+        }
+        remaining.retain(|t| !retry_succeeded.contains(&t.id));
+    }
+
+    for _remaining_task in &remaining {
+        tracker.record_failure();
+        failed_count += 1;
+    }
+
+    final_results.sort_by(|a, b| a.id.cmp(&b.id));
+
+    let snapshot = tracker.snapshot();
+    let mut class_counts = ClassCounts::default();
+    for r in &final_results {
+        match r.class {
+            TransportClass::Concorde => class_counts.concorde += 1,
+            TransportClass::BusinessClass => class_counts.business += 1,
+            TransportClass::Economy => class_counts.economy += 1,
+            TransportClass::Wheelbarrow => class_counts.wheelbarrow += 1,
+            TransportClass::Incompatible => {}
+        }
+    }
+
+    Ok((
+        final_results,
+        BatchSummary {
+            total_tasks: tasks.len(),
+            succeeded: snapshot.completed,
+            failed: failed_count,
+            total_duration_us: 0, // Aggregate timing not tracked across retries.
+            class_counts,
+        },
+    ))
+}
+
+/// Aggregate statistics for a distributed batch.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DistributedStats {
+    /// Mean duration per task in microseconds.
+    pub mean_duration_us: f64,
+    /// Total throughput in tasks per second.
+    pub throughput_per_sec: f64,
+    /// Error rate (0.0 to 1.0).
+    pub error_rate: f64,
+    /// Total tasks processed.
+    pub total_tasks: usize,
+}
+
+impl DistributedStats {
+    /// Compute stats from a batch summary.
+    pub fn from_summary(summary: &BatchSummary) -> Self {
+        let total = summary.total_tasks;
+        let mean_duration_us = if summary.succeeded > 0 {
+            summary.total_duration_us as f64 / summary.succeeded as f64
+        } else {
+            0.0
+        };
+        let throughput_per_sec = if summary.total_duration_us > 0 {
+            (summary.succeeded as f64 / summary.total_duration_us as f64) * 1_000_000.0
+        } else {
+            0.0
+        };
+        let error_rate = if total > 0 {
+            summary.failed as f64 / total as f64
+        } else {
+            0.0
+        };
+
+        Self {
+            mean_duration_us,
+            throughput_per_sec,
+            error_rate,
+            total_tasks: total,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -344,5 +618,161 @@ mod tests {
             message: "boom".into(),
         };
         assert!(err.to_string().contains("panicked"));
+    }
+
+    // ── New Phase 3 tests ──────────────────────────────────────────────
+
+    #[test]
+    fn job_queue_ordering() {
+        let mut queue = JobQueue::new();
+
+        queue.submit(
+            10,
+            DistributedSquishTask {
+                id: "low-priority".to_string(),
+                source: schema_with_field("s", PrimitiveType::I32),
+                target: schema_with_field("t", PrimitiveType::I32),
+            },
+        );
+        queue.submit(
+            1,
+            DistributedSquishTask {
+                id: "high-priority".to_string(),
+                source: schema_with_field("s", PrimitiveType::I32),
+                target: schema_with_field("t", PrimitiveType::I32),
+            },
+        );
+        queue.submit(
+            5,
+            DistributedSquishTask {
+                id: "mid-priority".to_string(),
+                source: schema_with_field("s", PrimitiveType::I32),
+                target: schema_with_field("t", PrimitiveType::I32),
+            },
+        );
+
+        assert_eq!(queue.len(), 3);
+
+        let first = queue.poll().expect("should have task");
+        assert_eq!(first.id, "high-priority");
+
+        let second = queue.poll().expect("should have task");
+        assert_eq!(second.id, "mid-priority");
+
+        let third = queue.poll().expect("should have task");
+        assert_eq!(third.id, "low-priority");
+
+        assert!(queue.is_empty());
+    }
+
+    #[test]
+    fn job_queue_cancel() {
+        let mut queue = JobQueue::new();
+
+        queue.submit(
+            1,
+            DistributedSquishTask {
+                id: "keep-me".to_string(),
+                source: schema_with_field("s", PrimitiveType::I32),
+                target: schema_with_field("t", PrimitiveType::I32),
+            },
+        );
+        queue.submit(
+            1,
+            DistributedSquishTask {
+                id: "remove-me".to_string(),
+                source: schema_with_field("s", PrimitiveType::I32),
+                target: schema_with_field("t", PrimitiveType::I32),
+            },
+        );
+
+        let removed = queue.cancel("remove-me");
+        assert_eq!(removed, 1);
+        assert_eq!(queue.len(), 1);
+
+        let remaining = queue.poll().expect("should have task");
+        assert_eq!(remaining.id, "keep-me");
+    }
+
+    #[test]
+    fn progress_tracker_snapshots() {
+        let tracker = ProgressTracker::new(10);
+        tracker.record_success();
+        tracker.record_success();
+        tracker.record_failure();
+
+        let snap = tracker.snapshot();
+        assert_eq!(snap.completed, 2);
+        assert_eq!(snap.failed, 1);
+        assert_eq!(snap.total, 10);
+        assert_eq!(snap.remaining, 7);
+    }
+
+    #[test]
+    fn retry_policy_exponential_backoff() {
+        let policy = RetryPolicy {
+            max_retries: 3,
+            backoff: BackoffStrategy::Exponential { base_ms: 100 },
+        };
+        assert_eq!(policy.delay_ms(0), 100);
+        assert_eq!(policy.delay_ms(1), 200);
+        assert_eq!(policy.delay_ms(2), 400);
+        assert_eq!(policy.delay_ms(3), 800);
+    }
+
+    #[test]
+    fn retry_policy_fixed_backoff() {
+        let policy = RetryPolicy {
+            max_retries: 3,
+            backoff: BackoffStrategy::Fixed(500),
+        };
+        assert_eq!(policy.delay_ms(0), 500);
+        assert_eq!(policy.delay_ms(5), 500);
+    }
+
+    #[test]
+    fn run_batch_with_retry_succeeds() {
+        let tasks = vec![DistributedSquishTask {
+            id: "test-retry".to_string(),
+            source: schema_with_field("s", PrimitiveType::I32),
+            target: schema_with_field("t", PrimitiveType::I32),
+        }];
+
+        let config = BatchConfig {
+            workers: Some(1),
+            ..Default::default()
+        };
+        let policy = RetryPolicy {
+            max_retries: 2,
+            backoff: BackoffStrategy::Fixed(0),
+        };
+
+        let (results, summary) =
+            run_batch_with_retry(&tasks, &config, &policy).expect("retry batch");
+        assert_eq!(results.len(), 1);
+        assert_eq!(summary.succeeded, 1);
+        assert_eq!(summary.failed, 0);
+    }
+
+    #[test]
+    fn distributed_stats_from_summary() {
+        let summary = BatchSummary {
+            total_tasks: 100,
+            succeeded: 95,
+            failed: 5,
+            total_duration_us: 1_000_000,
+            class_counts: ClassCounts {
+                concorde: 50,
+                business: 30,
+                economy: 10,
+                wheelbarrow: 5,
+            },
+        };
+
+        let stats = DistributedStats::from_summary(&summary);
+        assert_eq!(stats.total_tasks, 100);
+        assert!((stats.error_rate - 0.05).abs() < 0.001);
+        assert!(stats.throughput_per_sec > 0.0);
+        assert!(stats.mean_duration_us > 0.0);
     }
 }
