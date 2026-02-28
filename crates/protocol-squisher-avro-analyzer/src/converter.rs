@@ -18,7 +18,6 @@ type SchemaConversion = (IrType, bool, NestedTypeDefs);
 #[derive(Debug, Default)]
 pub struct AvroConverter {}
 
-#[allow(dead_code)]
 impl AvroConverter {
     /// Create a new converter
     pub fn new() -> Self {
@@ -62,12 +61,6 @@ impl AvroConverter {
         }
 
         Ok(ir)
-    }
-
-    /// Convert an Avro record to IR struct
-    fn convert_record(&self, avro_type: &AvroType) -> Result<StructDef, AnalyzerError> {
-        let (struct_def, _) = self.convert_record_with_nested(avro_type)?;
-        Ok(struct_def)
     }
 
     /// Convert an Avro record to IR struct, collecting nested type definitions
@@ -206,12 +199,6 @@ impl AvroConverter {
         })
     }
 
-    /// Convert an Avro field to IR field
-    fn convert_field(&self, field: &AvroField) -> Result<FieldDef, AnalyzerError> {
-        let (field_def, _) = self.convert_field_with_nested(field)?;
-        Ok(field_def)
-    }
-
     /// Convert an Avro field to IR field, collecting nested type definitions
     fn convert_field_with_nested(
         &self,
@@ -248,13 +235,6 @@ impl AvroConverter {
         };
 
         Ok((field_def, nested_types))
-    }
-
-    /// Convert an Avro schema to IR type
-    /// Returns (type, is_optional)
-    fn convert_schema(&self, schema: &AvroSchema) -> Result<(IrType, bool), AnalyzerError> {
-        let (ty, opt, _) = self.convert_schema_with_nested(schema)?;
-        Ok((ty, opt))
     }
 
     /// Convert an Avro schema to IR type, collecting nested type definitions
@@ -329,12 +309,6 @@ impl AvroConverter {
             // User-defined type reference
             _ => Ok(IrType::Reference(type_name.to_string())),
         }
-    }
-
-    /// Convert a complex Avro schema to IR type
-    fn convert_complex_schema(&self, complex: &AvroComplexSchema) -> Result<IrType, AnalyzerError> {
-        let (ty, _) = self.convert_complex_schema_with_nested(complex)?;
-        Ok(ty)
     }
 
     /// Convert a complex Avro schema to IR type, collecting nested type definitions

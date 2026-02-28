@@ -194,53 +194,57 @@ toc::[]
 == Phase 3: Advanced Features (Months 7-12)
 
 === Formal Verification
-- [x] ECHIDNA theorem prover integration
-- [x] Correctness proofs (Agda + Lean)
-- [x] Exhaustive property testing
-- [x] Fuzzing infrastructure
-- [x] miniKanren adapter synthesis
+- [x] Correctness proofs (2 fully verified in Agda: Concorde Safety, Container Propagation)
+- [x] Partial proofs (Wheelbarrow Necessity — 2 postulates; Carries Invariant — 1 hole)
+- [x] Concorde Safety cross-validated in Lean
+- [x] Property-based testing (721 tests passing)
+- [x] miniKanren adapter synthesis (scaffolded)
+- [ ] ECHIDNA neural proof synthesis (disabled — awaiting ECHIDNA availability)
+- [ ] Complete remaining Agda proof holes
+- [ ] Coq, Isabelle, Z3 proofs (planned, not started)
 
-**Status:** 🚧 **IN PROGRESS** - ECHIDNA integration complete with 4 core theorems proven in Agda/Lean, property tests (288/540 tests), ClusterFuzzLite configured
+**Status:** 🚧 **IN PROGRESS** - 2 of 5 core theorems fully proven, 2 partial, 1 planned
 
 === Security Protocol Support
-- [x] TLS version bridging
-- [x] Protocol family translation (TLS ↔ Noise)
-- [x] Security property verification
-- [x] Rejection of unsafe combinations
+- [x] Security bridge crate scaffolded (type definitions and safety checks)
+- [ ] TLS version bridging (implementation)
+- [ ] Protocol family translation (TLS ↔ Noise)
+- [ ] Security property verification (runtime)
 
 === FFI Replacement
-- [x] Function call bridging
-- [x] Memory ownership semantics
-- [x] Callback support
-- [x] Performance competitive with manual FFI
+- [x] PyO3 code generation (working)
+- [ ] General FFI function call bridging
+- [ ] Memory ownership semantics (beyond PyO3)
+- [ ] Callback support
 
 === Performance Optimization
-- [x] Zero-copy where possible
-- [x] SIMD for compatible types
-- [x] Lazy deserialization
-- [x] Streaming support
+- [x] Zero-copy detection and path generation
+- [x] Lazy deserialization scaffolding
+- [x] Streaming support scaffolding
+- [ ] SIMD for compatible types (stub only — `xor_checksum` toy function exists)
+- [ ] Hardware acceleration
 
-**Deliverable:** Production-grade system
+**Deliverable:** Production-grade system (in progress)
 
 == Phase 4: Ecosystem Growth (Year 2+)
 
 === Developer Experience
-- [x] IDE plugins (LSP for adapter previews)
-- [x] Interactive compatibility explorer
-- [x] Web playground
-- [x] Adapter marketplace
+- [ ] IDE plugins (LSP for adapter previews)
+- [ ] Interactive compatibility explorer
+- [ ] Web playground
+- [ ] Adapter marketplace (local file-based prototype exists)
 
 === Enterprise Features
-- [x] Schema registry integration
-- [x] Version migration tools
-- [x] Audit logging
-- [x] Governance policies
+- [x] Schema registry integration (scaffolded)
+- [x] Version migration tools (scaffolded)
+- [x] Audit logging (scaffolded)
+- [x] Governance policies (scaffolded)
 
 === Research Directions
-- [x] AI-assisted optimization
-- [x] Novel transformation primitives (cut, splice, reify)
-- [x] Distributed protocol squishing
-- [x] Hardware acceleration
+- [x] AI-assisted optimization (optimize-ai CLI subcommand)
+- [ ] Novel transformation primitives (cut, splice, reify)
+- [x] Distributed protocol squishing (scaffolded — rayon-based scheduler)
+- [ ] Hardware acceleration
 
 == Success Metrics
 

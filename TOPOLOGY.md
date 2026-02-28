@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: PMPL-1.0-or-later -->
 <!-- TOPOLOGY.md — Project architecture map and completion dashboard -->
-<!-- Last updated: 2026-02-24 -->
+<!-- Last updated: 2026-02-28 -->
 
 # Protocol Squisher — Project Topology
 
@@ -61,9 +61,15 @@ CORE ENGINE
   Transport Class Scoring           ██████████ 100%    Fidelity/Overhead verified
 
 PROOF & VERIFICATION
-  Formal Proofs (Agda/Lean)         ██████████ 100%    4 theorems proven
+  Formal Proofs (Agda/Lean)         ██████░░░░  60%    2 verified, 2 partial, 1 planned
   Diversity Analysis                ██████████ 100%    Squishability rankings verified
-  Property-Based Tests              ██████████ 100%    312 tests passing
+  Property-Based Tests              ██████████ 100%    721 tests passing
+
+ADVANCED FEATURES (Phase 3+)
+  Security Bridge                   ███░░░░░░░  30%    Type scaffolding only
+  Enterprise Features               ███░░░░░░░  30%    Scaffolded, not production
+  Performance (SIMD/streaming)      ██░░░░░░░░  20%    Zero-copy works; SIMD stub only
+  Distributed Squishing             ██░░░░░░░░  20%    Rayon scheduler scaffolded
 
 REPO INFRASTRUCTURE
   Justfile Automation               ██████████ 100%    Standard build/check tasks
@@ -71,7 +77,8 @@ REPO INFRASTRUCTURE
   Benchmark Suite                   ██████████ 100%    Results interpretation verified
 
 ─────────────────────────────────────────────────────────────────────────────
-OVERALL:                            ██████████ 100%    Phase 2 Complete & Stable
+OVERALL (Phase 1-2):                █████████░  90%    Core engine complete, proofs partial
+OVERALL (Phase 3-4):                ███░░░░░░░  30%    Scaffolded, not production
 ```
 
 ## Key Dependencies
