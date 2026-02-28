@@ -10,6 +10,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Planned
+
+- Phase 4a: `SchemaAnalyzer` trait unifying all 13 analyzers
+- Phase 4b: Public library API (re-export IR, compat, meta-analysis from root crate)
+- Phase 4c: Constraint evaluation API (`Constraint::evaluate()` for live data)
+- Phase 4d: Bidirectional analysis as first-class top-level API
+- Phase 4e: `protocol-squisher-server` crate (axum HTTP/JSON API)
+
+## [1.1.1] - 2026-02-28
+
+### Added
+
+- **ROADMAP.adoc rewrite**: Phases 4-6 documenting PanLL substrate integration,
+  ProtocolModule design, and Five-Pillar developer suite convergence
+- **Five-Pillar architecture**: Languages, Databases, Protocols, Containers, Quality —
+  identified Quality/Observability as the missing fifth pillar
+- **Three-pane mapping**: Documented how protocol-squisher concepts map to PanLL's
+  Pane-L (Symbolic), Pane-N (Neural), Pane-W (World)
+
+### Changed
+
+- Synchronized all 16 non-Cargo version/metadata files to v1.1.0
+  (Justfile, README.adoc, STATE.scm, TOPOLOGY.md, HN-ANNOUNCEMENT.md, METRICS.md,
+  ephapax-ir.ipkg, ephapax-ir-ffi.ipkg, lakefile.lean, mix.exs, seambot config.toml,
+  AGENTIC.scm, ECOSYSTEM.scm, NEUROSYM.scm, PLAYBOOK.scm, SECURITY-REQUIREMENTS.scm)
+- Applied `cargo fmt` across all crates
+- Updated critical-next-actions to target Phase 4 work
+
+### Security
+
+- panic-attack suite (assail + assault + abduct + adjudicate): **PASS** verdict
+- cargo audit: 0 vulnerabilities / 275 dependencies
+- All 921 tests passing, cargo clippy clean
+
+## [1.1.0] - 2026-02-28
+
 ### Added
 
 - **GraphQL analyzer** (`protocol-squisher-graphql-analyzer`): SDL parser with type/enum/union/input/
@@ -25,36 +61,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `RetryPolicy` with backoff, `run_batch_with_retry()`, `DistributedStats` (+7 tests)
 - **Performance hardening**: SIMD `find_byte()`/`sum_u32()`/`xor_bytes()`, `ChunkedProcessor`
   with `StreamStats`, `HardwareProfile` detection, `LazySchema` deferred parsing (+12 tests)
-- **Coq proofs**: `ConcordeSafety.v` (concorde_preserves_size, concorde_idempotent, concorde_safe),
-  `CarriesInvariant.v` (every_pair_classified, transport_class_total, no_economy_for_primitives)
-- **Isabelle proofs**: `WheelbarrowNecessity.thy` (wheelbarrow_for_incompatible, narrowing_is_wheelbarrow)
+- **ECHIDNA bridge**: 30-backend cross-prover, CLI-integrated, offline fallback
+- **VeriSimDB integration**: analysis persistence, InMemory fallback, CLI-integrated
+- **Integration pipeline**: `integration.rs` facade wiring ECHIDNA + VeriSimDB into CLI commands
+- **Coq proofs**: `ConcordeSafety.v`, `CarriesInvariant.v`
+- **Isabelle proofs**: `WheelbarrowNecessity.thy`
 - **Z3/SMT proofs**: transport class exhaustiveness verification, Concorde constraint checking
-- **Benchmark baseline**: 73 criterion benchmarks across 4 suites captured in
-  `benches/BASELINE-v1.0.0.json`
+- **Agda proofs**: OptimizationSoundness, extended CarriesInvariant and WheelbarrowNecessity
+- **Benchmark baseline**: 73 criterion benchmarks across 4 suites
 - **RSR workflows**: mirror.yml (6-forge), instant-sync.yml, guix-nix-policy.yml,
   rsr-antipattern.yml, npm-bun-blocker.yml
 
 ### Fixed
 
 - Replaced 2 postulates in `WheelbarrowNecessity.agda` with constructive proofs
-  (counterexample construction for `narrowing-not-lossless`, case analysis for
-  `wheelbarrow-lossy`)
-- Filled `{!!}` hole in `CarriesInvariant.agda` adapter-composition proof with
-  simultaneous with-matching
-- Synchronized all non-Cargo version files to 1.0.0 (Justfile, ipkg, mix.exs,
-  lakefile.lean)
-- Fixed author email in Idris2 ipkg files (`j.d.a.jewell@open.ac.uk`)
-- Fixed SPDX header in root Justfile (`PMPL-1.0` → `PMPL-1.0-or-later`)
+- Filled `{!!}` hole in `CarriesInvariant.agda` with simultaneous with-matching
+- Synchronized all non-Cargo version files to 1.0.0
+- Fixed author email in Idris2 ipkg files
+- Fixed SPDX header in root Justfile
 
 ### Changed
 
-- Test count: 742 → 829 (87 new tests across Phase 3 modules and new analyzers)
+- Test count: 742 → 921 (179 new tests)
 - Protocol analyzers: 11 → 13 (added GraphQL and TOML)
-- Security bridge completion: 60% → 80%
-- Enterprise features completion: 30% → 60%
-- Performance module completion: 30% → 50%
-- Distributed module completion: 30% → 60%
 - Formal proofs: Agda+Lean → Agda+Lean+Coq+Isabelle+Z3 (5 proof systems)
+- All Phase 3 modules hardened from scaffolds to functional implementations
 
 ## [1.0.0] - 2026-02-28
 

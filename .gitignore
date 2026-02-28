@@ -62,7 +62,7 @@ htmlcov/
 
 # Local tooling artifacts
 /ffi/zig/.zig-cache/
-/tools/ephapax-cli
+/tools/
 
 # Generated runtime output (panic-attack, abduct, amuck)
 /reports/

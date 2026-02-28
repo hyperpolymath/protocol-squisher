@@ -1,320 +1,480 @@
 // SPDX-License-Identifier: PMPL-1.0-or-later
-// SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
+// SPDX-FileCopyrightText: 2025-2026 Jonathan D.A. Jewell
 = Protocol Squisher Roadmap
 :toc: macro
 :toclevels: 3
 :icons: font
 
 [.lead]
-**From concept to rethinking the world's data exchange**
+**From concept to the protocol analysis substrate for neurosymbolic development**
 
 [NOTE]
 ====
-**Current Status:** ✅ **Phase 2 Format Expansion Complete** (February 2026)
+**Current Status:** v1.1.1 released (February 2026)
 
-Phase 0 (Foundation) and Phase 1 (MVP) are 100% complete:
-- ✅ ephapax IR with Idris2 dependent types
-- ✅ Rust and Python analyzers (59 tests)
-- ✅ Compatibility engine with 4 transport classes
-- ✅ PyO3 code generation
-- ✅ JSON fallback (Wheelbarrow)
-- ✅ Optimizer with suggestions
-- ✅ CLI tool (analyze, check, optimize, generate)
-- ✅ Property-based tests (64 tests)
-- ✅ Formal verification (Agda + Lean proofs)
-- ✅ Comprehensive documentation
+Phases 0-3 are **COMPLETE**: 921 tests, 13 format analyzers, formal proofs in 5 systems
+(Agda, Coq, Lean 4, Isabelle, Z3), ECHIDNA/VeriSimDB integration, full security sweep
+(panic-attack PASS verdict, cargo audit clean).
 
-**Phase 2 (Format Expansion):**
-- ✅ 13 protocol analyzers implemented (Rust, Python, JSON Schema, Protobuf, Bebop, FlatBuffers, MessagePack, Avro, Cap'n Proto, Thrift, ReScript, GraphQL, TOML)
-- ✅ Diversity/squishability analysis across protocol families
-
-**Now:** Public launch hardening and Phase 3 (real-world validation, synthesis, advanced features)
+**Next:** Phase 4 — Library extraction and PanLL substrate integration.
 ====
 
 toc::[]
 
-== Vision Horizon
+== Vision
 
-=== The End State (3-5 years)
+=== The Five-Pillar Developer Suite
+
+protocol-squisher is one of five pillars forming a comprehensive neurosymbolic development
+environment through https://github.com/hyperpolymath/panll[PanLL eNSAID]:
+
+[cols="1,2,2,1",options="header"]
+|===
+|Pillar |Tool(s) |PanLL Module |Status
+
+|**Languages**
+|PanLL core + nextgen-languages
+|Native (core mission)
+|92%
+
+|**Databases**
+|VeriSimDB / QuandleDB / LithoGlyph
+|`DatabaseModule` (exists)
+|alpha
+
+|**Protocols**
+|protocol-squisher
+|`ProtocolModule` (Phase 5)
+|v1.1.1
+
+|**Containers**
+|stapeln + selur-compose
+|`ContainerModule` (Phase 6)
+|35%
+
+|**Quality**
+|panic-attacker + hypatia + echidna
+|`QualityModule` (Phase 6)
+|ad-hoc
+|===
+
+=== The End State
 
 **"Any data format can talk to any other data format. Always."**
 
-- 50+ serialization formats supported
-- Formal verification for all adapters
+- 50+ serialization formats analyzed and compared
+- Formal verification for all transport class assignments
 - Security protocol bridging (TLS, Noise, WireGuard)
-- FFI replacement for 80% of use cases
-- Industry-standard interop layer
-- Self-improving through continuous learning
+- First-class library API for PanLL and external consumers
+- Self-improving through VeriSimDB analysis history and ECHIDNA cross-proofs
+- Protocol analysis visible across PanLL's three panes (Symbolic, Neural, World)
 
-=== The Inflection Point (1-2 years)
+=== The Inflection Point
 
-**"Python and Rust developers never write FFI code again"**
+**"protocol-squisher as a library dependency, not just a CLI"**
 
-- Python ↔ Rust is production-ready
-- 10+ major format pairs supported
-- Empirical compatibility database from 10,000+ schemas
-- Community contributions exceed core team
-- First major company adopts for production
+- Public `SchemaAnalyzer` trait unifying all 13 analyzers
+- Constraint evaluation API for live Pane-L integration
+- HTTP/JSON server for distributed and remote analysis
+- Bidirectional comparison as a first-class API
+- Community contributions exceed core development
 
-=== The MVP (3-6 months)
+== Completed Work
 
-**"One working demo that proves the invariant"**
-
-- Python (Pydantic) ↔ Rust (serde)
-- JSON fallback guarantees transport
-- Basic adapter generation
-- Property-based test coverage
-- Clear documentation of losses
-
-== Phase 0: Foundation (Weeks 1-4)
+=== Phase 0: Foundation [COMPLETE]
 
 **Goal:** Core infrastructure and IR design
 
-=== Week 1: Canonical IR
-- [x] Design intermediate representation
-- [x] Implement type system (primitives, containers, composites)
-- [x] Constraint representation
-- [x] IR ↔ JSON serialization (for tooling)
+- [x] Canonical IR design — `protocol-squisher-ir` with `ephapax` (Idris2 dependent types)
+- [x] Type system: primitives, containers, composites, 50+ constraint types
+- [x] IR ↔ JSON serialization for tooling interop
 - [x] Property-based tests for IR invariants
+- [x] Rust analyzer — `syn`-based serde type extraction (30 tests)
+- [x] Python analyzer — Pydantic introspection (29 tests)
+- [x] Compatibility engine — transport class scoring with loss documentation (31 tests)
 
-**Deliverable:** `protocol-squisher-ir` crate with comprehensive tests ✓ **COMPLETE** (ephapax IR in Idris2 with dependent types)
-
-=== Week 2: First Analyzer (Rust)
-- [x] Parse Rust source files (`syn` crate)
-- [x] Extract serde types
-- [x] Convert to IR
-- [x] Handle common patterns (Option, Vec, HashMap)
-- [x] Test against real serde examples
-
-**Deliverable:** `protocol-squisher-rust-analyzer` crate ✓ **COMPLETE** (30 tests passing)
-
-=== Week 3: Second Analyzer (Python)
-- [x] Python introspection script for Pydantic
-- [x] Parse introspection output in Rust
-- [x] Convert to IR
-- [x] Handle Python type hints
-- [x] Test against real Pydantic models
-
-**Deliverable:** `protocol-squisher-python-analyzer` crate ✓ **COMPLETE** (29 tests passing)
-
-=== Week 4: Compatibility Engine
-- [x] IR comparison algorithm
-- [x] Type compatibility rules
-- [x] Classification (Concorde/Wheelbarrow/etc.)
-- [x] Loss documentation
-- [x] Performance estimation
-
-**Deliverable:** `protocol-squisher-compat` crate with scoring system ✓ **COMPLETE** (31 tests passing)
-
-== Phase 1: Minimum Viable Demo (Weeks 5-12)
+=== Phase 1: Minimum Viable Demo [COMPLETE]
 
 **Goal:** Python ↔ Rust adapter that always works
 
-=== Weeks 5-6: JSON Fallback
-- [x] JSON serialization for all IR types
-- [x] Rust → JSON → Python path
-- [x] Python → JSON → Rust path
-- [x] Prove transport always succeeds
-- [x] Benchmark overhead
+- [x] JSON fallback (Wheelbarrow class) — guaranteed transport for any format pair (20 tests)
+- [x] PyO3 code generation — automatic Rust-Python binding synthesis (33 tests)
+- [x] Optimization layer — zero-copy detection, Concorde-class adapter generation (34 tests)
+- [x] CLI tool — `analyze-schema`, `check`, `optimize`, `generate`, `synthesize`, `diversity-report`
+- [x] HN launch post + runbook prepared
+- [ ] HN submission (pending)
 
-**Deliverable:** The guaranteed wheelbarrow. Slow but unbreakable. ✓ **COMPLETE** (20 tests passing)
+=== Phase 2: Format Expansion [COMPLETE]
 
-=== Weeks 7-8: PyO3 Codegen
-- [x] Generate PyO3 wrapper code
-- [x] Handle type conversions
-- [x] Error handling
-- [x] Memory management
-- [x] Generated code passes clippy/mypy
+**Goal:** 10+ serialization formats supported
 
-**Deliverable:** `protocol-squisher-pyo3-codegen` crate ✓ **COMPLETE** (33 tests passing)
+- [x] **13 protocol analyzers implemented:**
+  JSON Schema, Protobuf, Bebop, FlatBuffers, MessagePack, Avro,
+  Cap'n Proto, Thrift, ReScript, GraphQL, TOML (+ Rust, Python from Phase 0)
+- [x] Diversity/squishability analysis across protocol families
+- [x] Elixir OTP crawler for GitHub schema discovery
+- [x] Empirical compatibility database with pattern extraction
 
-=== Weeks 9-10: Optimization Layer
-- [x] Detect when zero-copy possible
-- [x] Generate optimized paths
-- [x] Benchmark against JSON fallback
-- [x] Document when optimizations apply
+=== Phase 3: Advanced Features [COMPLETE]
 
-**Deliverable:** Concorde-class adapters for compatible types ✓ **COMPLETE** (34 tests passing)
+**Goal:** Production-grade hardening across security, enterprise, performance, and proofs
 
-=== Weeks 11-12: Polish & Demo
-- [x] CLI tool (`protocol-squisher` binary)
-- [x] End-to-end examples
-- [x] Performance benchmarks
-- [x] Documentation
-- [x] HN launch post draft + runbook
-- [ ] HN submission + day-1 response window
+==== Security Bridge (31 tests)
 
-**Deliverable:** Public demo, first users 🚧 **IN PROGRESS** (CLI, examples, docs, and HN assets complete; external HN posting pending)
+- [x] TLS/Noise/WireGuard protocol family translation
+- [x] `NegotiationResult` with cipher suite/key exchange analysis
+- [x] `SecurityAuditEntry` (JSONL-serializable audit trail)
+- [x] `ProtocolCapabilities` trait for extensible security assessment
+- [x] `validate_security_requirements()`, `downgrade_risk()`, `negotiate()`
+- [x] Certificate expiry validation (`validate_cert_chain_at`)
+- [x] TLS probing stub (`probe_tls_version` — documented API surface for future runtime implementation)
 
-== Phase 2: Format Expansion (Months 4-6)
+==== Enterprise Features (16 tests)
 
-**Goal:** Support 10+ serialization formats
+- [x] `AuditQuery`/`AuditStats` for temporal analysis queries
+- [x] `PolicyViolation`/`PolicyReport` for governance
+- [x] `MigrationRisk`/`RollbackPlan` for version migration
+- [x] Registry `search()`/`list_versions()` backed by VeriSimDB
+- [x] Marketplace `validate_listing()`/`popularity_score()`
 
-=== Priority Targets
+==== Performance (12 tests)
 
-[cols="1,1,1",options="header"]
+- [x] SIMD byte operations: `find_byte()`, `sum_u32()`, `xor_bytes()`
+- [x] `ChunkedProcessor` with `StreamStats` for streaming analysis
+- [x] `HardwareProfile` detection (CPU features, cache topology)
+- [x] `LazySchema` deferred parsing for large schemas
+
+==== Distributed (7 tests)
+
+- [x] `JobQueue` — priority-based work distribution
+- [x] `ProgressTracker` — atomic progress counters
+- [x] `RetryPolicy` with exponential backoff
+- [x] `run_batch_with_retry()` with per-task timing and summary statistics
+- [x] `PartitionRebalancer` for workload balancing across workers
+
+==== ECHIDNA Bridge (complete)
+
+- [x] 30-backend cross-prover integration
+- [x] CLI-integrated (`--echidna` flag)
+- [x] Offline fallback with graceful degradation
+- [x] Proof obligation generation from transport class constraints
+
+==== VeriSimDB Integration (complete)
+
+- [x] Analysis persistence (store/retrieve analysis records)
+- [x] InMemory fallback for offline use
+- [x] `HttpRegistryBackend` backed by VeriSimDB
+- [x] `Feedback-O-Tron` suggestion generation from stored records
+
+==== Formal Proofs (5 systems)
+
+- [x] **Agda** (8 theorems): Concorde Safety, Container Propagation, Wheelbarrow Necessity,
+  Carries Invariant, Optimization Soundness (constructive proofs, no `postulate` except
+  justified JSON serialization axiom)
+- [x] **Coq**: ConcordeSafety, CarriesInvariant
+- [x] **Lean 4**: Concorde Safety cross-validation
+- [x] **Isabelle**: WheelbarrowNecessity
+- [x] **Z3/SMT**: transport exhaustiveness, Concorde constraint verification
+
+==== Integration Pipeline (10 tests)
+
+- [x] `integration.rs` facade wiring ECHIDNA + VeriSimDB into analyze, compile, feedback, synthesize
+- [x] Full pipeline tests: analysis → proof → storage → feedback
+
+==== Verification Sweep (2026-02-28)
+
+- [x] panic-attack suite: assail + assault + abduct + adjudicate → **PASS**
+- [x] cargo audit: 0 vulnerabilities / 275 dependencies
+- [x] cargo fmt, cargo clippy: clean
+- [x] All 921 tests passing, 0 failures
+
+== Phase 4: Library Extraction & PanLL Substrate
+
+**Goal:** Make protocol-squisher usable as a library dependency, not just a CLI tool.
+
+This is the critical prerequisite for PanLL integration. Currently, consumers must know
+the internal crate structure to use anything beyond `ir` and `rust_analyzer`.
+
+=== 4a. SchemaAnalyzer Trait
+
+Define a common trait in `protocol-squisher-ir` (or a new `protocol-squisher-core` crate):
+
+[source,rust]
+----
+pub trait SchemaAnalyzer {
+    fn name(&self) -> &str;
+    fn supported_extensions(&self) -> &[&str];
+    fn analyze_source(&self, source: &str) -> Result<Schema, AnalysisError>;
+    fn analyze_file(&self, path: &Path) -> Result<Schema, AnalysisError>;
+}
+----
+
+All 13 analyzers currently follow the same `new()` + `analyze_source()` pattern but have
+no common trait. Implementing this trait across all 13 enables:
+
+- Dynamic dispatch from PanLL (pass any schema to any analyzer)
+- Plugin discovery (register analyzers at runtime)
+- Uniform error handling
+
+=== 4b. Public Library API
+
+Re-export IR, compat, meta-analysis, and transport class types from the root `src/lib.rs`.
+Currently only `ir` and `rust_analyzer` are publicly re-exported. The full set:
+
+- `protocol_squisher::ir` — Schema, Constraint, Field types
+- `protocol_squisher::compat` — SchemaComparison, TransportClass, bidirectional_compare
+- `protocol_squisher::meta` — MetaAnalysis, SquishabilityReport, pattern detection
+- `protocol_squisher::transport` — TransportClass enum and lattice ordering
+- `protocol_squisher::analyzers` — All 13 analyzers via SchemaAnalyzer trait
+
+=== 4c. Constraint Evaluation API
+
+Add `Constraint::evaluate(&self, value: &serde_json::Value) -> Result<bool, EvalError>`
+for live Pane-L integration:
+
+- Currently constraints are declarative only (`is_preservable()` exists but no `evaluate()`)
+- Pane-L needs to evaluate constraints against actual data values
+- Enables interactive constraint checking in the Protocol Playground
+
+=== 4d. Bidirectional Analysis API
+
+Expose `bidirectional_compare()` from `protocol-squisher-compat` as a first-class
+top-level API:
+
+- Module exists but isn't re-exported from the top-level crate
+- Bidirectional analysis shows asymmetric compatibility (A→B may differ from B→A)
+- Critical for Pane-W visualization of compatibility matrices
+
+=== 4e. protocol-squisher-server Crate
+
+HTTP/JSON API using `axum` for remote and distributed analysis:
+
+[cols="1,2",options="header"]
 |===
-|Format Pair |Impact |Difficulty
+|Endpoint |Purpose
 
-|**Cap'n Proto ↔ Factor**
-|FormDB use case, hard problem
-|High (dynamic ↔ zero-copy)
+|`GET /api/v1/health`
+|Liveness check
 
-|**Protobuf ↔ JSON**
-|Massive existing need
-|Low (well-understood)
+|`GET /api/v1/analyzers`
+|List available analyzers with capabilities
 
-|**Thrift ↔ Avro**
-|Enterprise adoption
-|Medium (both schema-based)
+|`POST /api/v1/analyze`
+|Analyze a schema (body: source + analyzer hint)
 
-|**MessagePack ↔ serde**
-|Rust ecosystem
-|Low (similar models)
+|`POST /api/v1/compare`
+|Compare two schemas (body: pair of schemas)
 
-|**Excel ↔ Protobuf**
-|Business world
-|Medium (type inference)
-
-|**GraphQL ↔ PostgreSQL**
-|Web development
-|Medium (schema translation)
+|`POST /api/v1/squishability`
+|Generate squishability report for a schema set
 |===
 
-=== Continuous Learning System
+This enables:
 
-- [x] Elixir OTP crawler for GitHub schemas
-- [x] Parallel schema parsing
-- [x] Empirical compatibility database
-- [x] Pattern extraction
-- [x] Feed patterns back to synthesis layer
+- PanLL's Tauri backend HTTP proxy pattern (same as VeriSimDB integration)
+- Standalone deployment for CI/CD pipelines
+- Remote analysis for distributed teams
 
-**Deliverable:** Self-improving system (crawler + parser + empirical DB + synthesis-hint feedback loop)
+=== Phase 4 Success Criteria
 
-== Phase 3: Advanced Features (Months 7-12)
+- protocol-squisher usable as a Cargo library dependency with `use protocol_squisher::*`
+- All 13 analyzers accessible through a single trait
+- Constraint evaluation works against live values
+- Server crate passes integration tests with all endpoints
 
-=== Formal Verification
-- [x] Correctness proofs (2 fully verified in Agda: Concorde Safety, Container Propagation)
-- [x] Partial proofs (Wheelbarrow Necessity — 2 postulates; Carries Invariant — 1 hole)
-- [x] Concorde Safety cross-validated in Lean
-- [x] Property-based testing (829 tests passing)
-- [x] miniKanren adapter synthesis (scaffolded)
-- [ ] ECHIDNA neural proof synthesis (disabled — awaiting ECHIDNA availability)
-- [ ] Complete remaining Agda proof holes
-- [x] Coq proofs (ConcordeSafety, CarriesInvariant)
-- [x] Isabelle proofs (WheelbarrowNecessity)
-- [x] Z3/SMT proofs (transport exhaustiveness, Concorde constraints)
+== Phase 5: PanLL ProtocolModule
 
-**Status:** ✅ **COMPLETE** — 5 core theorems proven in Agda, cross-validated in Lean + Coq + Isabelle + Z3
+**Goal:** Protocol analysis visible in PanLL's three panes.
 
-=== Security Protocol Support
-- [x] Security bridge crate with TLS/Noise/WireGuard translation
-- [x] Protocol family translation (TLS → Noise, Noise → TLS requirements)
-- [x] WireGuard tunnel mapping (Noise_IKpsk2)
-- [x] Security property verification (`verify_security_properties`)
-- [x] Error types and protocol family enum
-- [ ] Runtime property verification at deployment edge
-- [ ] Certificate chain validation bridging
+=== 5a. ProtocolModule.res
 
-=== FFI Replacement
-- [x] PyO3 code generation (working)
-- [ ] General FFI function call bridging
-- [ ] Memory ownership semantics (beyond PyO3)
-- [ ] Callback support
+Following the `DatabaseModule.res` pattern exactly:
 
-=== Performance Optimization
-- [x] Zero-copy detection and path generation
-- [x] Lazy deserialization scaffolding
-- [x] Streaming support scaffolding
-- [x] Lane-parallel byte comparison (`count_differences`, `bytes_equal`)
-- [x] FNV-1a content hashing (`fast_hash`)
-- [x] XOR checksum with 16-byte lane reduction
-- [ ] Platform-specific SIMD intrinsics (SSE2/AVX2/NEON)
-- [ ] Hardware acceleration
+[source,rescript]
+----
+type capability =
+  | SchemaAnalysis
+  | CompatibilityCheck
+  | SquishabilityReport
+  | ProofVerification
+  | TransportHistory
 
-**Deliverable:** Production-grade system (in progress)
+type moduleConfig = {
+  id: string,
+  name: string,
+  version: string,
+  description: string,
+  endpoint: string,
+  capabilities: array<capability>,
+  playground: bool,
+  icon: string,
+}
+----
 
-== Phase 4: Ecosystem Growth (Year 2+)
+=== 5b. Three-Pane Mapping
 
-=== Developer Experience
-- [ ] IDE plugins (LSP for adapter previews)
-- [ ] Interactive compatibility explorer
-- [ ] Web playground
-- [ ] Adapter marketplace (local file-based prototype exists)
+[cols="1,3,3",options="header"]
+|===
+|Pane |protocol-squisher Concept |User Sees
 
-=== Enterprise Features
-- [x] Schema registry integration (scaffolded)
-- [x] Version migration tools (scaffolded)
-- [x] Audit logging (scaffolded)
-- [x] Governance policies (scaffolded)
+|**Pane-L** (Symbolic)
+|Constraint system (50+ types), TransportClass lattice
+(Concorde > Business > Economy > Wheelbarrow),
+ECHIDNA proof obligations, bidirectional asymmetries
+|Type rules, formal constraints, proof status badges
 
-=== Research Directions
-- [x] AI-assisted optimization (optimize-ai CLI subcommand)
-- [ ] Novel transformation primitives (cut, splice, reify)
-- [x] Distributed protocol squishing (batch scheduling, partitioning, per-task timing, summary statistics)
-- [ ] Hardware acceleration
+|**Pane-N** (Neural)
+|Meta-analysis patterns (SafeWidening, UnnecessaryOption,
+OverprecisionFloat, etc.), hypothesis testing, optimizer
+suggestions, tactic-to-weight feedback
+|Agent reasoning about protocol quality, OODA-phase annotations
 
-== Success Metrics
+|**Pane-W** (World)
+|SchemaComparison results, SquishabilityReport dashboards,
+transport class heatmaps, VeriSimDB analysis history trends,
+field-level loss paths
+|Visual comparison matrices, rankings, time-series charts
+|===
 
-=== MVP Success (Month 3)
-- [ ] 1,000+ GitHub stars
-- [ ] 10+ external contributors
-- [x] 100+ real-world schemas tested
-- [x] 0 invariant violations found
+=== 5c. Tauri Integration Strategy
 
-=== Inflection Point (Month 12)
-- [ ] 10,000+ GitHub stars
-- [ ] 100+ contributors
-- [ ] 5+ companies using in production
-- [ ] Featured in major tech publications
+Two strategies, both documented for different deployment contexts:
 
-=== End State (Year 3+)
-- [ ] De facto standard for polyglot systems
-- [ ] Taught in university systems courses
-- [ ] Referenced in RFCs and standards
-- [ ] Every major framework has integration
+**Direct crate dependency** (recommended for local):
+
+PanLL's `src-tauri/Cargo.toml` depends on `protocol-squisher` as a library.
+Zero network hop. Both are pure Rust. This is the primary integration path.
+
+**HTTP proxy** (for remote/distributed):
+
+Via `protocol-squisher-server` from Phase 4e. Same pattern as VeriSimDB
+integration (PanLL's `main.rs` proxy commands). Enables:
+
+- Analyzing schemas on remote machines
+- Distributed analysis across clusters
+- Decoupled deployment and versioning
+
+=== 5d. Protocol Playground
+
+Interactive schema analysis within PanLL:
+
+- Live editing with syntax highlighting per analyzer
+- Side-by-side comparison of two schemas
+- Transport class visualization (lattice diagram)
+- Constraint evaluation against sample data
+- ECHIDNA proof obligation display with verification status
+
+=== Phase 5 Success Criteria
+
+- Protocol analysis visible in PanLL's three panes
+- At least `SchemaAnalysis` and `CompatibilityCheck` capabilities functional
+- Protocol Playground loads and can analyze a schema
+
+== Phase 6: Developer Suite Convergence
+
+**Goal:** All five pillars observable from a single PanLL session.
+
+=== 6a. stapeln ContainerModule
+
+Container stack analysis through PanLL's three panes:
+
+- **Pane-L:** Container security constraints (exposed ports, capabilities, secrets policy)
+- **Pane-N:** Validation reasoning (why a stack is safe/unsafe, optimization suggestions)
+- **Pane-W:** Topology visualization (service graph, volume mounts, network topology)
+
+=== 6b. QualityModule
+
+Unify existing quality tools under one module:
+
+- **panic-attacker** — stress testing (assail, assault, amuck, abduct, adjudicate)
+- **hypatia** — CI/CD scanning and neurosymbolic security analysis
+- **echidna** — theorem proving and formal verification
+
+Currently these are hard-coded in PanLL (`src-tauri/src/main.rs` binary path detection).
+QualityModule replaces this with capability-based discovery:
+
+- Register quality tools by capability, not by path
+- Pane-L: proof obligations and security constraints
+- Pane-N: reasoning about test coverage and verification gaps
+- Pane-W: test results, coverage dashboards, proof status matrices
+
+=== 6c. Cross-Pillar Analysis
+
+The five pillars are not isolated. protocol-squisher's IR enables cross-pillar analysis:
+
+- **Container ↔ Protocol:** Analyze container port mappings as protocol boundaries.
+  Which protocols are exposed? Are they compatible with consumers?
+- **Database ↔ Protocol:** VQL schema analysis through the protocol IR.
+  Database query schemas map to the same constraint types.
+- **Language ↔ Protocol:** FFI boundaries are protocol boundaries.
+  Rust ↔ Python type mapping is protocol-squisher's original use case.
+- **Quality ↔ All:** Every pillar generates proof obligations that echidna can verify.
+  Every pillar produces analysis records that VeriSimDB stores and Feedback-O-Tron learns from.
+
+=== Phase 6 Success Criteria
+
+- All five pillars observable from a single PanLL session
+- Cross-pillar analysis produces meaningful results (not just stubs)
+- QualityModule can run panic-attack suite from within PanLL
 
 == Anti-Goals
 
 **Things we explicitly won't do:**
 
-- ❌ Optimize before proving correctness
-- ❌ Support every format before validating approach
-- ❌ Compromise the invariant for performance
-- ❌ Become a full RPC framework (stay focused on data)
-- ❌ Vendor lock-in (always open source, always portable)
+- Don't become an RPC framework (stay focused on data transport analysis)
+- Don't duplicate PanLL's database capabilities (use VeriSimDB for storage)
+- Don't compromise the invariant for performance
+- Don't vendor lock-in (always open source, always portable)
+- Don't force PanLL integration where it doesn't fit
+- Don't over-abstract before the library API has real consumers
+
+== Success Metrics
+
+=== Phase 4 (Library Extraction)
+
+- [ ] protocol-squisher usable as `cargo add protocol-squisher`
+- [ ] All 13 analyzers accessible through `SchemaAnalyzer` trait
+- [ ] `protocol-squisher-server` running with health check
+
+=== Phase 5 (PanLL Integration)
+
+- [ ] Protocol analysis visible in PanLL's three panes
+- [ ] Protocol Playground functional within PanLL
+- [ ] Direct crate dependency working end-to-end
+
+=== Phase 6 (Convergence)
+
+- [ ] Five pillars observable from a single PanLL session
+- [ ] Cross-pillar analysis produces actionable insights
+- [ ] QualityModule replaces hard-coded binary paths
+
+=== External (Ongoing)
+
+- [ ] 1,000+ GitHub stars
+- [ ] 10+ external contributors
+- [ ] First external company adoption
+- [ ] HN launch post submitted
 
 == Open Questions
 
-**Things we need to figure out:**
-
-1. **Naming:** Should generated code reference "squisher"? Or be invisible?
-2. **Ownership:** For FFI, who owns the data after crossing boundary?
-3. **Versioning:** How to handle schema evolution in adapters?
-4. **Caching:** Can we cache generated adapters safely?
-5. **Distribution:** Crate, binary, service, or all three?
+1. **SchemaAnalyzer trait location:** `protocol-squisher-ir` vs new `protocol-squisher-core` crate?
+   (Preference: `protocol-squisher-ir` to avoid crate proliferation)
+2. **Server framework:** `axum` (preferred) vs `actix-web`?
+3. **PanLL integration first step:** Direct crate dependency or HTTP proxy?
+   (Preference: direct crate dependency for local, HTTP proxy for distributed)
+4. **Cross-pillar IR:** Is the current ephapax IR sufficient for container and database
+   analysis, or do we need IR extensions?
 
 == Contributing to the Roadmap
 
 **This roadmap is not set in stone.**
 
-If you see:
-- A missing format pair that would be impactful
-- A hard problem we haven't considered
-- A better ordering of phases
-- A use case we haven't imagined
+If you see a missing format pair, a hard problem we haven't considered, a better ordering
+of phases, or a use case we haven't imagined — open an issue or MR. This is a
+collaborative exploration.
 
-→ Open an issue or MR. This is a collaborative exploration.
+The only fixed points:
 
-== Timeline Caveats
-
-**These are estimates, not commitments.**
-
-Hard problems will surface. The invariant might break (we'll fix it or document impossibility). Real-world use cases will reshape priorities.
-
-**The only fixed points:**
-1. MVP must prove the invariant
-2. Python ↔ Rust comes first (maximum impact)
+1. The invariant must hold (any format pair always has a transport path)
+2. Library extraction comes before PanLL integration
 3. We ship incrementally, not big-bang
-
-Everything else is negotiable based on what we learn.
