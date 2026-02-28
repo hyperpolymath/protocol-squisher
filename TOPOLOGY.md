@@ -20,10 +20,11 @@
                                    │                   │
                                    ▼                   ▼
                         ┌───────────────────────┐  ┌────────────────────────────────┐
-                        │ ANALYZERS (11+)       │  │ SYNTHESIS ENGINE               │
+                        │ ANALYZERS (13)        │  │ SYNTHESIS ENGINE               │
                         │ - Protobuf, Avro      │  │ - Canonical IR                 │
                         │ - Cap'n Proto, Thrift │  │ - Compatibility Analysis       │
                         │ - Bebop, FlatBuffers  │  │ - Transport Class Scoring      │
+                        │ - GraphQL, TOML       │  │ - ECHIDNA Trust Verification   │
                         └──────────┬────────────┘  └──────────┬─────────────────────┘
                                    │                          │
                                    └────────────┬─────────────┘
@@ -40,6 +41,15 @@
                         ┌─────────────────────────────────────────┐
                         │          UNIVERSAL TRANSPORT            │
                         │      (Concorde, Business, Wheelbarrow)  │
+                        └─────────────────────────────────────────┘
+
+                        ┌─────────────────────────────────────────┐
+                        │     EXTERNAL INTEGRATION (Optional)     │
+                        │  ECHIDNA Bridge ──► VeriSimDB Store     │
+                        │       │                    │            │
+                        │       ▼                    ▼            │
+                        │  Cross-Prover       Analysis History    │
+                        │  Verification       + Feedback-o-Tron   │
                         └─────────────────────────────────────────┘
 
                         ┌─────────────────────────────────────────┐
@@ -61,15 +71,20 @@ CORE ENGINE
   Transport Class Scoring           ██████████ 100%    Fidelity/Overhead verified
 
 PROOF & VERIFICATION
-  Formal Proofs (Agda/Lean/Coq/Isa) ██████████ 100%    5 Agda + Coq/Isabelle/Z3 cross-validation
+  Formal Proofs (Agda/Lean/Coq/Isa) ██████████ 100%    8 Agda + Coq/Lean/Isabelle/Z3 cross-validation
   Diversity Analysis                ██████████ 100%    Squishability rankings verified
-  Property-Based Tests              ██████████ 100%    829 tests passing
+  Property-Based Tests              ██████████ 100%    892+ tests passing
 
 ADVANCED FEATURES (Phase 3+)
-  Security Bridge                   ████████░░  80%    Negotiation, audit, downgrade risk, capabilities
-  Enterprise Features               ██████░░░░  60%    Audit queries, governance reports, migration validation
-  Performance (SIMD/streaming)      █████░░░░░  50%    Byte search, chunked streaming, hardware detect, lazy
-  Distributed Squishing             ██████░░░░  60%    Job queue, progress tracking, retry policies, stats
+  Security Bridge                   █████████░  95%    Negotiation, audit, downgrade, cert expiry, TLS probe
+  Enterprise Features               █████████░  95%    Audit, governance, migration, VeriSimDB-backed registry
+  Performance (SIMD/streaming)      ██████████ 100%    Byte search, chunked streaming, hardware detect, lazy
+  Distributed Squishing             █████████░  90%    Job queue, progress, retry, stats, partition rebalancer
+
+EXTERNAL INTEGRATION (Optional)
+  ECHIDNA Bridge                    ██████████ 100%    30-backend cross-prover, CLI-wired, offline fallback
+  VeriSimDB Store                   ██████████ 100%    Analysis persistence, InMemory fallback
+  Feedback-o-Tron                   ████████░░  80%    Suggestion generation from stored analysis records
 
 REPO INFRASTRUCTURE
   Justfile Automation               ██████████ 100%    Standard build/check tasks
@@ -78,7 +93,7 @@ REPO INFRASTRUCTURE
 
 ─────────────────────────────────────────────────────────────────────────────
 OVERALL (Phase 1-2):                ██████████ 100%    Core engine + proofs complete
-OVERALL (Phase 3-4):                ██████░░░░  60%    Hardened scaffolds, approaching production
+OVERALL (Phase 3-4):                █████████░  90%    Hardened + integrated, approaching production
 ```
 
 ## Key Dependencies

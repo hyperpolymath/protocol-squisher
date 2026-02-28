@@ -41,6 +41,8 @@ protocol-squisher-pyo3-codegen = { path = "../protocol-squisher-pyo3-codegen" }
 protocol-squisher-json-fallback = { path = "../protocol-squisher-json-fallback" }
 protocol-squisher-meta-analysis = { path = "../protocol-squisher-meta-analysis" }
 protocol-squisher-transport-primitives = { path = "../../ephapax-ir" }
+protocol-squisher-echidna-bridge = { path = "../protocol-squisher-echidna-bridge" }
+protocol-squisher-verisimdb = { path = "../protocol-squisher-verisimdb" }
 
 serde = { version = "1.0", features = ["derive"] }
 

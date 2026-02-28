@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
 
 use crate::unix_timestamp_utc;
 use anyhow::{Context, Result};
@@ -248,6 +249,151 @@ fn matches_glob(name: &str, segments: &[String]) -> bool {
     true
 }
 
+/// Abstraction over registry storage backends.
+///
+/// `FilesystemBackend` (via `SchemaRegistry`) is the default implementation.
+/// `HttpRegistryBackend` provides a stub for future VeriSimDB-backed registries.
+pub trait RegistryBackend {
+    /// Store a schema in the registry.
+    fn store_schema(
+        &self,
+        name: &str,
+        version: &str,
+        format: &str,
+        schema: IrSchema,
+    ) -> Result<RegistryEntry>;
+
+    /// Fetch a schema by name and version.
+    fn fetch_schema(&self, name: &str, version: &str) -> Result<RegistryEntry>;
+
+    /// List all versions for a schema name.
+    fn list_versions(&self, name: &str) -> Result<Vec<String>>;
+
+    /// List all schemas in the registry.
+    fn list_schemas(&self) -> Result<Vec<RegistryIndexRecord>>;
+}
+
+impl RegistryBackend for SchemaRegistry {
+    fn store_schema(
+        &self,
+        name: &str,
+        version: &str,
+        format: &str,
+        schema: IrSchema,
+    ) -> Result<RegistryEntry> {
+        self.publish(name, version, format, schema)
+    }
+
+    fn fetch_schema(&self, name: &str, version: &str) -> Result<RegistryEntry> {
+        self.fetch(name, version)
+    }
+
+    fn list_versions(&self, name: &str) -> Result<Vec<String>> {
+        SchemaRegistry::list_versions(self, name)
+    }
+
+    fn list_schemas(&self) -> Result<Vec<RegistryIndexRecord>> {
+        self.list(None)
+    }
+}
+
+/// HTTP registry backend backed by VeriSimDB.
+///
+/// Uses VeriSimDB's multi-modal data engine for persistent schema storage.
+/// When VeriSimDB is unreachable, all methods return an `Unavailable` error.
+pub struct HttpRegistryBackend {
+    base_url: String,
+    client: protocol_squisher_verisimdb::VeriSimDBClient,
+}
+
+impl HttpRegistryBackend {
+    /// Create a new HTTP registry backend pointing at `base_url`.
+    pub fn new(base_url: impl Into<String>) -> Self {
+        let url = base_url.into();
+        let client = protocol_squisher_verisimdb::VeriSimDBClient::new(&url);
+        Self {
+            base_url: url,
+            client,
+        }
+    }
+
+    /// Return the base URL.
+    pub fn base_url(&self) -> &str {
+        &self.base_url
+    }
+
+    /// Check whether VeriSimDB is reachable.
+    pub fn is_available(&self) -> bool {
+        self.client.health().unwrap_or(false)
+    }
+}
+
+impl RegistryBackend for HttpRegistryBackend {
+    fn store_schema(
+        &self,
+        name: &str,
+        version: &str,
+        format: &str,
+        schema: IrSchema,
+    ) -> Result<RegistryEntry> {
+        let entry = RegistryEntry {
+            name: name.to_string(),
+            version: version.to_string(),
+            format: format.to_string(),
+            published_at_utc: unix_timestamp_utc(),
+            schema,
+        };
+
+        let value = serde_json::to_value(&entry)
+            .context("Failed to serialize registry entry for VeriSimDB")?;
+
+        self.client
+            .create_entity("schema_registry", &value)
+            .map_err(|e| anyhow::anyhow!("VeriSimDB store failed: {e}"))?;
+
+        Ok(entry)
+    }
+
+    fn fetch_schema(&self, name: &str, version: &str) -> Result<RegistryEntry> {
+        let key = format!("{name}@{version}");
+        let value = self
+            .client
+            .get_entity("schema_registry", &key)
+            .map_err(|e| anyhow::anyhow!("VeriSimDB fetch failed: {e}"))?;
+
+        serde_json::from_value(value).context("Failed to deserialize registry entry from VeriSimDB")
+    }
+
+    fn list_versions(&self, name: &str) -> Result<Vec<String>> {
+        let vql = format!(
+            "SELECT version FROM schema_registry WHERE name = '{}'",
+            name.replace('\'', "''")
+        );
+        let result = self
+            .client
+            .vql_query(&vql)
+            .map_err(|e| anyhow::anyhow!("VeriSimDB list_versions query failed: {e}"))?;
+
+        let records: Vec<RegistryIndexRecord> = serde_json::from_value(result)
+            .unwrap_or_default();
+        let mut versions: Vec<String> = records.into_iter().map(|r| r.version).collect();
+        versions.sort_by(|a, b| compare_versions(a, b));
+        Ok(versions)
+    }
+
+    fn list_schemas(&self) -> Result<Vec<RegistryIndexRecord>> {
+        let vql = "SELECT * FROM schema_registry";
+        let result = self
+            .client
+            .vql_query(vql)
+            .map_err(|e| anyhow::anyhow!("VeriSimDB list_schemas query failed: {e}"))?;
+
+        let records: Vec<RegistryIndexRecord> =
+            serde_json::from_value(result).unwrap_or_default();
+        Ok(records)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -358,5 +504,55 @@ mod tests {
 
         fs::remove_dir_all(root).ok();
         Ok(())
+    }
+
+    #[test]
+    fn filesystem_backend_trait_impl() -> Result<()> {
+        let root = temp_registry_dir();
+        let backend: Box<dyn RegistryBackend> = Box::new(SchemaRegistry::new(&root));
+
+        backend.store_schema("test", "1.0.0", "protobuf", sample_schema("Test"))?;
+        let fetched = backend.fetch_schema("test", "1.0.0")?;
+        assert_eq!(fetched.name, "test");
+        assert_eq!(fetched.version, "1.0.0");
+
+        let versions = backend.list_versions("test")?;
+        assert_eq!(versions, vec!["1.0.0"]);
+
+        let all = backend.list_schemas()?;
+        assert_eq!(all.len(), 1);
+
+        fs::remove_dir_all(root).ok();
+        Ok(())
+    }
+
+    #[test]
+    fn http_backend_unavailable_store() {
+        let backend = HttpRegistryBackend::new("http://127.0.0.1:1");
+        assert_eq!(backend.base_url(), "http://127.0.0.1:1");
+        assert!(!backend.is_available());
+
+        let result = backend.store_schema("x", "1.0.0", "json", sample_schema("X"));
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("VeriSimDB"));
+    }
+
+    #[test]
+    fn http_backend_unavailable_fetch() {
+        let backend = HttpRegistryBackend::new("http://127.0.0.1:1");
+        assert!(backend.fetch_schema("x", "1.0.0").is_err());
+    }
+
+    #[test]
+    fn http_backend_unavailable_list_versions() {
+        let backend = HttpRegistryBackend::new("http://127.0.0.1:1");
+        assert!(backend.list_versions("x").is_err());
+    }
+
+    #[test]
+    fn http_backend_unavailable_list_schemas() {
+        let backend = HttpRegistryBackend::new("http://127.0.0.1:1");
+        assert!(backend.list_schemas().is_err());
     }
 }

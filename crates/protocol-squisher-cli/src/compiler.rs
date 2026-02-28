@@ -11,6 +11,7 @@
 
 use anyhow::{bail, Context, Result};
 use colored::Colorize;
+use protocol_squisher_echidna_bridge::TrustLevel;
 use protocol_squisher_ir::IrSchema;
 use protocol_squisher_transport_primitives::{
     ephapax_backend_mode, ephapax_backend_verified, IRContext, TransportClass,
@@ -137,25 +138,24 @@ impl UniversalCompiler {
 
     /// Analyze transport class using ephapax linear types (CRITICAL)
     ///
-    /// This uses ephapax IR with linear types to prove the transport class
-    /// is correct and cannot crash at runtime.
+    /// Attempts ECHIDNA cross-prover proof of transport class when available.
+    /// Falls back to conservative Business class when ECHIDNA is offline.
     fn analyze_transport_class(
         &self,
-        _schema: &IrSchema,
+        schema: &IrSchema,
         _target: ProtocolFormat,
     ) -> Result<TransportClass> {
-        // Current bridge path: return a conservative class while the full
-        // schema-to-ephapax projection is being integrated.
+        // Attempt ECHIDNA-backed proof of transport class.
+        let mut ctx = crate::integration::IntegrationContext::new();
+        if let Some((proven_class, trust_level)) =
+            ctx.try_prove_transport_class(schema, schema)
+        {
+            if trust_level >= TrustLevel::Level2 {
+                return Ok(proven_class);
+            }
+        }
 
-        // The ephapax IR will analyze:
-        // - Type compatibility (linear types ensure no resource leaks)
-        // - Memory layout alignment
-        // - Lifetime constraints
-        // - Transport overhead
-
-        // This is proven correct by Idris2's totality checker + linear types
-        // when the `verified` backend is available. In `stub` mode this remains
-        // a heuristic fallback until full ephapax bridging is wired in.
+        // Conservative fallback: Business class (safe for most conversions).
         let _ = self.ephapax_ctx.get_fidelity(TransportClass::Business);
         Ok(TransportClass::Business)
     }

@@ -9,6 +9,10 @@
 //! - Per-task error isolation (one failure doesn't abort the batch)
 //! - Summary statistics for batch results
 
+pub mod rebalancer;
+pub mod recovery;
+pub mod resilience;
+
 use protocol_squisher_compat::{compare_schemas, TransportClass};
 use protocol_squisher_ir::IrSchema;
 use rayon::prelude::*;

@@ -19,8 +19,10 @@ use std::path::{Path, PathBuf};
 
 mod analyze;
 mod compiler;
+mod feedback;
 mod formats;
 mod generate;
+mod integration;
 
 #[derive(Parser)]
 #[command(
@@ -420,6 +422,45 @@ enum Commands {
         #[arg(short, long, default_value = "generated")]
         output: PathBuf,
     },
+
+    /// Generate and optionally submit upstream optimization suggestions
+    Feedback {
+        /// Source protocol format (protobuf, avro, thrift, etc.)
+        #[arg(long = "from-format")]
+        from_format: String,
+
+        /// Target protocol format
+        #[arg(long = "to-format")]
+        to_format: String,
+
+        /// Source schema file
+        #[arg(long = "from")]
+        from_path: PathBuf,
+
+        /// Target schema file
+        #[arg(long = "to")]
+        to_path: PathBuf,
+
+        /// Target repository for suggestions (e.g., "org/repo")
+        #[arg(long)]
+        repo: String,
+
+        /// Platform to submit to (github, gitlab, etc.)
+        #[arg(long, default_value = "github")]
+        platform: String,
+
+        /// Minimum confidence threshold (0.0–1.0)
+        #[arg(long, default_value = "0.8")]
+        threshold: f64,
+
+        /// Actually submit suggestions (default: dry-run)
+        #[arg(long)]
+        submit: bool,
+
+        /// Output format (text, json)
+        #[arg(short, long, default_value = "text")]
+        format: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -653,7 +694,86 @@ fn main() -> Result<()> {
             targets,
             output,
         } => cross_compile(input, targets, output),
+
+        Commands::Feedback {
+            from_format: _,
+            to_format: _,
+            from_path: _,
+            to_path: _,
+            repo,
+            platform,
+            threshold,
+            submit,
+            format,
+        } => feedback_command(&repo, &platform, threshold, submit, &format),
     }
+}
+
+/// Generate upstream feedback suggestions (dry-run by default).
+fn feedback_command(
+    repo: &str,
+    platform: &str,
+    threshold: f64,
+    submit: bool,
+    format: &str,
+) -> Result<()> {
+    let config = feedback::FeedbackConfig {
+        binary_path: std::path::PathBuf::from("feedback-a-tron"),
+        confidence_threshold: threshold,
+        dry_run: !submit,
+        platform: platform.to_string(),
+    };
+
+    if submit && !feedback::is_feedback_available(&config) {
+        anyhow::bail!(
+            "feedback-a-tron binary not found. Install it or use --dry-run mode."
+        );
+    }
+
+    // Pull reports from VeriSimDB (or in-memory fallback if unavailable).
+    let ctx = crate::integration::IntegrationContext::new();
+    let reports = ctx.build_squishability_reports();
+    let suggestions = feedback::generate_suggestions(&reports, &config, repo);
+
+    if suggestions.is_empty() {
+        if format == "json" {
+            println!("[]");
+        } else {
+            println!("No suggestions generated (reports empty or below threshold).");
+        }
+        return Ok(());
+    }
+
+    match format {
+        "json" => {
+            let json = serde_json::to_string_pretty(&suggestions)?;
+            println!("{json}");
+        }
+        _ => {
+            for (i, s) in suggestions.iter().enumerate() {
+                println!(
+                    "{}. [{}] {} (confidence: {:.0}%)",
+                    i + 1,
+                    s.source_pattern,
+                    s.title,
+                    s.confidence * 100.0
+                );
+                println!("   Improvement: {}", s.expected_improvement);
+                if config.dry_run {
+                    println!("   (dry-run — not submitted)");
+                }
+                println!();
+            }
+        }
+    }
+
+    if !config.dry_run {
+        let submitted = feedback::submit_batch(&suggestions, &config)
+            .map_err(|e| anyhow::anyhow!(e))?;
+        println!("Submitted {submitted} suggestion(s) to {platform}.");
+    }
+
+    Ok(())
 }
 
 /// Corpus analysis: parse a schema file and emit structured JSON for squisher-corpus ingestion.
@@ -910,6 +1030,27 @@ fn synthesize_command(
     })?;
 
     let plan = synthesize_adapter(&source_schema, &target_schema);
+
+    // ECHIDNA proof annotation and VeriSimDB storage (non-fatal).
+    {
+        let mut ctx = crate::integration::IntegrationContext::new();
+        if let Some((_proven_class, trust_level)) =
+            ctx.try_prove_transport_class(&source_schema, &target_schema)
+        {
+            println!(
+                "  ECHIDNA Trust: {:?} (synthesis verified)",
+                trust_level
+            );
+        }
+        let _ = ctx.store_analysis_record(
+            &source_schema.name,
+            &target_schema.name,
+            &format!("{:?}", plan.overall_class),
+            100.0,
+            0.0,
+            source_format.name(),
+        );
+    }
 
     match format.as_str() {
         "json" => {

@@ -8,6 +8,9 @@
 //! - reject weak key-exchange and unauthenticated combinations
 //! - verify requested security properties before accepting a translation
 
+pub mod cert_chain;
+pub mod runtime_verify;
+
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fmt;
