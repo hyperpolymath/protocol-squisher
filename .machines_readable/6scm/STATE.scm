@@ -54,11 +54,11 @@
 
 (define release-readiness
   '((status . "released")
-    (release-tag . "v1.1.0")
+    (release-tag . "v1.1.1")
     (release-date . "2026-02-28")
     (latest-security-sweep
       (date . "2026-02-28")
-      (cargo-audit . "0 vulnerabilities / 188 dependencies")
+      (cargo-audit . "0 vulnerabilities / 275 dependencies")
       (dependabot-open . 0)
       (secret-scanning-open . 0)
       (code-scanning-open . 0))
@@ -83,20 +83,33 @@
 
 (define critical-next-actions
   '((immediate
-      "Submit HN launch post."
-      "Monitor for v1.0.0 issue reports and bug fixes."
-      "Test ECHIDNA/VeriSimDB integration with live services.")
+      "Phase 4a: Define SchemaAnalyzer trait and implement across 13 analyzers."
+      "Phase 4b: Expose public library API (re-export IR, compat, meta-analysis)."
+      "Submit HN launch post.")
     (this-week
-      "Continue Phase 3 hardening toward production readiness."
-      "Verify Coq/Isabelle/Z3 proofs with actual proof checkers."
-      "Run OptimizationSoundness.agda and ContainerPropagation.v through proof checkers.")
+      "Phase 4c: Constraint evaluation API for Pane-L integration."
+      "Phase 4d: Expose bidirectional_compare as first-class API."
+      "Test ECHIDNA/VeriSimDB integration with live services.")
     (next-milestone
-      "Deploy ECHIDNA and VeriSimDB for live integration testing."
-      "Reach 50+ GitHub stars."
+      "Phase 4e: protocol-squisher-server crate (axum HTTP/JSON API)."
+      "Phase 5a: ProtocolModule.res in PanLL following DatabaseModule pattern."
       "First external contributor.")))
 
 (define session-history
-  '((session-2026-02-28-full-integration-phase3-proofs
+  '((session-2026-02-28-roadmap-panll-integration
+      (date . "2026-02-28")
+      (accomplishments
+        "Synchronized all 16 non-Cargo files to v1.1.0 (versions, test counts)."
+        "Applied cargo fmt across all crates."
+        "Ran full panic-attack security suite: assail + assault + abduct + adjudicate → PASS."
+        "cargo audit: 0 vulnerabilities / 275 dependencies."
+        "Rewrote ROADMAP.adoc with Phases 4-6 (PanLL substrate, ProtocolModule, Five Pillars)."
+        "Identified Quality/Observability as the missing fifth pillar."
+        "Updated STATE.scm critical-next-actions for Phase 4 work."
+        "Updated CHANGELOG.md with v1.1.1 release notes.")
+      (notes
+        "Roadmap now positions protocol-squisher as PanLL's protocol substrate. Five-pillar architecture: Languages, Databases, Protocols, Containers, Quality. Phase 4 (library extraction) is the critical prerequisite for Phase 5 (PanLL ProtocolModule)."))
+    (session-2026-02-28-full-integration-phase3-proofs
       (date . "2026-02-28")
       (accomplishments
         "CLI pipeline integration: created integration.rs facade wiring ECHIDNA bridge + VeriSimDB into analyze, compile, feedback, and synthesize commands."
