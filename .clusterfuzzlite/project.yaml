@@ -1,10 +1,10 @@
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: PMPL-1.0-or-later
 
-homepage: "https://github.com/hyperpolymath/vext"
+homepage: "https://github.com/hyperpolymath/protocol-squisher"
 language: rust
-primary_contact: "jonathan.jewell@open.ac.uk"
+primary_contact: "j.d.a.jewell@open.ac.uk"
 auto_ccs:
-  - "jonathan.jewell@open.ac.uk"
+  - "j.d.a.jewell@open.ac.uk"
 sanitizers:
   - address
   - undefined
