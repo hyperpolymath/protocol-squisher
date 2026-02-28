@@ -1,6 +1,6 @@
-# Protocol Squisher: Universal Protocol Interoperability with Formal Guarantees
+# Show HN: Protocol Squisher – Universal Protocol Interoperability with Formal Guarantees
 
-**TL;DR:** Automatic adapter synthesis between any two serialization formats. If it compiles, it carries. 678 tests, 4 theorems proven in Agda/Lean, Rust↔Python working now.
+**TL;DR:** Automatic adapter synthesis between any two serialization formats. If it compiles, it carries. 721 tests, formal proofs in Agda/Lean, 11 format analyzers, v1.0.0 just released.
 
 ---
 
@@ -77,12 +77,12 @@ We achieve this through:
 
 ## Formal Verification
 
-4 core theorems proven in Agda and cross-validated in Lean:
+Core theorems proven in Agda (Concorde Safety cross-validated in Lean):
 
-1. **Concorde Safety**: Identical types → lossless bijection
-2. **Wheelbarrow Necessity**: Narrowing conversions require fallback
-3. **Container Propagation**: Container class = worst element class
-4. **Optimization Soundness**: Suggested rewrites preserve semantics
+1. **Concorde Safety** (fully verified): Identical types → lossless bijection
+2. **Container Propagation** (fully verified): Container class = worst element class
+3. **Wheelbarrow Necessity** (partial): Narrowing conversions require fallback
+4. **Carries Invariant** (partial): Every schema pair has an adapter
 
 Proofs: https://github.com/hyperpolymath/protocol-squisher/tree/main/proofs
 
@@ -120,15 +120,12 @@ Generated code handles all FFI, type conversions, and includes property tests.
 
 ## Current Status
 
-**MVP Complete (100%)**
-- ✅ 678 tests passing
-- ✅ Rust ↔ Python working (all 4 transport classes)
+**v1.0.0 Released**
+- ✅ 721 tests passing
+- ✅ 11 format analyzers: Rust, Python, Protobuf, Thrift, Avro, MessagePack, FlatBuffers, Cap'n Proto, Bebop, ReScript, JSON Schema
 - ✅ CLI with analysis, optimization suggestions, code generation
-- ✅ Formal proofs in Agda/Lean
+- ✅ Formal proofs in Agda/Lean (2 complete, 2 partial)
 - ✅ Zero-copy benchmarks (~1ns Concorde, ~100-1000ns Wheelbarrow)
-
-**Supported formats:**
-- Rust (serde), Python (Pydantic), Protobuf, Thrift, Avro, MessagePack, FlatBuffers, Cap'n Proto, Bebop, ReScript, JSON Schema
 
 ## Try It
 
@@ -169,9 +166,9 @@ We document losses upfront. No surprises.
 
 We need:
 - Real-world schema examples that break our analysis
-- New format analyzers (Protobuf, Thrift, Avro)
+- Edge cases in formal proofs (help us finish the partial proofs!)
 - Performance optimizations
-- Edge cases in formal proofs
+- New format analyzers (GraphQL, gRPC, Excel, etc.)
 
 Issues: https://github.com/hyperpolymath/protocol-squisher/issues
 
