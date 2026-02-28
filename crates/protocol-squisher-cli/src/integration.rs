@@ -173,7 +173,7 @@ impl IntegrationContext {
             fidelity,
             overhead,
             format: format.to_string(),
-            analyzer_version: "1.0.0".to_string(),
+            analyzer_version: "1.1.0".to_string(),
             proof_certificate_id: None,
             trust_level: None,
             embedding: None,
@@ -206,7 +206,7 @@ impl IntegrationContext {
         // Query all records produced by this analyzer version.
         let records = self
             .store
-            .query_by_provenance("1.0.0")
+            .query_by_provenance("1.1.0")
             .unwrap_or_default();
 
         records_to_reports(&records)
