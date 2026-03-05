@@ -201,3 +201,8 @@ container-backend-verified-real:
 # Stop Podman dev service
 container-down:
     ./scripts/podman-dev.sh down
+
+# [AUTO-GENERATED] Multi-arch / RISC-V target
+build-riscv:
+	@echo "Building for RISC-V..."
+	cross build --target riscv64gc-unknown-linux-gnu
