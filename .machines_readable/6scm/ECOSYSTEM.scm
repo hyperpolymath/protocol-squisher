@@ -6,14 +6,15 @@
 ;; When adding/removing satellites, update this file and the satellite's ECOSYSTEM.scm.
 
 (ecosystem
-  (version . "1.1.0")
+  (version . "1.2.0")
   (name . "protocol-squisher")
-  (type . "library")
-  (purpose . "Universal protocol interoperability through automatic adapter synthesis between incompatible serialization formats")
+  (type . "library + research-tool")
+  (purpose . "Universal data shape reasoning engine — formally reason about data structure across serialization formats, databases, APIs, type systems, and memory layouts, with algebraic guarantees")
 
   (position-in-ecosystem
-   (category . "developer-tools")
-   (layer . "interoperability"))
+   (category . "developer-tools + foundational-research")
+   (layer . "interoperability + data-shape-algebra")
+   (vision . "18-month plan: format converter → universal data shape reasoning engine (VISION-18-MONTHS.md)"))
 
   (related-projects
    ((name . "ephapax")
@@ -36,14 +37,32 @@
     (note . "Formal verification for adapter correctness proofs"))
    ((name . "Idris2")
     (relationship . "verification-language")
-    (note . "Dependently-typed language used for ephapax IR implementation with totality checking")))
+    (note . "Dependently-typed language used for ephapax IR implementation with totality checking"))
+   ;; New related projects (vision direction)
+   ((name . "Cambria")
+    (relationship . "inspiration")
+    (note . "Ink & Switch lens-based system for evolving JSON schemas in local-first software — closest existing system to our vision, but we generalise beyond JSON"))
+   ((name . "Apache Arrow")
+    (relationship . "potential-consumer")
+    (note . "Columnar in-memory format with well-defined type system — Arrow schemas are data shapes, Phase 3 will include an Arrow extractor"))
+   ((name . "buf.build")
+    (relationship . "inspiration")
+    (note . "Protobuf schema management with breaking change detection — does for Protobuf what we aim to do for all data shapes"))
+   ((name . "CUE")
+    (relationship . "inspiration")
+    (note . "Constraint-based configuration language with lattice-based type system — philosophically aligned with our linearity lattice and transport class semilattice"))
+   ((name . "BX community")
+    (relationship . "academic-foundation")
+    (note . "Bidirectional transformations research (symmetric lenses, delta lenses) — theoretical foundation for our morphism algebra"))))
 
   (what-this-is
+   "A universal data shape reasoning engine with algebraic guarantees"
    "A code generator that synthesizes type-safe adapters between serialization formats"
    "A compatibility analyzer that classifies format pairs by transport class (Concorde/Business/Economy/Wheelbarrow)"
    "A formal guarantee system: if it compiles, data will transport (even if lossy)"
    "A JSON fallback mechanism that ensures universal compatibility"
-   "A performance optimizer that generates zero-copy paths when possible")
+   "A performance optimizer that generates zero-copy paths when possible"
+   "(Vision) A category-theoretic foundation for reasoning about data shape across all structural boundaries")
 
   (what-this-is-not
    "Not an RPC framework - focuses on data serialization only"

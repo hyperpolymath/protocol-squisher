@@ -44,6 +44,10 @@ harness = false
 name = "generated_vs_handwritten"
 harness = false
 
+[[bench]]
+name = "analysis_throughput"
+harness = false
+
 [[example]]
 name = "rust_python_interop"
 path = "examples/rust_python_interop.rs"
@@ -94,6 +98,12 @@ members = [
   "crates/protocol-squisher-toml-analyzer",
   "crates/protocol-squisher-echidna-bridge",
   "crates/protocol-squisher-verisimdb",
+  "crates/protocol-squisher-constraints",
+  "crates/protocol-squisher-server",
+  "crates/protocol-squisher-sql-analyzer",
+  "crates/protocol-squisher-openapi-analyzer",
+  "crates/protocol-squisher-arrow-analyzer",
+  "crates/shape-ir",
 ]
 exclude = [
   "tests/pyo3-integration",        # Standalone maturin project for integration tests
@@ -148,3 +158,12 @@ path = "crates/protocol-squisher-graphql-analyzer"
 
 [dependencies.protocol-squisher-toml-analyzer]
 path = "crates/protocol-squisher-toml-analyzer"
+
+[dependencies.protocol-squisher-sql-analyzer]
+path = "crates/protocol-squisher-sql-analyzer"
+
+[dependencies.protocol-squisher-openapi-analyzer]
+path = "crates/protocol-squisher-openapi-analyzer"
+
+[dependencies.protocol-squisher-constraints]
+path = "crates/protocol-squisher-constraints"

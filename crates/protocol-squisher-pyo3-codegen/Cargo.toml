@@ -12,6 +12,11 @@ homepage = "https://github.com/hyperpolymath/protocol-squisher"
 keywords = ["pyo3", "codegen", "bindings", "python", "ffi"]
 categories = ["development-tools", "encoding"]
 rust-version = "1.75"
+# PyO3 compatibility: This crate generates PyO3 binding source code (strings)
+# rather than depending on PyO3 directly. The generated code targets PyO3 0.23+
+# (pyo3::Python, pyo3::PyResult, #[pyclass], #[pymethods] API).
+# Minimum Python version: 3.8+ (PyO3 0.23 requirement).
+# Python 3.13+: Compatible — PyO3 0.23+ supports the stable ABI including 3.13.
 
 [dependencies]
 protocol-squisher-ir = { path = "../protocol-squisher-ir" }

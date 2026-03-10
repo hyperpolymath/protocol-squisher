@@ -23,6 +23,7 @@ mod feedback;
 mod formats;
 mod generate;
 mod integration;
+mod shape;
 
 #[derive(Parser)]
 #[command(
@@ -461,6 +462,129 @@ enum Commands {
         #[arg(short, long, default_value = "text")]
         format: String,
     },
+
+    /// Extract and compare universal data shapes (Vision Phase 1)
+    Shape {
+        /// Subcommand: extract, graph, compare
+        #[command(subcommand)]
+        command: ShapeCommand,
+    },
+}
+
+#[derive(Subcommand)]
+enum ShapeCommand {
+    /// Extract a universal Shape from a schema file
+    Extract {
+        /// Protocol format (protobuf, avro, thrift, rust, python, etc.)
+        #[arg(long = "protocol")]
+        protocol: String,
+
+        /// Input schema file
+        #[arg(short, long)]
+        input: PathBuf,
+
+        /// Output format (text, json)
+        #[arg(short, long, default_value = "text")]
+        format: String,
+    },
+
+    /// Build a shape category graph from multiple schemas and find adapter paths
+    Graph {
+        /// Protocol format for all inputs
+        #[arg(long = "protocol")]
+        protocol: String,
+
+        /// Input schema files (at least 2)
+        #[arg(short, long, num_args = 2..)]
+        inputs: Vec<PathBuf>,
+
+        /// Source type for pathfinding
+        #[arg(long)]
+        from: Option<String>,
+
+        /// Target type for pathfinding
+        #[arg(long)]
+        to: Option<String>,
+
+        /// Output format (text, json)
+        #[arg(short, long, default_value = "text")]
+        format: String,
+    },
+
+    /// Compare two schemas via their Shape IR representations
+    Compare {
+        /// Source protocol format
+        #[arg(long = "from-format")]
+        from_format: String,
+
+        /// Target protocol format
+        #[arg(long = "to-format")]
+        to_format: String,
+
+        /// Source schema file
+        #[arg(long = "from")]
+        from_path: PathBuf,
+
+        /// Target schema file
+        #[arg(long = "to")]
+        to_path: PathBuf,
+
+        /// Output format (text, json)
+        #[arg(short, long, default_value = "text")]
+        format: String,
+    },
+
+    /// Render a shape as a visual ASCII tree (Phase 5)
+    Render {
+        /// Protocol format
+        #[arg(long = "protocol")]
+        protocol: String,
+
+        /// Input schema file
+        #[arg(short, long)]
+        input: PathBuf,
+    },
+
+    /// Export a shape category as a Graphviz DOT graph (Phase 5)
+    Dot {
+        /// Protocol format for all inputs
+        #[arg(long = "protocol")]
+        protocol: String,
+
+        /// Input schema files (at least 2)
+        #[arg(short, long, num_args = 2..)]
+        inputs: Vec<PathBuf>,
+    },
+
+    /// Show schema evolution timeline with semver classification (Phase 5)
+    Timeline {
+        /// Protocol format
+        #[arg(long = "protocol")]
+        protocol: String,
+
+        /// Input schema files in chronological order (version inferred from position)
+        #[arg(short, long, num_args = 1..)]
+        inputs: Vec<PathBuf>,
+
+        /// Schema name
+        #[arg(long, default_value = "schema")]
+        name: String,
+    },
+
+    /// Three-panel PanLL view (L=constraints, N=reasoning, W=output) (Phase 5)
+    Panll {
+        /// Protocol format
+        #[arg(long = "protocol")]
+        protocol: String,
+
+        /// Input schema file(s)
+        #[arg(short, long, num_args = 1..)]
+        inputs: Vec<PathBuf>,
+
+        /// Output format (text, json)
+        #[arg(short, long, default_value = "text")]
+        format: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -706,6 +830,8 @@ fn main() -> Result<()> {
             submit,
             format,
         } => feedback_command(&repo, &platform, threshold, submit, &format),
+
+        Commands::Shape { command } => shape::run(command),
     }
 }
 

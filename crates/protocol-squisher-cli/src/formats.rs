@@ -22,6 +22,11 @@ pub enum ProtocolFormat {
     ReScript,
     Protobuf,
     JsonSchema,
+    GraphQL,
+    Toml,
+    Sql,
+    OpenApi,
+    Arrow,
 }
 
 impl ProtocolFormat {
@@ -39,6 +44,11 @@ impl ProtocolFormat {
             Self::ReScript,
             Self::Protobuf,
             Self::JsonSchema,
+            Self::GraphQL,
+            Self::Toml,
+            Self::Sql,
+            Self::OpenApi,
+            Self::Arrow,
         ]
     }
 
@@ -56,6 +66,11 @@ impl ProtocolFormat {
             Self::ReScript => "rescript",
             Self::Protobuf => "protobuf",
             Self::JsonSchema => "json-schema",
+            Self::GraphQL => "graphql",
+            Self::Toml => "toml",
+            Self::Sql => "sql",
+            Self::OpenApi => "openapi",
+            Self::Arrow => "arrow",
         }
     }
 
@@ -73,6 +88,11 @@ impl ProtocolFormat {
             Self::ReScript => &["res", "resi"],
             Self::Protobuf => &["proto"],
             Self::JsonSchema => &["json"],
+            Self::GraphQL => &["graphql", "gql"],
+            Self::Toml => &["toml"],
+            Self::Sql => &["sql", "ddl"],
+            Self::OpenApi => &["openapi.json", "openapi.yaml"],
+            Self::Arrow => &["arrow.json", "arrow-schema.json"],
         }
     }
 
@@ -91,6 +111,11 @@ impl ProtocolFormat {
             "rescript" | "res" => Ok(Self::ReScript),
             "protobuf" | "proto" | "pb" => Ok(Self::Protobuf),
             "json-schema" | "jsonschema" | "json" => Ok(Self::JsonSchema),
+            "graphql" | "gql" => Ok(Self::GraphQL),
+            "toml" => Ok(Self::Toml),
+            "sql" | "ddl" | "sql-ddl" => Ok(Self::Sql),
+            "openapi" | "swagger" | "oas" => Ok(Self::OpenApi),
+            "arrow" | "arrow-ipc" | "arrow-schema" => Ok(Self::Arrow),
             _ => {
                 // Try to find similar format
                 let similar = Self::find_similar(&s_lower);
@@ -208,6 +233,26 @@ impl ProtocolFormat {
                 let analyzer = protocol_squisher_json_schema_analyzer::JsonSchemaAnalyzer::new();
                 Ok(analyzer.analyze_file(path)?)
             },
+            Self::GraphQL => {
+                let analyzer = protocol_squisher_graphql_analyzer::GraphqlAnalyzer::new();
+                Ok(analyzer.analyze_file(path)?)
+            },
+            Self::Toml => {
+                let analyzer = protocol_squisher_toml_analyzer::TomlAnalyzer::new();
+                Ok(analyzer.analyze_file(path)?)
+            },
+            Self::Sql => {
+                let analyzer = protocol_squisher_sql_analyzer::SqlAnalyzer::new();
+                Ok(analyzer.analyze_file(path)?)
+            },
+            Self::OpenApi => {
+                let analyzer = protocol_squisher_openapi_analyzer::OpenApiAnalyzer::new();
+                Ok(analyzer.analyze_file(path)?)
+            },
+            Self::Arrow => {
+                let analyzer = protocol_squisher_arrow_analyzer::ArrowAnalyzer::new();
+                Ok(analyzer.analyze_file(path)?)
+            },
         }
     }
 
@@ -257,6 +302,26 @@ impl ProtocolFormat {
             },
             Self::JsonSchema => {
                 let analyzer = protocol_squisher_json_schema_analyzer::JsonSchemaAnalyzer::new();
+                Ok(analyzer.analyze_str(content, name)?)
+            },
+            Self::GraphQL => {
+                let analyzer = protocol_squisher_graphql_analyzer::GraphqlAnalyzer::new();
+                Ok(analyzer.analyze_str(content, name)?)
+            },
+            Self::Toml => {
+                let analyzer = protocol_squisher_toml_analyzer::TomlAnalyzer::new();
+                Ok(analyzer.analyze_str(content, name)?)
+            },
+            Self::Sql => {
+                let analyzer = protocol_squisher_sql_analyzer::SqlAnalyzer::new();
+                Ok(analyzer.analyze_str(content, name)?)
+            },
+            Self::OpenApi => {
+                let analyzer = protocol_squisher_openapi_analyzer::OpenApiAnalyzer::new();
+                Ok(analyzer.analyze_str(content, name)?)
+            },
+            Self::Arrow => {
+                let analyzer = protocol_squisher_arrow_analyzer::ArrowAnalyzer::new();
                 Ok(analyzer.analyze_str(content, name)?)
             },
         }

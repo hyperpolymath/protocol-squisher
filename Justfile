@@ -80,6 +80,15 @@ fmt:
     cargo fmt --all
     @echo "Note: ephapax formatting not yet available"
 
+# Run all benchmarks
+bench:
+    @echo "Running benchmarks..."
+    cargo bench --workspace
+
+# Run analysis throughput benchmarks only
+bench-analysis:
+    cargo bench --bench analysis_throughput
+
 # Run all quality checks
 quality: fmt lint test
 
@@ -201,6 +210,85 @@ container-backend-verified-real:
 # Stop Podman dev service
 container-down:
     ./scripts/podman-dev.sh down
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# FFI (ZIG)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Build the Zig FFI shared/static libraries (ffi/zig/)
+#
+# The Zig FFI provides a C-compatible ABI boundary for protocol-squisher,
+# exposing handle-based init/free, compatibility analysis, adapter generation,
+# buffer management, and callback registration. Types match the Idris2 ABI
+# definitions in src/abi/.
+#
+# Produces:
+#   zig-out/lib/libprotocol_squisher_ffi.so  (shared)
+#   zig-out/lib/libprotocol_squisher_ffi.a   (static)
+build-ffi:
+    @echo "Building Zig FFI..."
+    @if command -v zig >/dev/null 2>&1; then \
+        cd ffi/zig && zig build; \
+        echo "Zig FFI built successfully"; \
+    else \
+        echo "zig not found in PATH — skipping FFI build"; \
+        echo "Install: https://ziglang.org/download/"; \
+    fi
+
+# Run Zig FFI unit + integration tests
+test-ffi:
+    @echo "Testing Zig FFI..."
+    @if command -v zig >/dev/null 2>&1; then \
+        cd ffi/zig && zig build test; \
+        echo "Zig FFI tests passed"; \
+    else \
+        echo "zig not found in PATH — skipping FFI tests"; \
+    fi
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SHAPE IR (Phase 1 — universal data shape reasoning)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Build the shape-ir crate
+build-shape:
+    cargo build -p shape-ir
+
+# Run shape-ir tests (84 tests: 79 unit + 5 doc)
+test-shape:
+    cargo test -p shape-ir
+
+# Run clippy on shape-ir with denied warnings
+check-shape:
+    cargo clippy -p shape-ir -- -D warnings
+
+# Run shape-ir benchmarks
+bench-shape:
+    cargo bench -p shape-ir
+
+# Full vision pipeline check (currently Phase 1 only)
+vision-check:
+    @echo "=== Shape IR ==="
+    cargo test -p shape-ir --quiet
+    @echo "=== Shape IR: all tests passing ==="
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# INVARIANTS (must always hold)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Check algebraic invariants that must never be violated
+invariants:
+    @echo "Checking invariants..."
+    @echo "  Transport class algebra: Concorde is identity"
+    cargo test -p shape-ir -- transport_class --quiet
+    @echo "  Linearity lattice: meet is commutative"
+    cargo test -p shape-ir -- linearity --quiet
+    @echo "  Self-comparison is always Concorde"
+    cargo test -p shape-ir -- self_comparison_is_concorde --quiet
+    @echo "All invariants hold."
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MULTI-ARCH
+# ═══════════════════════════════════════════════════════════════════════════════
 
 # [AUTO-GENERATED] Multi-arch / RISC-V target
 build-riscv:

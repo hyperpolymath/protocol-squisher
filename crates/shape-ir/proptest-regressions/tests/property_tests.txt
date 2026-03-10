@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 41c07d94766a7234d1be1b6a2c87df398917c92098f4209b69815777920f0918 # shrinks to schema = IrSchema { name: "test", version: "0.1.0", source_format: "test-format", types: {"T": Struct(StructDef { name: "T", fields: [FieldDef { name: "r", ty: Primitive(Bool), optional: false, constraints: [], metadata: FieldMetadata { doc: None, default: None, aliases: [], flatten: false, skip: false, serde_hints: {} } }, FieldDef { name: "r", ty: Primitive(Bool), optional: true, constraints: [], metadata: FieldMetadata { doc: None, default: None, aliases: [], flatten: false, skip: false, serde_hints: {} } }], metadata: TypeMetadata { doc: None, deprecated: None, serde_hints: {}, extra: {} } })}, roots: ["T"], metadata: SchemaMetadata { description: None, docs_url: None, source_path: None, extra: {} } }

@@ -30,6 +30,11 @@ protocol-squisher-capnproto-analyzer = { path = "../protocol-squisher-capnproto-
 protocol-squisher-rescript-analyzer = { path = "../protocol-squisher-rescript-analyzer" }
 protocol-squisher-protobuf-analyzer = { path = "../protocol-squisher-protobuf-analyzer" }
 protocol-squisher-json-schema-analyzer = { path = "../protocol-squisher-json-schema-analyzer" }
+protocol-squisher-graphql-analyzer = { path = "../protocol-squisher-graphql-analyzer" }
+protocol-squisher-toml-analyzer = { path = "../protocol-squisher-toml-analyzer" }
+protocol-squisher-sql-analyzer = { path = "../protocol-squisher-sql-analyzer" }
+protocol-squisher-openapi-analyzer = { path = "../protocol-squisher-openapi-analyzer" }
+protocol-squisher-arrow-analyzer = { path = "../protocol-squisher-arrow-analyzer" }
 protocol-squisher-compat = { path = "../protocol-squisher-compat" }
 protocol-squisher-optimizer = { path = "../protocol-squisher-optimizer" }
 protocol-squisher-minikanren = { path = "../protocol-squisher-minikanren" }
@@ -43,6 +48,7 @@ protocol-squisher-meta-analysis = { path = "../protocol-squisher-meta-analysis" 
 protocol-squisher-transport-primitives = { path = "../../ephapax-ir" }
 protocol-squisher-echidna-bridge = { path = "../protocol-squisher-echidna-bridge" }
 protocol-squisher-verisimdb = { path = "../protocol-squisher-verisimdb" }
+shape-ir = { path = "../shape-ir" }
 
 serde = { version = "1.0", features = ["derive"] }
 

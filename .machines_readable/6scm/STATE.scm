@@ -15,14 +15,15 @@
   '((version . "1.2.0")
     (schema-version . "1.1")
     (created . "2026-01-04")
-    (updated . "2026-02-28")
+    (updated . "2026-03-10f")
     (project . "protocol-squisher")
     (repo . "hyperpolymath/protocol-squisher")
     (branch . "main")))
 
 (define project-context
   '((name . "protocol-squisher")
-    (tagline . "Universal protocol interoperability through automatic adapter synthesis")
+    (tagline . "Universal data shape reasoning engine — from format converter to algebraic foundation")
+    (direction . "18-month vision: universal data shape reasoning engine (see VISION-18-MONTHS.md)")
     (tech-stack
       . ("Rust" "Idris2" "ephapax" "Zig" "PyO3" "serde" "proptest" "criterion" "Podman"))
     (policy
@@ -31,15 +32,27 @@
       (fallback-path . "JSON wheelbarrow"))))
 
 (define current-position
-  '((phase . "v1-released")
+  '((phase . "vision-phase-1")
     (overall-completion . 95)
     (crate-version . "1.1.0")
-    (test-count . 937)
+    (test-count . 1378)  ;; sealed P1-5 — Phase 5 visual language (70 new tests, 12 seam tests)
+    (vision
+      (direction . "universal data shape reasoning engine")
+      (vision-document . "VISION-18-MONTHS.md")
+      (phase-1-status . "sealed — 11 constructors, comparison engine, extraction, metrics, benchmarks, CLI, property tests, compose tests (16), extract edge cases (Result/Set/Tuple)")
+      (phase-2-status . "sealed — ShapeCategory (category laws, Dijkstra pathfinding, monoidal structure), 35 category unit tests + property tests, compose_arrows tested")
+      (phase-3-status . "sealed — 3 domain extractors: SQL DDL (29), OpenAPI/Swagger (33), Arrow IPC (29). 22 cross-domain tests, 7-format category test, 15+ pairwise combos proven")
+      (phase-4-status . "complete — temporal algebra: SchemaTimeline, VersionedShape, EvolutionStep, SemverClassification, forecast_compatibility, plan_evolution, next_version. 28 tests + 1 doc-test")
+      (phase-5-status . "complete — render.rs (ASCII tree, DOT graph, timeline, morphism table, evolution strategy), panll.rs (PanLL L/N/W three-panel model), CLI (shape render/dot/timeline/panll). 29 render tests + 20 panll tests + 9 doc-tests")
+      (phase-6-status . "not-started"))
     (components
-      ((core-ir . "working")
+      ;; New direction — universal data shape
+      ((shape-ir . "working — 165 tests (124 unit + 36 property + 5 doc), all 11 constructors, comparison engine, shape extractors, CLI integration, morphism metrics, ShapeCategory (category laws, Dijkstra pathfinding, symmetric monoidal structure), benchmarks")
+       ;; Existing foundation (Phases 1-3 still valid)
+       (core-ir . "working — foundation for shape extractors")
        (compat-engine . "working")
        (cli . "working")
-       (format-analyzers . "working — 13 analyzers (added GraphQL, TOML)")
+       (format-analyzers . "working — 17 analyzers (13 serialization + SQL DDL + OpenAPI + Arrow IPC + TOML domain extractors)")
        (json-fallback . "working")
        (optimizer . "working")
        (proofs . "complete — 5 Agda theorems + cross-validated in Coq, Isabelle, Z3")
@@ -83,20 +96,75 @@
 
 (define critical-next-actions
   '((immediate
-      "Phase 4a: Define SchemaAnalyzer trait and implement across 13 analyzers."
-      "Phase 4b: Expose public library API (re-export IR, compat, meta-analysis)."
-      "Submit HN launch post.")
+      "Vision Phase 6: Write academic paper on universal data shape reasoning."
+      "Publish shape-ir crate to crates.io."
+      "Production testing of Phase 3+ features (security-bridge, enterprise, distributed).")
     (this-week
-      "Phase 4c: Constraint evaluation API for Pane-L integration."
-      "Phase 4d: Expose bidirectional_compare as first-class API."
-      "Test ECHIDNA/VeriSimDB integration with live services.")
+      "PanLL ReScript module: consume PanllFrame JSON in TEA three-panel UI."
+      "Formal Idris2 verification of category laws (dependent type proofs)."
+      "Functor/natural transformation abstractions for ShapeCategory.")
     (next-milestone
-      "Phase 4e: protocol-squisher-server crate (axum HTTP/JSON API)."
-      "Phase 5a: ProtocolModule.res in PanLL following DatabaseModule pattern."
-      "First external contributor.")))
+      "Vision Phase 6 complete: Paper submitted + crates published."
+      "VeriSimDB-backed enterprise registry (live, not stub)."
+      "TUI (ratatui) visual explorer for shapes/categories.")))
 
 (define session-history
-  '((session-2026-02-28-phase4ab-library-extraction
+  '((session-2026-03-10d-vision-phase3-domain-extractors
+      (date . "2026-03-10")
+      (accomplishments
+        "Phase 3 domain extractor 1: SQL DDL analyzer (protocol-squisher-sql-analyzer) — 29 tests."
+        "Hand-written SQL DDL parser: CREATE TABLE, column types, NOT NULL, PRIMARY KEY, FOREIGN KEY, dialect detection (PostgreSQL/MySQL/SQLite), quoted identifiers, comments."
+        "SQL → IR converter: 40+ SQL type mappings (INTEGER→I32, BIGSERIAL→I64, TIMESTAMPTZ→DateTime, UUID→Uuid, JSONB→Json, etc.), nullable→Optional, PK always non-optional."
+        "Phase 3 domain extractor 2: OpenAPI/Swagger analyzer (protocol-squisher-openapi-analyzer) — 33 tests."
+        "OpenAPI parser: JSON+YAML input, OAS 3.0/3.1 and Swagger 2.0, object/enum/array/map/allOf/oneOf/anyOf schemas, format hints (date-time→DateTime, uuid→Uuid), $ref resolution."
+        "OpenAPI → IR converter: objects→Struct, enums→Enum, oneOf→Union, arrays→Alias(Vec), maps→Alias(Map), format hints override base type, required/optional property mapping."
+        "Both analyzers wired into CLI: ProtocolFormat enum, analyze_file/analyze_str dispatch, formats now 16 total."
+        "Critical cross-domain comparison tests: SQL↔manual shape Concorde (isomorphic), OpenAPI↔SQL Concorde (isomorphic)."
+        "Fixed SQL parser bugs: 'key' column name matching 'KEY' keyword exclusion, double-quoted identifiers splitting on embedded spaces."
+        "Test count: 1175 → 1208 (29 SQL + 33 OpenAPI - 29 already counted). All clippy-clean, 0 failures.")
+      (notes
+        "Phase 3 is proving the vision: database schemas, API contracts, and serialization formats are now all 'data shapes' that can be compared across domains. The cross-domain comparison tests are the killer feature — proving that a SQL table and an OpenAPI object with the same fields are isomorphic (Concorde transport class)."))
+    (session-2026-03-10c-vision-phase2-category
+      (date . "2026-03-10")
+      (accomplishments
+        "Phase 2 core: ShapeCategory (~450 lines) with objects, arrows, identity, composition, Dijkstra minimax pathfinding, compare_all, lossless_reachable, roundtrip_class, isomorphic_pairs."
+        "Symmetric monoidal structure: add_product (tensor with Unit as unit object), add_coproduct (sum / disjoint union), with projection/embedding and injection/case-analysis arrows."
+        "32 category unit tests: construction, identity laws (left/right), associativity, pathfinding (5 scenarios), compose_path, compare_all, lossless reachability, outgoing/incoming, display, struct evolution, roundtrip (3 scenarios), isomorphic pairs, product/tensor (3), coproduct (2)."
+        "9 category property tests: pathfinding self/direct/composed-class, compare_all arrow count, isomorphic pair symmetry, lossless reachable correctness, transport class total order."
+        "CLI `shape graph` subcommand: builds category from multiple inputs, compare_all, pathfinding with composed transport class, isomorphic pairs, lossless reachability — text and JSON output."
+        "MorphismMetrics wired into CLI compare output (direction label, identity%, reversibility%, net bits)."
+        "5 criterion benchmark groups including category benchmarks (find_path, compose_path, lossless_reachable, compare_all, find_path_8_nodes)."
+        "Test count: 158 → 165 shape-ir (total workspace 1102+). All clippy-clean.")
+      (notes
+        "Phase 2 core complete. ShapeCategory implements full category laws with Dijkstra adapter discovery. Monoidal structure provides tensor product and coproduct. CLI integration enables interactive category exploration. Next: formal Idris2 verification, functor abstractions, then Phase 3 domain extractors."))
+    (session-2026-03-10b-vision-phase1-expansion
+      (date . "2026-03-10")
+      (accomplishments
+        "Expanded comparison engine: Dependent pair comparison (binder+body), Recursive type comparison with alpha-equivalence, Ref alpha-renaming through environment threading."
+        "Built shape extractor bridge (extract.rs ~400 lines): Canonical IR → Shape IR, mapping all IrType variants including self-referential types to Recursive and Any/Json to recursive 6-variant JSON shape."
+        "Wired shape-ir into CLI: `protocol-squisher shape extract` and `shape compare` subcommands with text/JSON output."
+        "Proved algebraic laws via 12 property tests: transport class semilattice (associative, commutative, idempotent, identity, absorbing), product/sum canonical forms, morphism composition associativity, information content additivity."
+        "Defined MorphismMetrics: classify_morphism() computing transport_class, identity/loss/padding ratios, net_bits, pure_embedding/projection detection, reversibility score."
+        "Test count increased 84 → 116 (32 new: 12 compare, 5 information metrics, 12 property, 8 extraction, minus 5 doc overlap)."
+        "All clippy-clean, all tests passing.")
+      (notes
+        "All STATE.scm immediate actions completed. Phase 1 core engine now has full constructor coverage, cross-format extraction, CLI integration, and algebraic law proofs. Ready for Phase 1 polish (benchmarks, docs) then Phase 2 category theory."))
+    (session-2026-03-10-vision-phase1-infrastructure
+      (date . "2026-03-10")
+      (accomplishments
+        "Major direction change: from format converter to universal data shape reasoning engine."
+        "Created shape-ir crate with 84 tests (79 unit + 5 doc): Shape enum, TransportClass, Linearity, InformationContent, comparison engine."
+        "Wrote VISION-18-MONTHS.md: 6-phase, 18-month plan (Shape IR → Algebra → Eat the World → Temporal → Visual → Paper)."
+        "Updated Justfile: build-shape, test-shape, check-shape, bench-shape, vision-check, invariants recipes."
+        "Updated STATE.scm: new direction, vision tracking, shape-ir component, updated next actions."
+        "Updated ECOSYSTEM.scm: added Cambria, Apache Arrow, buf.build, CUE, BX community as related projects."
+        "Updated TOPOLOGY.md: added shape-ir architecture diagram and vision dashboard section."
+        "Created INTENT.md: intellectual lineage (Cambria, Spivak, BX, optics, information theory)."
+        "Created LEARNING.md: living document for insights during 18-month development."
+        "Updated Trustfile with vision commitment, shape-ir invariants, and phase quality gates.")
+      (notes
+        "The 13 existing analyzers remain valid as foundation — they become domain-specific Shape extractors in Phase 3. Test count: 937 existing + 84 shape-ir = 1021 total."))
+    (session-2026-02-28-phase4ab-library-extraction
       (date . "2026-02-28")
       (accomplishments
         "Phase 4a: Defined SchemaAnalyzer trait in protocol-squisher-ir, implemented across all 13 analyzers."

@@ -8,6 +8,9 @@ authors = ["Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"]
 license = "PMPL-1.0-or-later"
 description = "Primitive type transport class analysis for protocol-squisher"
 repository = "https://github.com/hyperpolymath/protocol-squisher"
+# ephapax IR version: 1.1.0 — four transport classes (Concorde, Business, Economy,
+# Wheelbarrow), linear type safety, Idris2 backend with Zig C-ABI bridge.
+# See ephapax-ir/src/lib.rs for EPHAPAX_BACKEND_MODE (verified vs stub).
 
 [dependencies]
 anyhow = "1.0"

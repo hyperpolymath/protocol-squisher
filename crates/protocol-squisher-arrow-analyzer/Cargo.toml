@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+
+[package]
+name = "protocol-squisher-arrow-analyzer"
+version = "1.1.0"
+edition = "2021"
+authors = ["Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"]
+license = "PMPL-1.0-or-later"
+description = "Apache Arrow schema analyzer for Protocol Squisher — columnar memory layouts as data shapes"
+repository = "https://github.com/hyperpolymath/protocol-squisher"
+homepage = "https://github.com/hyperpolymath/protocol-squisher"
+keywords = ["arrow", "columnar", "schema", "memory-layout", "interop"]
+categories = ["development-tools", "data-structures", "parser-implementations"]
+
+[dependencies]
+protocol-squisher-ir = { path = "../protocol-squisher-ir" }
+arrow-schema = { version = "58.0", features = ["serde"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0"
+
+[dev-dependencies]
+shape-ir = { path = "../shape-ir" }

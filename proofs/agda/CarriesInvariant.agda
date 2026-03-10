@@ -78,7 +78,40 @@ wheelbarrow-uses-json : ∀ {s t : PrimitiveType} →
 wheelbarrow-uses-json prf = JsonFallback
 
 -- THEOREM 6: JSON fallback always succeeds (serialization always possible)
--- Postulate: JSON can serialize any value
+--
+-- POSTULATE AUDIT (2026-03-10, Jonathan D.A. Jewell):
+--
+-- These three postulates assert that JSON serialization/deserialization
+-- exists for all types. This is an INTENTIONAL runtime axiom, justified
+-- because:
+--
+--   1. json-serialize: Every protocol-squisher IR type is a finite
+--      algebraic data type (primitives, structs, arrays, optionals).
+--      JSON can represent all of these — this is a property of the
+--      serde_json implementation, not something provable in Agda's
+--      type theory without modelling the full JSON spec.
+--
+--   2. json-deserialize: Deserialization is partial (returns Maybe B),
+--      correctly modelling that JSON parsing can fail for malformed
+--      input or type mismatches. This is honest about the gap.
+--
+--   3. json-roundtrip: Asserts that serialization produces *some*
+--      JSON output (not that deserialization recovers the original).
+--      This is a weak claim — it says "serialization doesn't crash",
+--      not "roundtrip is lossless". The Wheelbarrow transport class
+--      already documents that data loss may occur.
+--
+-- The postulate does NOT hide a real proof gap: the invariant
+-- ("If It Compiles, It Carries") only requires that *some* conversion
+-- path exists, not that it's lossless. The JSON fallback always exists
+-- at runtime via serde_json, making this a reasonable axiom about the
+-- runtime environment rather than a logical hole.
+--
+-- NOTE: The Set-level encoding (json-serialize returns Set, not a
+-- concrete ByteString type) is a simplification. A fully faithful
+-- model would use a concrete JSON AST type, but that would require
+-- importing or defining the full JSON grammar in Agda, which is
+-- orthogonal to the transport-class proof.
 
 postulate
   json-serialize : ∀ {A : Set} → A → Set  -- JSON string

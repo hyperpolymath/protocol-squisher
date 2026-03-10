@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+
+[package]
+name = "protocol-squisher-server"
+version = "1.1.0"
+edition = "2021"
+authors = ["Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"]
+license = "PMPL-1.0-or-later"
+description = "HTTP/JSON server for protocol-squisher analysis, comparison, and constraint evaluation"
+repository = "https://github.com/hyperpolymath/protocol-squisher"
+homepage = "https://github.com/hyperpolymath/protocol-squisher"
+keywords = ["server", "http", "analysis", "protocol", "interop"]
+categories = ["development-tools", "web-programming::http-server"]
+rust-version = "1.75"
+
+[dependencies]
+protocol-squisher-ir = { path = "../protocol-squisher-ir" }
+protocol-squisher-compat = { path = "../protocol-squisher-compat" }
+protocol-squisher-constraints = { path = "../protocol-squisher-constraints" }
+axum = "0.8"
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors"] }
+
+[dev-dependencies]

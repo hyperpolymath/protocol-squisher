@@ -59,6 +59,14 @@ pub mod optimizer {
     pub use protocol_squisher_optimizer::*;
 }
 
+pub mod constraints {
+    //! Constraint evaluation engine for Pane-L integration.
+    //!
+    //! Schema-level constraints (type compatibility, field presence, version
+    //! range, cardinality, nullability) and value-level constraint evaluation.
+    pub use protocol_squisher_constraints::*;
+}
+
 pub mod json_fallback {
     //! JSON fallback — guaranteed Wheelbarrow-class transport for any pair.
     pub use protocol_squisher_json_fallback::*;
@@ -136,10 +144,45 @@ pub mod toml_analyzer {
     pub use protocol_squisher_toml_analyzer::*;
 }
 
+// ─── First-Class APIs ───────────────────────────────────────────────────────
+
+/// Perform a bidirectional compatibility comparison between two schemas.
+///
+/// Returns a [`compat::BidirectionalResult`] showing forward (A->B) and
+/// reverse (B->A) transport classes, round-trip fidelity, and per-type
+/// asymmetries. This is the primary entry point for Pane-W visualization.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use protocol_squisher::{bidirectional_compare, ir::IrSchema};
+///
+/// let report = protocol_squisher::bidirectional_compare(&schema_a, &schema_b);
+/// println!("Forward: {}", report.forward_class);
+/// println!("Reverse: {}", report.reverse_class);
+/// println!("Symmetric: {}", report.is_symmetric);
+/// ```
+pub fn bidirectional_compare(a: &ir::IrSchema, b: &ir::IrSchema) -> compat::BidirectionalResult {
+    compat::bidirectional_compare(a, b)
+}
+
+/// Evaluate a set of schema constraints against a schema.
+///
+/// Returns a [`constraints::ConstraintReport`] with per-constraint pass/fail
+/// and an overall verdict. Primary entry point for Pane-L constraint checking.
+pub fn evaluate_constraints(
+    schema: &ir::IrSchema,
+    constraint_set: &constraints::ConstraintSet,
+) -> constraints::ConstraintReport {
+    constraints::evaluate(schema, constraint_set)
+}
+
 // ─── Prelude ─────────────────────────────────────────────────────────────────
 
 /// Convenience re-exports for common usage.
 pub mod prelude {
+    pub use crate::compat::{BidirectionalResult, TransportClass};
+    pub use crate::constraints::{ConstraintReport, ConstraintSet, SchemaConstraint};
     pub use crate::ir::{IrSchema, SchemaAnalyzer};
 }
 

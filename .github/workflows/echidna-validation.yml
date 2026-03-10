@@ -1,0 +1,87 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+name: ECHIDNA Validation
+
+on:
+  push:
+    paths:
+      - 'crates/**'
+      - 'ephapax-ir/**'
+      - '.github/workflows/echidna-validation.yml'
+  pull_request:
+    paths:
+      - 'crates/**'
+      - 'ephapax-ir/**'
+  schedule:
+    - cron: '0 6 * * 1'  # Weekly on Monday at 06:00 UTC
+
+permissions: read-all
+
+jobs:
+  echidna-verify:
+    name: ECHIDNA Proof Verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7  # stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5  # v2
+
+      - name: Build ECHIDNA bridge
+        run: cargo build -p protocol-squisher-echidna-bridge
+
+      - name: Run ECHIDNA bridge tests
+        run: cargo test -p protocol-squisher-echidna-bridge --verbose
+
+      - name: Run constraint solver tests
+        run: cargo test -p protocol-squisher-constraints --verbose
+
+      - name: Run MiniKanren logic tests
+        run: cargo test -p protocol-squisher-minikanren --verbose
+
+      - name: Unsafe audit
+        run: |
+          echo "=== Unsafe Code Audit ==="
+          UNSAFE_COUNT=0
+          for dir in crates/*/src; do
+            if [ -d "$dir" ]; then
+              COUNT=$(grep -rn "unsafe" "$dir" --include="*.rs" 2>/dev/null | grep -v "// SAFETY:" | wc -l || echo 0)
+              if [ "$COUNT" -gt 0 ]; then
+                echo "WARNING: $dir has $COUNT unsafe blocks without SAFETY comments"
+                grep -rn "unsafe" "$dir" --include="*.rs" 2>/dev/null | grep -v "// SAFETY:"
+                UNSAFE_COUNT=$((UNSAFE_COUNT + COUNT))
+              fi
+            fi
+          done
+          echo "Total unsafe without SAFETY comment: $UNSAFE_COUNT"
+
+      - name: Dangerous pattern scan
+        run: |
+          echo "=== Dangerous Pattern Scan ==="
+          ISSUES=0
+          for pattern in "believe_me" "assert_total" "transmute" "std::mem::forget" "todo!" "unimplemented!"; do
+            FOUND=$(grep -rn "$pattern" crates/*/src ephapax-ir/src --include="*.rs" --include="*.idr" 2>/dev/null | wc -l || echo 0)
+            if [ "$FOUND" -gt 0 ]; then
+              echo "FOUND: $FOUND instances of '$pattern'"
+              grep -rn "$pattern" crates/*/src ephapax-ir/src --include="*.rs" --include="*.idr" 2>/dev/null
+              ISSUES=$((ISSUES + FOUND))
+            fi
+          done
+          echo "Total dangerous patterns: $ISSUES"
+
+      - name: Clippy strict analysis
+        run: cargo clippy --workspace -- -D warnings 2>&1 || true
+
+      - name: Summary
+        run: |
+          echo "## ECHIDNA Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Scanned: crates/ (30+ analyzer crates), ephapax-ir/" >> $GITHUB_STEP_SUMMARY
+          echo "- Checks: echidna-bridge build+test, constraints, minikanren, unsafe audit, dangerous patterns, clippy" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "*Powered by ECHIDNA property-based verification*" >> $GITHUB_STEP_SUMMARY

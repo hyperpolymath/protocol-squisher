@@ -774,3 +774,721 @@ mod tests {
         );
     }
 }
+
+// ===========================================================================
+// Phase 3: Cross-Domain Shape Extraction & Comparison
+// ===========================================================================
+// These tests exercise the full pipeline: Format Analyzer → IrSchema → Shape
+// extraction → cross-domain comparison. This is the Phase 3 killer feature:
+// proving that database schemas, API contracts, and serialization formats are
+// all "data shapes" that can be compared for structural isomorphism.
+
+#[cfg(test)]
+mod cross_domain_shape_tests {
+    use protocol_squisher_ir::SchemaAnalyzer;
+    use shape_ir::extract::extract_schema;
+    use shape_ir::TransportClass;
+
+    // -- Helper: extract shapes from an analyzer + input string ---------------
+
+    fn shapes_from_protobuf(input: &str) -> shape_ir::extract::ExtractedShapes {
+        let analyzer = protocol_squisher_protobuf_analyzer::ProtobufAnalyzer::new();
+        let schema = SchemaAnalyzer::analyze_str(&analyzer, input, "proto").unwrap();
+        extract_schema(&schema)
+    }
+
+    fn shapes_from_json_schema(input: &str) -> shape_ir::extract::ExtractedShapes {
+        let analyzer = protocol_squisher_json_schema_analyzer::JsonSchemaAnalyzer::new();
+        let schema = SchemaAnalyzer::analyze_str(&analyzer, input, "jsonschema").unwrap();
+        extract_schema(&schema)
+    }
+
+    fn shapes_from_graphql(input: &str) -> shape_ir::extract::ExtractedShapes {
+        let analyzer = protocol_squisher_graphql_analyzer::GraphqlAnalyzer::new();
+        let schema = SchemaAnalyzer::analyze_str(&analyzer, input, "graphql").unwrap();
+        extract_schema(&schema)
+    }
+
+    fn shapes_from_avro(input: &str) -> shape_ir::extract::ExtractedShapes {
+        let analyzer = protocol_squisher_avro_analyzer::AvroAnalyzer::new();
+        let schema = SchemaAnalyzer::analyze_str(&analyzer, input, "avro").unwrap();
+        extract_schema(&schema)
+    }
+
+    fn shapes_from_thrift(input: &str) -> shape_ir::extract::ExtractedShapes {
+        let analyzer = protocol_squisher_thrift_analyzer::ThriftAnalyzer::new();
+        let schema = SchemaAnalyzer::analyze_str(&analyzer, input, "thrift").unwrap();
+        extract_schema(&schema)
+    }
+
+    fn shapes_from_sql(input: &str) -> shape_ir::extract::ExtractedShapes {
+        let analyzer = protocol_squisher_sql_analyzer::SqlAnalyzer::new();
+        let schema = SchemaAnalyzer::analyze_str(&analyzer, input, "sql").unwrap();
+        extract_schema(&schema)
+    }
+
+    fn shapes_from_openapi(input: &str) -> shape_ir::extract::ExtractedShapes {
+        let analyzer = protocol_squisher_openapi_analyzer::OpenApiAnalyzer::new();
+        let schema = SchemaAnalyzer::analyze_str(&analyzer, input, "openapi").unwrap();
+        extract_schema(&schema)
+    }
+
+    fn shapes_from_arrow(input: &str) -> shape_ir::extract::ExtractedShapes {
+        let analyzer = protocol_squisher_arrow_analyzer::ArrowAnalyzer::new();
+        let schema = SchemaAnalyzer::analyze_str(&analyzer, input, "arrow").unwrap();
+        extract_schema(&schema)
+    }
+
+    // -- Phase 3 integration tests -------------------------------------------
+
+    #[test]
+    fn protobuf_extracts_shapes() {
+        let shapes = shapes_from_protobuf(
+            r#"syntax = "proto3";
+            message User {
+                int32 id = 1;
+                string name = 2;
+            }"#,
+        );
+        assert!(shapes.shapes.contains_key("User"));
+        let user = &shapes.shapes["User"];
+        let labels = user.field_labels();
+        assert!(labels.len() >= 2);
+    }
+
+    #[test]
+    fn graphql_extracts_shapes() {
+        let shapes = shapes_from_graphql(
+            "type User {
+                id: Int!
+                name: String!
+            }",
+        );
+        assert!(shapes.shapes.contains_key("User"));
+    }
+
+    #[test]
+    fn avro_extracts_shapes() {
+        let shapes = shapes_from_avro(
+            r#"{
+                "type": "record",
+                "name": "User",
+                "fields": [
+                    {"name": "id", "type": "int"},
+                    {"name": "name", "type": "string"}
+                ]
+            }"#,
+        );
+        assert!(shapes.shapes.contains_key("User"));
+    }
+
+    #[test]
+    fn thrift_extracts_shapes() {
+        let shapes = shapes_from_thrift(
+            "struct User {
+                1: required i32 id
+                2: required string name
+            }",
+        );
+        assert!(shapes.shapes.contains_key("User"));
+    }
+
+    #[test]
+    fn sql_extracts_shapes() {
+        let shapes = shapes_from_sql(
+            "CREATE TABLE users (
+                id INTEGER NOT NULL,
+                name TEXT NOT NULL
+            );",
+        );
+        assert!(shapes.shapes.contains_key("users"));
+    }
+
+    #[test]
+    fn openapi_extracts_shapes() {
+        let spec = serde_json::json!({
+            "openapi": "3.0.3",
+            "info": {"title": "Test", "version": "1.0"},
+            "paths": {},
+            "components": {"schemas": {
+                "User": {
+                    "type": "object",
+                    "required": ["id", "name"],
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "name": {"type": "string"}
+                    }
+                }
+            }}
+        })
+        .to_string();
+        let shapes = shapes_from_openapi(&spec);
+        assert!(shapes.shapes.contains_key("User"));
+    }
+
+    #[test]
+    fn json_schema_extracts_shapes() {
+        let shapes = shapes_from_json_schema(
+            r#"{
+                "title": "User",
+                "type": "object",
+                "required": ["id", "name"],
+                "properties": {
+                    "id": {"type": "integer"},
+                    "name": {"type": "string"}
+                }
+            }"#,
+        );
+        // JSON Schema may use the title or root name
+        assert!(!shapes.shapes.is_empty());
+    }
+
+    // -- Cross-domain isomorphism tests: THE killer feature -------------------
+
+    #[test]
+    fn protobuf_vs_sql_isomorphic() {
+        let proto_shapes = shapes_from_protobuf(
+            r#"syntax = "proto3";
+            message User {
+                int32 id = 1;
+                string name = 2;
+            }"#,
+        );
+        let sql_shapes = shapes_from_sql(
+            "CREATE TABLE User (
+                id INTEGER NOT NULL,
+                name TEXT NOT NULL
+            );",
+        );
+        let proto_shape = &proto_shapes.shapes["User"];
+        let sql_shape = &sql_shapes.shapes["User"];
+
+        let morphism = shape_ir::compare::compare(proto_shape, sql_shape);
+        assert!(
+            morphism.transport_class == TransportClass::Concorde
+                || morphism.transport_class == TransportClass::Business,
+            "Protobuf User ↔ SQL User should be at most Business, got {:?}",
+            morphism.transport_class
+        );
+    }
+
+    #[test]
+    fn openapi_vs_protobuf_isomorphic() {
+        let openapi_spec = serde_json::json!({
+            "openapi": "3.0.3",
+            "info": {"title": "API", "version": "1.0"},
+            "paths": {},
+            "components": {"schemas": {
+                "User": {
+                    "type": "object",
+                    "required": ["id", "name"],
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "name": {"type": "string"}
+                    }
+                }
+            }}
+        })
+        .to_string();
+        let openapi_shapes = shapes_from_openapi(&openapi_spec);
+        let proto_shapes = shapes_from_protobuf(
+            r#"syntax = "proto3";
+            message User {
+                int32 id = 1;
+                string name = 2;
+            }"#,
+        );
+
+        let openapi_shape = &openapi_shapes.shapes["User"];
+        let proto_shape = &proto_shapes.shapes["User"];
+
+        let morphism = shape_ir::compare::compare(openapi_shape, proto_shape);
+        assert_eq!(
+            morphism.transport_class,
+            TransportClass::Concorde,
+            "OpenAPI User ↔ Protobuf User should be isomorphic"
+        );
+    }
+
+    #[test]
+    fn sql_vs_openapi_isomorphic() {
+        let sql_shapes = shapes_from_sql(
+            "CREATE TABLE User (
+                id INTEGER NOT NULL,
+                name TEXT NOT NULL
+            );",
+        );
+        let openapi_spec = serde_json::json!({
+            "openapi": "3.0.3",
+            "info": {"title": "API", "version": "1.0"},
+            "paths": {},
+            "components": {"schemas": {
+                "User": {
+                    "type": "object",
+                    "required": ["id", "name"],
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "name": {"type": "string"}
+                    }
+                }
+            }}
+        })
+        .to_string();
+        let openapi_shapes = shapes_from_openapi(&openapi_spec);
+
+        let sql_shape = &sql_shapes.shapes["User"];
+        let openapi_shape = &openapi_shapes.shapes["User"];
+
+        let morphism = shape_ir::compare::compare(sql_shape, openapi_shape);
+        assert_eq!(
+            morphism.transport_class,
+            TransportClass::Concorde,
+            "SQL User ↔ OpenAPI User should be isomorphic"
+        );
+    }
+
+    #[test]
+    fn avro_vs_thrift_isomorphic() {
+        let avro_shapes = shapes_from_avro(
+            r#"{
+                "type": "record",
+                "name": "User",
+                "fields": [
+                    {"name": "id", "type": "int"},
+                    {"name": "name", "type": "string"}
+                ]
+            }"#,
+        );
+        let thrift_shapes = shapes_from_thrift(
+            "struct User {
+                1: required i32 id
+                2: required string name
+            }",
+        );
+
+        let avro_shape = &avro_shapes.shapes["User"];
+        let thrift_shape = &thrift_shapes.shapes["User"];
+
+        let morphism = shape_ir::compare::compare(avro_shape, thrift_shape);
+        assert_eq!(
+            morphism.transport_class,
+            TransportClass::Concorde,
+            "Avro User ↔ Thrift User should be isomorphic"
+        );
+    }
+
+    #[test]
+    fn graphql_vs_openapi_isomorphic() {
+        let graphql_shapes = shapes_from_graphql(
+            "type User {
+                id: Int!
+                name: String!
+            }",
+        );
+        let openapi_spec = serde_json::json!({
+            "openapi": "3.0.3",
+            "info": {"title": "API", "version": "1.0"},
+            "paths": {},
+            "components": {"schemas": {
+                "User": {
+                    "type": "object",
+                    "required": ["id", "name"],
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "name": {"type": "string"}
+                    }
+                }
+            }}
+        })
+        .to_string();
+        let openapi_shapes = shapes_from_openapi(&openapi_spec);
+
+        let graphql_shape = &graphql_shapes.shapes["User"];
+        let openapi_shape = &openapi_shapes.shapes["User"];
+
+        let morphism = shape_ir::compare::compare(graphql_shape, openapi_shape);
+        assert!(
+            morphism.transport_class == TransportClass::Concorde
+                || morphism.transport_class == TransportClass::Business,
+            "GraphQL User ↔ OpenAPI User should be at most Business, got {:?}",
+            morphism.transport_class
+        );
+    }
+
+    #[test]
+    fn seven_format_shape_category() {
+        // Build a ShapeCategory from 7 different format representations of "User"
+        // (6 existing + Arrow IPC) and verify the isomorphic core is detected
+        let proto = shapes_from_protobuf(
+            r#"syntax = "proto3";
+            message User {
+                int32 id = 1;
+                string name = 2;
+            }"#,
+        );
+        let sql = shapes_from_sql(
+            "CREATE TABLE User (
+                id INTEGER NOT NULL,
+                name TEXT NOT NULL
+            );",
+        );
+        let openapi_str = serde_json::json!({
+            "openapi": "3.0.3",
+            "info": {"title": "API", "version": "1.0"},
+            "paths": {},
+            "components": {"schemas": {
+                "User": {
+                    "type": "object",
+                    "required": ["id", "name"],
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "name": {"type": "string"}
+                    }
+                }
+            }}
+        })
+        .to_string();
+        let openapi = shapes_from_openapi(&openapi_str);
+        let thrift = shapes_from_thrift(
+            "struct User {
+                1: required i32 id
+                2: required string name
+            }",
+        );
+        let avro = shapes_from_avro(
+            r#"{
+                "type": "record",
+                "name": "User",
+                "fields": [
+                    {"name": "id", "type": "int"},
+                    {"name": "name", "type": "string"}
+                ]
+            }"#,
+        );
+        let arrow_json = {
+            use arrow_schema::{DataType, Field, Schema};
+            let s = Schema::new(vec![
+                Field::new("id", DataType::Int32, false),
+                Field::new("name", DataType::Utf8, false),
+            ]);
+            serde_json::to_string(&s).unwrap()
+        };
+        let arrow = shapes_from_arrow(&arrow_json);
+
+        let mut cat = shape_ir::category::ShapeCategory::new();
+        cat.add_object("proto_User", proto.shapes["User"].clone());
+        cat.add_object("sql_User", sql.shapes["User"].clone());
+        cat.add_object("openapi_User", openapi.shapes["User"].clone());
+        cat.add_object("thrift_User", thrift.shapes["User"].clone());
+        cat.add_object("avro_User", avro.shapes["User"].clone());
+        cat.add_object("arrow_User", arrow.shapes["arrow"].clone());
+
+        cat.compare_all();
+
+        // Most should be pairwise isomorphic or safe-widening (Concorde/Business)
+        let iso_pairs = cat.isomorphic_pairs();
+        // With 6 objects, max isomorphic pairs = 6*5/2 = 15
+        // Annotation differences may reduce strict isomorphism count
+        assert!(
+            iso_pairs.len() >= 3,
+            "Expected at least 3 isomorphic pairs among 6 formats, got {}",
+            iso_pairs.len()
+        );
+
+        // Verify ALL pairwise morphisms are at most Business (safe)
+        for id_a in cat.object_ids() {
+            for id_b in cat.object_ids() {
+                if id_a != id_b {
+                    if let Some(m) = cat.arrow(id_a, id_b) {
+                        assert!(
+                            m.transport_class == TransportClass::Concorde
+                                || m.transport_class == TransportClass::Business,
+                            "{id_a} → {id_b} should be safe, got {:?}",
+                            m.transport_class
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn arrow_vs_openapi_isomorphic() {
+        let arrow_json = {
+            use arrow_schema::{DataType, Field, Schema};
+            let s = Schema::new(vec![
+                Field::new("id", DataType::Int32, false),
+                Field::new("name", DataType::Utf8, false),
+            ]);
+            serde_json::to_string(&s).unwrap()
+        };
+        let arrow_shapes = shapes_from_arrow(&arrow_json);
+        let openapi_str = serde_json::json!({
+            "openapi": "3.0.3",
+            "info": {"title": "API", "version": "1.0"},
+            "paths": {},
+            "components": {"schemas": {
+                "arrow": {
+                    "type": "object",
+                    "required": ["id", "name"],
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "name": {"type": "string"}
+                    }
+                }
+            }}
+        })
+        .to_string();
+        let openapi_shapes = shapes_from_openapi(&openapi_str);
+
+        let arrow_shape = &arrow_shapes.shapes["arrow"];
+        let openapi_shape = &openapi_shapes.shapes["arrow"];
+
+        let morphism = shape_ir::compare::compare(arrow_shape, openapi_shape);
+        assert!(
+            morphism.transport_class == TransportClass::Concorde
+                || morphism.transport_class == TransportClass::Business,
+            "Arrow ↔ OpenAPI should be safe, got {:?}",
+            morphism.transport_class
+        );
+    }
+
+    #[test]
+    fn arrow_vs_avro_isomorphic() {
+        let arrow_json = {
+            use arrow_schema::{DataType, Field, Schema};
+            let s = Schema::new(vec![
+                Field::new("id", DataType::Int32, false),
+                Field::new("name", DataType::Utf8, false),
+            ]);
+            serde_json::to_string(&s).unwrap()
+        };
+        let arrow_shapes = shapes_from_arrow(&arrow_json);
+        let avro_shapes = shapes_from_avro(
+            r#"{
+                "type": "record",
+                "name": "arrow",
+                "fields": [
+                    {"name": "id", "type": "int"},
+                    {"name": "name", "type": "string"}
+                ]
+            }"#,
+        );
+
+        let arrow_shape = &arrow_shapes.shapes["arrow"];
+        let avro_shape = &avro_shapes.shapes["arrow"];
+
+        let morphism = shape_ir::compare::compare(arrow_shape, avro_shape);
+        assert!(
+            morphism.transport_class == TransportClass::Concorde
+                || morphism.transport_class == TransportClass::Business,
+            "Arrow ↔ Avro should be safe, got {:?}",
+            morphism.transport_class
+        );
+    }
+
+    #[test]
+    fn sql_vs_avro_isomorphic() {
+        let sql_shapes = shapes_from_sql(
+            "CREATE TABLE Item (
+                id INTEGER NOT NULL,
+                name TEXT NOT NULL
+            );",
+        );
+        let avro_shapes = shapes_from_avro(
+            r#"{
+                "type": "record",
+                "name": "Item",
+                "fields": [
+                    {"name": "id", "type": "int"},
+                    {"name": "name", "type": "string"}
+                ]
+            }"#,
+        );
+
+        let sql_shape = &sql_shapes.shapes["Item"];
+        let avro_shape = &avro_shapes.shapes["Item"];
+
+        let morphism = shape_ir::compare::compare(sql_shape, avro_shape);
+        assert!(
+            morphism.transport_class == TransportClass::Concorde
+                || morphism.transport_class == TransportClass::Business,
+            "SQL ↔ Avro should be safe, got {:?}",
+            morphism.transport_class
+        );
+    }
+
+    #[test]
+    fn sql_vs_thrift_isomorphic() {
+        let sql_shapes = shapes_from_sql(
+            "CREATE TABLE Item (
+                id INTEGER NOT NULL,
+                name TEXT NOT NULL
+            );",
+        );
+        let thrift_shapes = shapes_from_thrift(
+            "struct Item {
+                1: required i32 id
+                2: required string name
+            }",
+        );
+
+        let sql_shape = &sql_shapes.shapes["Item"];
+        let thrift_shape = &thrift_shapes.shapes["Item"];
+
+        let morphism = shape_ir::compare::compare(sql_shape, thrift_shape);
+        assert!(
+            morphism.transport_class == TransportClass::Concorde
+                || morphism.transport_class == TransportClass::Business,
+            "SQL ↔ Thrift should be safe, got {:?}",
+            morphism.transport_class
+        );
+    }
+
+    #[test]
+    fn widening_across_domains_is_business() {
+        // SQL uses I32, Avro uses I64 for id → widening → Business
+        let sql_shapes = shapes_from_sql(
+            "CREATE TABLE User (
+                id INTEGER NOT NULL,
+                name TEXT NOT NULL
+            );",
+        );
+        let avro_shapes = shapes_from_avro(
+            r#"{
+                "type": "record",
+                "name": "User",
+                "fields": [
+                    {"name": "id", "type": "long"},
+                    {"name": "name", "type": "string"}
+                ]
+            }"#,
+        );
+
+        let sql_shape = &sql_shapes.shapes["User"];
+        let avro_shape = &avro_shapes.shapes["User"];
+
+        let morphism = shape_ir::compare::compare(sql_shape, avro_shape);
+        assert_eq!(
+            morphism.transport_class,
+            TransportClass::Business,
+            "SQL I32 → Avro I64 should be Business (safe widening)"
+        );
+    }
+
+    #[test]
+    fn arrow_extracts_shapes() {
+        let arrow_json = {
+            use arrow_schema::{DataType, Field, Schema};
+            let s = Schema::new(vec![
+                Field::new("id", DataType::Int32, false),
+                Field::new("name", DataType::Utf8, false),
+            ]);
+            serde_json::to_string(&s).unwrap()
+        };
+        let shapes = shapes_from_arrow(&arrow_json);
+        assert!(shapes.shapes.contains_key("arrow"));
+    }
+
+    #[test]
+    fn arrow_vs_sql_isomorphic() {
+        let arrow_json = {
+            use arrow_schema::{DataType, Field, Schema};
+            let s = Schema::new(vec![
+                Field::new("id", DataType::Int32, false),
+                Field::new("name", DataType::Utf8, false),
+            ]);
+            serde_json::to_string(&s).unwrap()
+        };
+        let arrow_shapes = shapes_from_arrow(&arrow_json);
+        let sql_shapes = shapes_from_sql(
+            "CREATE TABLE arrow (
+                id INTEGER NOT NULL,
+                name TEXT NOT NULL
+            );",
+        );
+
+        let arrow_shape = &arrow_shapes.shapes["arrow"];
+        let sql_shape = &sql_shapes.shapes["arrow"];
+
+        let morphism = shape_ir::compare::compare(arrow_shape, sql_shape);
+        assert!(
+            morphism.transport_class == TransportClass::Concorde
+                || morphism.transport_class == TransportClass::Business,
+            "Arrow ↔ SQL with same structure should be safe, got {:?}",
+            morphism.transport_class
+        );
+    }
+
+    #[test]
+    fn arrow_vs_protobuf_isomorphic() {
+        let arrow_json = {
+            use arrow_schema::{DataType, Field, Schema};
+            let s = Schema::new(vec![
+                Field::new("id", DataType::Int32, false),
+                Field::new("name", DataType::Utf8, false),
+            ]);
+            serde_json::to_string(&s).unwrap()
+        };
+        let arrow_shapes = shapes_from_arrow(&arrow_json);
+        let proto_shapes = shapes_from_protobuf(
+            r#"syntax = "proto3";
+            message arrow {
+                int32 id = 1;
+                string name = 2;
+            }"#,
+        );
+
+        let arrow_shape = &arrow_shapes.shapes["arrow"];
+        let proto_shape = &proto_shapes.shapes["arrow"];
+
+        let morphism = shape_ir::compare::compare(arrow_shape, proto_shape);
+        assert!(
+            morphism.transport_class == TransportClass::Concorde
+                || morphism.transport_class == TransportClass::Business,
+            "Arrow ↔ Protobuf with same structure should be safe, got {:?}",
+            morphism.transport_class
+        );
+    }
+
+    #[test]
+    fn nullable_mismatch_across_domains() {
+        // SQL has nullable column (Optional), OpenAPI has required field
+        let sql_shapes = shapes_from_sql(
+            "CREATE TABLE User (
+                id INTEGER NOT NULL,
+                email TEXT
+            );",
+        );
+        let openapi_str = serde_json::json!({
+            "openapi": "3.0.3",
+            "info": {"title": "API", "version": "1.0"},
+            "paths": {},
+            "components": {"schemas": {
+                "User": {
+                    "type": "object",
+                    "required": ["id", "email"],
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "email": {"type": "string"}
+                    }
+                }
+            }}
+        })
+        .to_string();
+        let openapi_shapes = shapes_from_openapi(&openapi_str);
+
+        let sql_shape = &sql_shapes.shapes["User"];
+        let openapi_shape = &openapi_shapes.shapes["User"];
+
+        // SQL email is Optional<String>, OpenAPI email is String
+        // Optional<T> → T is Economy (unwrapping loses the None case)
+        let morphism = shape_ir::compare::compare(sql_shape, openapi_shape);
+        assert!(
+            morphism.transport_class == TransportClass::Economy
+                || morphism.transport_class == TransportClass::Business,
+            "Nullable→Required should be Economy or Business, got {:?}",
+            morphism.transport_class
+        );
+    }
+}

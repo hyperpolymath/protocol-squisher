@@ -45,7 +45,10 @@ pub mod ephapax_engine;
 pub mod schema;
 pub mod transport;
 
-pub use bidirectional::{bidirectional_compare, BidirectionalResult, Direction, TypeAsymmetry};
+pub use bidirectional::{
+    bidirectional_compare, BidirectionalReport, BidirectionalResult, Direction, FieldCompat,
+    TypeAsymmetry,
+};
 pub use compare::{compare_types, TypeComparison};
 pub use ephapax_engine::{
     ConversionSummary, EphapaxCompatibilityEngine, FieldCompatibility, SchemaCompatibilityResult,

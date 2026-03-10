@@ -67,19 +67,16 @@ impl TomlParser {
     }
 
     /// Parse a TOML string.
+    ///
+    /// Uses `toml::Table::from_str` (document parser) rather than
+    /// `toml::Value::from_str` (value parser), because a TOML document
+    /// with key-value pairs is a table/document, not a standalone value.
     pub fn parse_str(&self, content: &str, name: &str) -> Result<ParsedToml, AnalyzerError> {
-        let table: toml::Value = content
+        let table: toml::Table = content
             .parse()
             .map_err(|e: toml::de::Error| AnalyzerError::ParseError(e.to_string()))?;
 
-        let entries = match table {
-            toml::Value::Table(t) => convert_table(&t),
-            _ => {
-                return Err(AnalyzerError::ParseError(
-                    "TOML root must be a table".to_string(),
-                ))
-            },
-        };
+        let entries = convert_table(&table);
 
         Ok(ParsedToml {
             entries,

@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: PMPL-1.0-or-later -->
 <!-- TOPOLOGY.md — Project architecture map and completion dashboard -->
-<!-- Last updated: 2026-02-28 -->
+<!-- Last updated: 2026-03-10f -->
 
 # Protocol Squisher — Project Topology
 
@@ -59,13 +59,78 @@
                         └─────────────────────────────────────────┘
 ```
 
+## Vision Architecture (18-Month Plan — Phase 1 In Progress)
+
+The existing architecture above remains valid as the **foundation layer**. The
+vision adds a new **Shape IR layer** underneath it that generalises the Canonical
+IR to reason about all data shapes, not just serialization formats.
+
+```
+                    ┌──────────────────────────────────────────────────────┐
+                    │            UNIVERSAL DATA SHAPE LAYER               │
+                    │               (NEW — Phase 1+)                      │
+                    │                                                      │
+                    │  ┌────────────────────────────────────────────────┐  │
+                    │  │  shape-ir crate (crates/shape-ir/)            │  │
+                    │  │  ┌──────────┐ ┌────────────┐ ┌────────────┐  │  │
+                    │  │  │  Shape   │ │ Transport  │ │ Linearity  │  │  │
+                    │  │  │  enum    │ │ Class      │ │ Lattice    │  │  │
+                    │  │  │(11 ctors)│ │ (semilat.) │ │ (4-point)  │  │  │
+                    │  │  └──────────┘ └────────────┘ └────────────┘  │  │
+                    │  │  ┌──────────────┐  ┌────────────────────┐    │  │
+                    │  │  │ Information  │  │ Comparison Engine  │    │  │
+                    │  │  │ Content +    │  │ (shape × shape →   │    │  │
+                    │  │  │ MorphMetrics │  │  morphism + class) │    │  │
+                    │  │  └──────────────┘  └────────────────────┘    │  │
+                    │  │  ┌──────────────┐  ┌────────────────────┐    │  │
+                    │  │  ┌──────────────┐  ┌────────────────────┐    │  │
+                    │  │  │ ShapeCat.   │  │ Adapter Discovery  │    │  │
+                    │  │  │ (category   │  │ (Dijkstra minimax  │    │  │
+                    │  │  │ +monoidal)  │  │  pathfinding)      │    │  │
+                    │  │  └──────────────┘  └────────────────────┘    │  │
+                    │  │  ┌──────────────┐  ┌────────────────────┐    │  │
+                    │  │  │ Shape Extr.  │  │ CLI Integration    │    │  │
+                    │  │  │ (IR→Shape)   │  │ (extract+compare   │    │  │
+                    │  │  └──────────────┘  │  +graph)           │    │  │
+                    │  │                    └────────────────────┘    │  │
+                    │  └────────────────────────────────────────────────┘  │
+                    │                         ▲                            │
+                    │           ┌──────────────┴──────────────┐            │
+                    │           │    Shape Extractors          │            │
+                    │           │  (one per domain)            │            │
+                    │  ┌────────┴──┐ ┌────────┐ ┌──────────┐  │            │
+                    │  │ Protobuf  │ │ SQL DDL│ │ OpenAPI  │  │            │
+                    │  │ Avro      │ │ Arrow  │ │ Rust AST │  │            │
+                    │  │ ... (13)  │ │        │ │ Zig/C    │  │            │
+                    │  └───────────┘ └────────┘ └──────────┘  │            │
+                    │  (existing)     (Phase 3)  (Phase 3)    │            │
+                    │           └──────────────────────────────┘            │
+                    └──────────────────────────────────────────────────────┘
+                                          │
+                              ┌────────────┴────────────┐
+                              ▼                         ▼
+                    ┌───────────────────┐     ┌───────────────────┐
+                    │  Shape Algebra    │     │  Temporal Algebra │
+                    │  (Phase 2)        │     │  (Phase 4)        │
+                    │  Category, compos.│     │  Evolution, ver.  │
+                    │  Pathfinding      │     │  Forecasting      │
+                    └───────────────────┘     └───────────────────┘
+                              │                         │
+                              └────────────┬────────────┘
+                                           ▼
+                    ┌──────────────────────────────────────────────────────┐
+                    │  Visual & Interface Layer (Phase 5)                 │
+                    │  TUI (ratatui) │ PanLL (L/N/W) │ Web               │
+                    └──────────────────────────────────────────────────────┘
+```
+
 ## Completion Dashboard
 
 ```
 COMPONENT                          STATUS              NOTES
 ─────────────────────────────────  ──────────────────  ─────────────────────────────────
 CORE ENGINE
-  13 Protocol Analyzers             ██████████ 100%    Bebop to TOML active
+  17 Protocol Analyzers             ██████████ 100%    13 serialization + SQL DDL + OpenAPI + Arrow IPC + TOML
   Canonical IR                      ██████████ 100%    Universal mapping stable
   Synthesis Engine                  ██████████ 100%    Minimum viable adapter active
   Transport Class Scoring           ██████████ 100%    Fidelity/Overhead verified
@@ -73,7 +138,7 @@ CORE ENGINE
 PROOF & VERIFICATION
   Formal Proofs (Agda/Lean/Coq/Isa) ██████████ 100%    8 Agda + Coq/Lean/Isabelle/Z3 cross-validation
   Diversity Analysis                ██████████ 100%    Squishability rankings verified
-  Property-Based Tests              ██████████ 100%    937 tests passing
+  Property-Based Tests              ██████████ 100%    1378 tests passing
 
 ADVANCED FEATURES (Phase 3+)
   Security Bridge                   █████████░  95%    Negotiation, audit, downgrade, cert expiry, TLS probe
@@ -92,16 +157,27 @@ REPO INFRASTRUCTURE
   Benchmark Suite                   ██████████ 100%    Results interpretation verified
 
 ─────────────────────────────────────────────────────────────────────────────
-LIBRARY API (Phase 4a/4b)
-  SchemaAnalyzer Trait               ██████████ 100%    Implemented across all 13 analyzers
-  Public Library API                 ██████████ 100%    prelude, all_analyzers(), 13 re-exported modules
-  Constraint Evaluation API          ░░░░░░░░░░   0%    Phase 4c — planned
-  protocol-squisher-server           ░░░░░░░░░░   0%    Phase 4e — planned
+VISION: UNIVERSAL DATA SHAPE (18-Month Plan)
+  shape-ir crate (Phase 1)         ██████████ 100%    SEALED — 11 ctors, comparison, extraction, metrics, compose (16 tests), extract edge cases
+  Shape Algebra (Phase 2)          ██████████ 100%    SEALED — ShapeCategory (laws, Dijkstra, monoidal), 35 unit + property tests
+  Domain Extractors (Phase 3)      ██████████ 100%    SEALED — SQL+OpenAPI+Arrow, 22 cross-domain tests, 7-format category test
+  Temporal Algebra (Phase 4)       ██████████ 100%    SchemaTimeline, SemverClassification, forecast, evolution strategy, 29 tests
+  Visual Language (Phase 5)        ██████████ 100%    SEALED — render.rs + panll.rs + CLI (render/dot/timeline/panll), 12 seam tests, 70 total Phase 5 tests
+  Paper + Release (Phase 6)        ░░░░░░░░░░   0%    Not started — months 16-18
 
 ─────────────────────────────────────────────────────────────────────────────
-OVERALL (Phase 1-2):                ██████████ 100%    Core engine + proofs complete
-OVERALL (Phase 3):                  █████████░  95%    Hardened + integrated
-OVERALL (Phase 4):                  ████░░░░░░  40%    Library extraction started
+LIBRARY API (Phase 4a/4b)
+  SchemaAnalyzer Trait               ██████████ 100%    Implemented across all 17 analyzers
+  Public Library API                 ██████████ 100%    prelude, all_analyzers(), 13 re-exported modules
+  Constraint Evaluation API          ██████████ 100%    5 SchemaConstraint variants, 20+ value Constraints, 27 tests
+  protocol-squisher-server           ██████████ 100%    axum, 5 endpoints (health/formats/analyze/compare/constraints), 5 tests
+
+─────────────────────────────────────────────────────────────────────────────
+OVERALL (Original Phase 1-2):       ██████████ 100%    Core engine + proofs complete
+OVERALL (Original Phase 3):         █████████░  95%    Hardened + integrated
+OVERALL (Original Phase 4):         ██████████ 100%    Library API + constraints + server complete
+OVERALL (Vision Phase 1):           ██████████ 100%    COMPLETE — 124 tests, full engine
+OVERALL (Vision Phase 2):           ██████████ 100%    Phases 1-5 SEALED — 1378 tests, render + panll + CLI visual layer
 ```
 
 ## Key Dependencies
@@ -111,6 +187,11 @@ Format Analyzers ──► Canonical IR ───► Synthesis Logic ──► G
      │                 │                   │                    │
      ▼                 ▼                   ▼                    ▼
 Diversity Spec ───► Compatibility ───► Transport Class ───► Proven Transport
+
+Vision (new):
+Shape Extractors ──► shape-ir ──► Shape Algebra ──► Morphisms ──► Visual Layer
+  (17 analyzers       (Phase 1     (Phase 2)         (Phase 2)     (Phase 5)
+   + SQL + OpenAPI)    SEALED)      SEALED            SEALED        SEALED
 ```
 
 ## Update Protocol

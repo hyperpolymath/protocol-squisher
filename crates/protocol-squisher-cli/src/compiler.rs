@@ -177,7 +177,12 @@ impl UniversalCompiler {
             | ProtocolFormat::Avro
             | ProtocolFormat::CapnProto
             | ProtocolFormat::MessagePack
-            | ProtocolFormat::JsonSchema => self.unsupported_codegen_target(target),
+            | ProtocolFormat::JsonSchema
+            | ProtocolFormat::GraphQL
+            | ProtocolFormat::Toml
+            | ProtocolFormat::Sql
+            | ProtocolFormat::OpenApi
+            | ProtocolFormat::Arrow => self.unsupported_codegen_target(target),
         }
     }
 
