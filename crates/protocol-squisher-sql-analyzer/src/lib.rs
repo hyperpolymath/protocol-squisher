@@ -33,6 +33,7 @@
 //! Columns without NOT NULL become `Optional<T>` in the IR. Primary key
 //! columns are always non-optional regardless of NOT NULL declaration.
 
+#![forbid(unsafe_code)]
 pub mod converter;
 pub mod ephapax_bridge;
 pub mod parser;

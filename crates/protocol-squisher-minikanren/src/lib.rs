@@ -7,6 +7,7 @@
 //! each field/path gets candidate transformation actions, and the solver picks
 //! the best global assignment according to transport-class utility.
 
+#![forbid(unsafe_code)]
 use protocol_squisher_compat::{
     compare_schemas, LossKind, SchemaComparison, TransportClass, TypeDefComparison,
 };

@@ -3,6 +3,7 @@
 
 //! Enterprise-facing capabilities for Protocol Squisher.
 
+#![forbid(unsafe_code)]
 pub mod audit;
 pub mod governance;
 pub mod marketplace;

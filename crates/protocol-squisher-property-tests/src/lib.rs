@@ -7,6 +7,7 @@
 
 #![cfg(test)]
 
+#![forbid(unsafe_code)]
 pub mod container_combinations;
 pub mod edge_cases;
 pub mod primitive_matrix;

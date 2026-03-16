@@ -9,6 +9,7 @@
 //! - Compare transport class opportunities across protocols
 //! - Generate hypothesis-driven insights
 
+#![forbid(unsafe_code)]
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

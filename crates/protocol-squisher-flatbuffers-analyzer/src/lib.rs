@@ -68,6 +68,7 @@
 //! - **Unions**: FlatBuffers supports discriminated unions
 //! - **Backwards compatibility**: Tables support optional fields and schema evolution
 
+#![forbid(unsafe_code)]
 mod converter;
 mod ephapax_bridge;
 mod parser;

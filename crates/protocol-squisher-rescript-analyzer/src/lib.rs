@@ -54,6 +54,7 @@
 //! | `array<T>` | `Vec<T>` | `Vec<T>` with compatible T |
 //! | `(T1, T2, ...)` | `Tuple<T1, T2, ...>` | Matching tuples |
 
+#![forbid(unsafe_code)]
 mod converter;
 mod ephapax_bridge;
 mod parser;

@@ -24,6 +24,7 @@
 //! | input       | StructDef         | Input type (marked in metadata)|
 //! | interface   | StructDef         | Interface (marked in metadata) |
 
+#![forbid(unsafe_code)]
 pub mod converter;
 pub mod ephapax_bridge;
 pub mod parser;

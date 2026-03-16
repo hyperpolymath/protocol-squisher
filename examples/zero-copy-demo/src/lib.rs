@@ -11,6 +11,7 @@
 //! - Rust String ↔ Python str (UTF-8 strings)
 //! - Rust bool ↔ Python bool (boolean values)
 
+#![forbid(unsafe_code)]
 use pyo3::prelude::*;
 use serde::{Deserialize, Serialize};
 

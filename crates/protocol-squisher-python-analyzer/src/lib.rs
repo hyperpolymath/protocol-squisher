@@ -35,6 +35,7 @@
 //! let schema = analyzer.analyze_module("myapp.models")?;
 //! ```
 
+#![forbid(unsafe_code)]
 use protocol_squisher_ir::IrSchema;
 use std::path::Path;
 

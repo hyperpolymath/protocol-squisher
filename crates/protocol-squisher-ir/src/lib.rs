@@ -14,6 +14,7 @@
 //! 3. **Constraint-aware**: Represents validation rules and invariants
 //! 4. **Serializable**: IR itself can be stored/transmitted as JSON
 
+#![forbid(unsafe_code)]
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::Path;

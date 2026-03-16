@@ -12,6 +12,7 @@
 //! that both Rust serde and Python can handle. This is the universal fallback
 //! when optimized paths aren't available.
 
+#![forbid(unsafe_code)]
 use protocol_squisher_ir::{
     ContainerType, IrSchema, IrType, PrimitiveType, SpecialType, TypeDef, TypeId,
 };

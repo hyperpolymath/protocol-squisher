@@ -66,6 +66,7 @@
 //! This makes MessagePack ideal for demonstrating the diversity spectrum's
 //! schema-less end, contrasting with Bebop/FlatBuffers' schema-based approach.
 
+#![forbid(unsafe_code)]
 mod converter;
 mod ephapax_bridge;
 mod parser;

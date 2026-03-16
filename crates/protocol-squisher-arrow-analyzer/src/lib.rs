@@ -34,6 +34,7 @@
 //! Nullable Arrow fields become `Optional<T>` in the IR. Non-nullable
 //! fields get `NonEmpty` constraints.
 
+#![forbid(unsafe_code)]
 pub mod converter;
 pub mod ephapax_bridge;
 pub mod parser;

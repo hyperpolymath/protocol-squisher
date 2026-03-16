@@ -4,6 +4,7 @@
 //!
 //! Demonstrates Business-class (safe widening) and Wheelbarrow-class (narrowing) transport.
 
+#![forbid(unsafe_code)]
 use pyo3::prelude::*;
 use serde::{Deserialize, Serialize};
 

@@ -17,6 +17,7 @@
 //! - **Nested structures**: References between types
 
 // Imports only used in tests
+#![forbid(unsafe_code)]
 #[cfg(test)]
 use protocol_squisher_compat::EphapaxCompatibilityEngine;
 #[cfg(test)]

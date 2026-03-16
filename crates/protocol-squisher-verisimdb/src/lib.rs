@@ -29,6 +29,7 @@
 //! | Provenance         | Which analyzer version produced which result |
 //! | Semantic           | ECHIDNA proof certificates (CBOR) |
 
+#![forbid(unsafe_code)]
 pub mod client;
 pub mod error;
 pub mod models;

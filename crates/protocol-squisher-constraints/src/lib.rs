@@ -36,6 +36,7 @@
 //! assert!(report.passed());
 //! ```
 
+#![forbid(unsafe_code)]
 use protocol_squisher_ir::{
     Constraint, FieldDef, IrSchema, IrType, PrimitiveType, StructDef, TypeDef,
 };

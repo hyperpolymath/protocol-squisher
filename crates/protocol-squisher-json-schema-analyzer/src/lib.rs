@@ -27,6 +27,7 @@
 //! let ir_schema = analyzer.analyze_str(schema_json, "Person").unwrap();
 //! ```
 
+#![forbid(unsafe_code)]
 mod converter;
 mod parser;
 mod types;

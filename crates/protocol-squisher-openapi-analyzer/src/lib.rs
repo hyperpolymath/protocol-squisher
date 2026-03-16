@@ -31,6 +31,7 @@
 //!
 //! Properties not listed in `required` become `Optional<T>` in the IR.
 
+#![forbid(unsafe_code)]
 pub mod converter;
 pub mod ephapax_bridge;
 pub mod parser;

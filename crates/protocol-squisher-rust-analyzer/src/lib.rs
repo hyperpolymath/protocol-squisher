@@ -30,6 +30,7 @@
 //! let schema = analyzer.analyze_source(source)?;
 //! ```
 
+#![forbid(unsafe_code)]
 use protocol_squisher_ir::{
     Constraint, EnumDef, FieldDef, FieldMetadata, IrSchema, StringFormat, StructDef, TagStyle,
     TypeDef, TypeMetadata, VariantDef, VariantPayload,

@@ -60,6 +60,7 @@
 //! | `set<T>` | `Vec<T>` | `Vec<T>` (with uniqueness constraint) |
 //! | `map<K,V>` | `Map<K,V>` | `Map<K,V>` with compatible K,V |
 
+#![forbid(unsafe_code)]
 mod converter;
 mod ephapax_bridge;
 mod parser;

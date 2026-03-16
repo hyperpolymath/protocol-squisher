@@ -71,6 +71,7 @@
 //! - **Interfaces**: RPC interfaces (we skip these and focus on data types)
 //! - **Generics**: Cap'n Proto supports generic types `List(T)`, `Pair(K,V)`
 
+#![forbid(unsafe_code)]
 mod converter;
 mod ephapax_bridge;
 mod parser;

@@ -34,6 +34,7 @@
 //! cached results or a safe default (trust level 1). The bridge never blocks
 //! the analysis pipeline on prover availability.
 
+#![forbid(unsafe_code)]
 pub mod cache;
 pub mod client;
 pub mod cross_prover;

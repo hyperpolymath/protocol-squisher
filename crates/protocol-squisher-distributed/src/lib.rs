@@ -9,6 +9,7 @@
 //! - Per-task error isolation (one failure doesn't abort the batch)
 //! - Summary statistics for batch results
 
+#![forbid(unsafe_code)]
 pub mod rebalancer;
 pub mod recovery;
 pub mod resilience;

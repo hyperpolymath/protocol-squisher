@@ -78,6 +78,7 @@
 //!
 //! These patterns are captured in the IR metadata for squishability analysis.
 
+#![forbid(unsafe_code)]
 mod converter;
 mod ephapax_bridge;
 mod parser;

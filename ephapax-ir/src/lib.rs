@@ -28,6 +28,7 @@
 //! - Dependent types (types encode proofs)
 //! - Linear types (resource safety)
 
+#![forbid(unsafe_code)]
 mod ffi;
 
 use std::marker::PhantomData;

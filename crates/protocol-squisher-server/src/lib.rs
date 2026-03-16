@@ -29,6 +29,7 @@
 //! }
 //! ```
 
+#![forbid(unsafe_code)]
 use axum::{
     extract::Json,
     http::StatusCode,

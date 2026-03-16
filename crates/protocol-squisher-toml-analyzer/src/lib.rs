@@ -19,6 +19,7 @@
 //! | Array          | Vec<T>            | Inferred from first element   |
 //! | Array of Tables| Vec<StructDef>    | Nested struct array           |
 
+#![forbid(unsafe_code)]
 pub mod converter;
 pub mod ephapax_bridge;
 pub mod parser;

@@ -37,6 +37,7 @@
 
 // ─── Core ────────────────────────────────────────────────────────────────────
 
+#![forbid(unsafe_code)]
 pub mod ir {
     //! Intermediate Representation (IR) for schema definitions.
     //!

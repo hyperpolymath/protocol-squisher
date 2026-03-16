@@ -82,6 +82,7 @@
 //! - `transport_analysis` - Field compatibility checking
 //! - `complex_schema` - Nested types, oneofs, maps
 
+#![forbid(unsafe_code)]
 mod converter;
 mod ephapax_bridge;
 mod parser;
