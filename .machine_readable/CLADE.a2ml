@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Clade declaration — part of the gv-clade-index registry
+# See: https://github.com/hyperpolymath/gv-clade-index
+
+[identity]
+uuid = "30f04d66-254a-596a-b597-400e60c0c831"
+primary-forge = "github"
+primary-owner = "hyperpolymath"
+canonical-name = "protocol-squisher"
+prefixed-name = "pt-protocol-squisher"
+
+[clade]
+primary = "pt"
+secondary = []
+assigned = "2026-03-16"
+rationale = ""
+
+[forges]
+github = "hyperpolymath/protocol-squisher"
+gitlab = "hyperpolymath/protocol-squisher"
+bitbucket = "hyperpolymath/protocol-squisher"
+
+[lineage]
+type = "standalone"
+parent = "Protocol compression and squishing"
+born = "2026-03-16"
