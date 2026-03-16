@@ -6,10 +6,10 @@
 - Prefer to keep generated files out of source control, and regenerate them with the documented commands before committing.
 
 ## Workflow
-1. Inspect `.machines_readable/6scm/STATE.scm` for blockers and next actions.
-2. Respect any constraints listed inside `.machines_readable/6scm/AGENTIC.scm` when tooling changes are requested.
+1. Inspect `.machines_readable/6scm/.machine_readable/6a2/STATE.a2ml` for blockers and next actions.
+2. Respect any constraints listed inside `.machines_readable/6scm/.machine_readable/6a2/AGENTIC.a2ml` when tooling changes are requested.
 3. Keep human-readable docs (`README.adoc`, `ROADMAP.adoc`, `docs/`) and machine-readable docs (`.machines_readable/6scm/*.scm`) aligned in the same change set.
-4. After finishing edits, update `STATE.scm` metadata and session history, then commit with a concise, imperative message.
+4. After finishing edits, update `.machine_readable/6a2/STATE.a2ml` metadata and session history, then commit with a concise, imperative message.
 
 ## External Integrations (Optional, Offline-First)
 
