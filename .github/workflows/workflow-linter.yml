@@ -64,7 +64,7 @@ jobs:
           # Find any uses: lines that don't have @SHA format.
           # Exclude: comment lines, local actions, docker actions,
           # github-script, and the linter's own grep commands.
-          unpinned=$(grep -rn "uses:" .github/workflows/ | \
+          unpinned=$(grep -rnE "^[[:space:]]+uses:" .github/workflows/ | \
             grep -v "^\s*#" | \
             grep -v "@[a-f0-9]\{40\}" | \
             grep -v 'uses: \./\|uses: docker://\|uses: actions/github-script' | \
