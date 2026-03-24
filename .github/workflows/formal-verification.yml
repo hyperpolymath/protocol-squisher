@@ -14,7 +14,8 @@ on:
       - 'proofs/**'
       - 'ephapax-ir/**'
 
-permissions: read-all
+permissions:
+  contents: read
 
 jobs:
   verify-agda:

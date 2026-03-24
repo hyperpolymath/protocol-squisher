@@ -17,7 +17,8 @@ on:
       - 'crates/protocol-squisher-pyo3-codegen/**'
       - '.github/workflows/pyo3-integration.yml'
 
-permissions: read-all
+permissions:
+  contents: read
 
 jobs:
   test:
