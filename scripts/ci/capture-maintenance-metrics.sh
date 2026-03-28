@@ -74,8 +74,8 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-if [[ -z "${panic_attack_bin}" && -x /var/mnt/eclipse/repos/panic-attacker/target/release/panic-attack ]]; then
-    panic_attack_bin=/var/mnt/eclipse/repos/panic-attacker/target/release/panic-attack
+if [[ -z "${panic_attack_bin}" && -x /var$REPOS_DIR/panic-attacker/target/release/panic-attack ]]; then
+    panic_attack_bin=/var$REPOS_DIR/panic-attacker/target/release/panic-attack
 fi
 if [[ -z "${panic_attack_bin}" ]]; then
     panic_attack_bin=panic-attack

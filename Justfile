@@ -133,7 +133,7 @@ ci: quality validate-rsr
 # Run corrective-maintenance gates (ABI/FFI policy + panic-assail + real verified backend)
 maint-corrective:
     ./scripts/ci/check-abi-policy.sh
-    @panic_bin="${PANIC_ATTACK_BIN:-}"; [ -n "${panic_bin}" ] || [ ! -x /var/mnt/eclipse/repos/panic-attacker/target/release/panic-attack ] || panic_bin=/var/mnt/eclipse/repos/panic-attacker/target/release/panic-attack; PANIC_ATTACK_BIN="${panic_bin}" ./scripts/ci/panic-assail-regression.sh
+    @panic_bin="${PANIC_ATTACK_BIN:-}"; [ -n "${panic_bin}" ] || [ ! -x /var$REPOS_DIR/panic-attacker/target/release/panic-attack ] || panic_bin=/var$REPOS_DIR/panic-attacker/target/release/panic-attack; PANIC_ATTACK_BIN="${panic_bin}" ./scripts/ci/panic-assail-regression.sh
     ./scripts/podman-dev.sh install-ephapax-cli
     ./scripts/podman-dev.sh backend-verified-real
     ./scripts/podman-dev.sh compile-smoke-verified-real
@@ -298,3 +298,39 @@ build-riscv:
 # Run panic-attacker pre-commit scan
 assail:
     @command -v panic-attack >/dev/null 2>&1 && panic-attack assail . || echo "panic-attack not found — install from https://github.com/hyperpolymath/panic-attacker"
+
+# Self-diagnostic — checks dependencies, permissions, paths
+doctor:
+    @echo "Running diagnostics for protocol-squisher..."
+    @echo "Checking required tools..."
+    @command -v just >/dev/null 2>&1 && echo "  [OK] just" || echo "  [FAIL] just not found"
+    @command -v git >/dev/null 2>&1 && echo "  [OK] git" || echo "  [FAIL] git not found"
+    @echo "Checking for hardcoded paths..."
+    @grep -rn '$HOME\|$ECLIPSE_DIR' --include='*.rs' --include='*.ex' --include='*.res' --include='*.gleam' --include='*.sh' . 2>/dev/null | head -5 || echo "  [OK] No hardcoded paths"
+    @echo "Diagnostics complete."
+
+# Guided tour of key features
+tour:
+    @echo "=== protocol-squisher Tour ==="
+    @echo ""
+    @echo "1. Project structure:"
+    @ls -la
+    @echo ""
+    @echo "2. Available commands: just --list"
+    @echo ""
+    @echo "3. Read README.adoc for full overview"
+    @echo "4. Read EXPLAINME.adoc for architecture decisions"
+    @echo "5. Run 'just doctor' to check your setup"
+    @echo ""
+    @echo "Tour complete! Try 'just --list' to see all available commands."
+
+# Open feedback channel with diagnostic context
+help-me:
+    @echo "=== protocol-squisher Help ==="
+    @echo "Platform: $(uname -s) $(uname -m)"
+    @echo "Shell: $SHELL"
+    @echo ""
+    @echo "To report an issue:"
+    @echo "  https://github.com/hyperpolymath/protocol-squisher/issues/new"
+    @echo ""
+    @echo "Include the output of 'just doctor' in your report."

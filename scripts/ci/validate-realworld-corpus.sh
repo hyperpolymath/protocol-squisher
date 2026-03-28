@@ -21,7 +21,7 @@ Validate real-world corpus coverage and invariant health by running
 
 Options:
   --bin <path>              protocol-squisher binary path
-  --root <path>             Scan root (repeatable). Default: /var/mnt/eclipse/repos
+  --root <path>             Scan root (repeatable). Default: /var$REPOS_DIR
   --min-success <n>         Minimum successful analyses required (default: 100)
   --max-files <n>           Max candidate files to attempt (default: 220)
   --output <path>           Write JSON report to path
@@ -69,7 +69,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ ${#roots[@]} -eq 0 ]]; then
-    roots=(/var/mnt/eclipse/repos)
+    roots=(/var$REPOS_DIR)
 fi
 
 if ! [[ "${min_success}" =~ ^[0-9]+$ ]]; then
