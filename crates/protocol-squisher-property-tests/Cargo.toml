@@ -15,7 +15,7 @@ homepage = "https://github.com/hyperpolymath/protocol-squisher"
 protocol-squisher-ir = { path = "../protocol-squisher-ir" }
 protocol-squisher-compat = { path = "../protocol-squisher-compat" }
 protocol-squisher-transport-primitives = { path = "../../ephapax-ir" }
-proptest = "1.4"
+proptest = "1.11"
 proptest-derive = "0.8"
 
 [lib]

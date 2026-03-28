@@ -20,7 +20,7 @@ thiserror = "2.0"
 protocol-squisher-ir = { path = "../protocol-squisher-ir" }
 
 [dev-dependencies]
-proptest = "1.6"
+proptest = "1.11"
 criterion = { version = "0.8", features = ["html_reports"] }
 
 [[bench]]
