@@ -334,3 +334,22 @@ help-me:
     @echo "  https://github.com/hyperpolymath/protocol-squisher/issues/new"
     @echo ""
     @echo "Include the output of 'just doctor' in your report."
+
+# Attempt to automatically install missing tools
+heal:
+    #!/usr/bin/env bash
+    echo "═══════════════════════════════════════════════════"
+    echo "  Protocol Squisher Heal — Automatic Tool Installation"
+    echo "═══════════════════════════════════════════════════"
+    echo ""
+if ! command -v cargo >/dev/null 2>&1; then
+    echo "Installing Rust via rustup..."
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+    source "$HOME/.cargo/env"
+fi
+if ! command -v just >/dev/null 2>&1; then
+    echo "Installing just..."
+    cargo install just 2>/dev/null || echo "Install just from https://just.systems"
+fi
+    echo ""
+    echo "Heal complete. Run 'just doctor' to verify."
