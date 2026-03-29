@@ -20,7 +20,7 @@ protocol-squisher-thrift-analyzer = { path = "crates/protocol-squisher-thrift-an
 
 [dev-dependencies]
 # Property-based testing
-proptest = "1.4.0"
+proptest = "1.11.0"
 # Benchmarking
 criterion = { version = "0.8", features = ["html_reports"] }
 
