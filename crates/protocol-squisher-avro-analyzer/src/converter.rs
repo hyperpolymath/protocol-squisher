@@ -484,13 +484,13 @@ mod tests {
         "#;
 
         let parser = AvroParser::new();
-        let parsed = parser.parse_str(json).unwrap();
+        let parsed = parser.parse_str(json).expect("parsing simple record JSON should succeed");
 
         let converter = AvroConverter::new();
         let result = converter.convert(&parsed, "person");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
+        let ir = result.expect("converting simple record to IR should succeed");
         assert!(ir.types.contains_key("Person"));
 
         let Some(TypeDef::Struct(s)) = ir.types.get("Person") else {
@@ -514,13 +514,13 @@ mod tests {
         "#;
 
         let parser = AvroParser::new();
-        let parsed = parser.parse_str(json).unwrap();
+        let parsed = parser.parse_str(json).expect("parsing optional field JSON should succeed");
 
         let converter = AvroConverter::new();
         let result = converter.convert(&parsed, "user");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
+        let ir = result.expect("converting optional field record to IR should succeed");
         if let Some(TypeDef::Struct(s)) = ir.types.get("User") {
             assert!(s.fields[0].optional);
             assert!(matches!(
@@ -543,13 +543,13 @@ mod tests {
         "#;
 
         let parser = AvroParser::new();
-        let parsed = parser.parse_str(json).unwrap();
+        let parsed = parser.parse_str(json).expect("parsing array field JSON should succeed");
 
         let converter = AvroConverter::new();
         let result = converter.convert(&parsed, "list");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
+        let ir = result.expect("converting array field record to IR should succeed");
         if let Some(TypeDef::Struct(s)) = ir.types.get("List") {
             assert!(matches!(
                 s.fields[0].ty,
@@ -571,13 +571,13 @@ mod tests {
         "#;
 
         let parser = AvroParser::new();
-        let parsed = parser.parse_str(json).unwrap();
+        let parsed = parser.parse_str(json).expect("parsing map field JSON should succeed");
 
         let converter = AvroConverter::new();
         let result = converter.convert(&parsed, "config");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
+        let ir = result.expect("converting map field record to IR should succeed");
         if let Some(TypeDef::Struct(s)) = ir.types.get("Config") {
             assert!(matches!(
                 s.fields[0].ty,
@@ -597,13 +597,13 @@ mod tests {
         "#;
 
         let parser = AvroParser::new();
-        let parsed = parser.parse_str(json).unwrap();
+        let parsed = parser.parse_str(json).expect("parsing enum JSON should succeed");
 
         let converter = AvroConverter::new();
         let result = converter.convert(&parsed, "status");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
+        let ir = result.expect("converting enum to IR should succeed");
         let Some(TypeDef::Enum(e)) = ir.types.get("Status") else {
             unreachable!("Status should convert to an enum type");
         };
@@ -624,13 +624,13 @@ mod tests {
         "#;
 
         let parser = AvroParser::new();
-        let parsed = parser.parse_str(json).unwrap();
+        let parsed = parser.parse_str(json).expect("parsing fixed type JSON should succeed");
 
         let converter = AvroConverter::new();
         let result = converter.convert(&parsed, "uuid");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
+        let ir = result.expect("converting fixed type to IR should succeed");
         assert!(ir.types.contains_key("UUID"));
     }
 
@@ -639,27 +639,27 @@ mod tests {
         let converter = AvroConverter::new();
 
         assert!(matches!(
-            converter.avro_type_to_ir("boolean").unwrap(),
+            converter.avro_type_to_ir("boolean").expect("boolean should map to IR primitive"),
             IrType::Primitive(PrimitiveType::Bool)
         ));
         assert!(matches!(
-            converter.avro_type_to_ir("int").unwrap(),
+            converter.avro_type_to_ir("int").expect("int should map to IR primitive"),
             IrType::Primitive(PrimitiveType::I32)
         ));
         assert!(matches!(
-            converter.avro_type_to_ir("long").unwrap(),
+            converter.avro_type_to_ir("long").expect("long should map to IR primitive"),
             IrType::Primitive(PrimitiveType::I64)
         ));
         assert!(matches!(
-            converter.avro_type_to_ir("float").unwrap(),
+            converter.avro_type_to_ir("float").expect("float should map to IR primitive"),
             IrType::Primitive(PrimitiveType::F32)
         ));
         assert!(matches!(
-            converter.avro_type_to_ir("double").unwrap(),
+            converter.avro_type_to_ir("double").expect("double should map to IR primitive"),
             IrType::Primitive(PrimitiveType::F64)
         ));
         assert!(matches!(
-            converter.avro_type_to_ir("string").unwrap(),
+            converter.avro_type_to_ir("string").expect("string should map to IR primitive"),
             IrType::Primitive(PrimitiveType::String)
         ));
     }

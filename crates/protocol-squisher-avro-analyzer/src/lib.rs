@@ -196,7 +196,7 @@ mod tests {
         let result = analyzer.analyze_str(avro_json, "person");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
+        let ir = result.expect("simple record analysis should produce valid IR");
         assert!(ir.types.contains_key("Person"));
     }
 
@@ -217,7 +217,7 @@ mod tests {
         let result = analyzer.analyze_str(avro_json, "user");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
+        let ir = result.expect("optional field analysis should produce valid IR");
         assert!(ir.types.contains_key("User"));
     }
 
@@ -270,7 +270,7 @@ mod tests {
         let result = analyzer.analyze_str(avro_json, "status");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
+        let ir = result.expect("enum type analysis should produce valid IR");
         assert!(ir.types.contains_key("Status"));
     }
 
@@ -315,7 +315,7 @@ mod tests {
         let result = analyzer.analyze_str(avro_json, "user");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
+        let ir = result.expect("nested record analysis should produce valid IR");
         assert!(ir.types.contains_key("User"));
         assert!(ir.types.contains_key("Address"));
     }

@@ -213,7 +213,8 @@ mod tests {
         let ctx = IRContext::new();
         let i32_type = IrType::Primitive(IrPrim::I32);
 
-        let analysis = TransportAnalysis::new(&ctx, &i32_type, &i32_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &i32_type, &i32_type)
+            .expect("exact match transport analysis should succeed");
 
         assert!(analysis.is_zero_copy());
         assert!(analysis.is_safe());
@@ -228,7 +229,8 @@ mod tests {
         let i32_type = IrType::Primitive(IrPrim::I32);
         let i64_type = IrType::Primitive(IrPrim::I64);
 
-        let analysis = TransportAnalysis::new(&ctx, &i32_type, &i64_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &i32_type, &i64_type)
+            .expect("safe widening transport analysis should succeed");
 
         assert!(!analysis.is_zero_copy());
         assert!(analysis.is_safe());
@@ -243,7 +245,8 @@ mod tests {
         let i32_type = IrType::Primitive(IrPrim::I32);
         let string_type = IrType::Primitive(IrPrim::String);
 
-        let analysis = TransportAnalysis::new(&ctx, &i32_type, &string_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &i32_type, &string_type)
+            .expect("incompatible types transport analysis should succeed");
 
         assert!(!analysis.is_zero_copy());
         assert!(!analysis.is_safe());
@@ -257,7 +260,8 @@ mod tests {
         let ctx = IRContext::new();
         let int_type = IrType::Primitive(IrPrim::I32);
 
-        let analysis = TransportAnalysis::new(&ctx, &int_type, &int_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &int_type, &int_type)
+            .expect("Avro int-to-i32 transport analysis should succeed");
         assert!(analysis.is_zero_copy());
     }
 
@@ -266,7 +270,8 @@ mod tests {
         let ctx = IRContext::new();
         let long_type = IrType::Primitive(IrPrim::I64);
 
-        let analysis = TransportAnalysis::new(&ctx, &long_type, &long_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &long_type, &long_type)
+            .expect("Avro long-to-i64 transport analysis should succeed");
         assert!(analysis.is_zero_copy());
     }
 
@@ -275,7 +280,8 @@ mod tests {
         let ctx = IRContext::new();
         let string_type = IrType::Primitive(IrPrim::String);
 
-        let analysis = TransportAnalysis::new(&ctx, &string_type, &string_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &string_type, &string_type)
+            .expect("Avro string-to-string transport analysis should succeed");
         assert!(analysis.is_zero_copy());
     }
 
@@ -289,7 +295,8 @@ mod tests {
         let vec_type =
             IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(IrPrim::I32))));
 
-        let analysis = TransportAnalysis::new(&ctx, &array_type, &vec_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &array_type, &vec_type)
+            .expect("Avro array-to-vec transport analysis should succeed");
         assert!(analysis.is_zero_copy());
     }
 
@@ -303,7 +310,8 @@ mod tests {
             Box::new(IrType::Primitive(IrPrim::I32)),
         ));
 
-        let analysis = TransportAnalysis::new(&ctx, &map_type, &map_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &map_type, &map_type)
+            .expect("Avro map-to-map transport analysis should succeed");
         assert!(analysis.is_zero_copy());
     }
 
@@ -316,7 +324,8 @@ mod tests {
             IrPrim::I32,
         ))));
 
-        let analysis = TransportAnalysis::new(&ctx, &optional_type, &optional_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &optional_type, &optional_type)
+            .expect("optional Avro field transport analysis should succeed");
         assert!(analysis.is_zero_copy());
     }
 
@@ -332,7 +341,8 @@ mod tests {
         let required_string = IrType::Primitive(IrPrim::String);
 
         // Optional to required - requires runtime check (Business class at best)
-        let analysis = TransportAnalysis::new(&ctx, &optional_string, &required_string).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &optional_string, &required_string)
+            .expect("Avro union analysis should succeed");
         assert!(!analysis.is_zero_copy());
         assert!(analysis.requires_json_fallback());
     }
@@ -346,7 +356,8 @@ mod tests {
         let source = IrType::Container(ContainerType::Option(Box::new(i64_type.clone())));
         let target = IrType::Container(ContainerType::Option(Box::new(i64_type)));
 
-        let class = analyze_transport_compatibility(&ctx, &source, &target).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &source, &target)
+            .expect("Option with identical elements should analyze successfully");
         assert_eq!(class, TransportClass::Concorde);
     }
 
@@ -360,7 +371,8 @@ mod tests {
         let target =
             IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(IrPrim::I32))));
 
-        let class = analyze_transport_compatibility(&ctx, &source, &target).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &source, &target)
+            .expect("Vec with narrowing elements should analyze successfully");
         assert_eq!(class, TransportClass::Wheelbarrow);
     }
 
@@ -378,7 +390,8 @@ mod tests {
             Box::new(IrType::Primitive(IrPrim::I32)),
         ));
 
-        let class = analyze_transport_compatibility(&ctx, &source, &target).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &source, &target)
+            .expect("Map with narrowing value should analyze successfully");
         assert_eq!(class, TransportClass::Wheelbarrow);
     }
 }

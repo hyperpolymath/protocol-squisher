@@ -247,7 +247,7 @@ mod tests {
         let result = parser.parse_str(json);
         assert!(result.is_ok());
 
-        let parsed = result.unwrap();
+        let parsed = result.expect("parsing simple record should succeed");
         assert_eq!(parsed.types.len(), 1);
 
         assert!(
@@ -279,7 +279,7 @@ mod tests {
         let result = parser.parse_str(json);
         assert!(result.is_ok());
 
-        let parsed = result.unwrap();
+        let parsed = result.expect("parsing optional field record should succeed");
         if let AvroType::Record { fields, .. } = &parsed.types[0] {
             assert!(fields[0].schema.is_optional());
         }
@@ -333,7 +333,7 @@ mod tests {
         let result = parser.parse_str(json);
         assert!(result.is_ok());
 
-        let parsed = result.unwrap();
+        let parsed = result.expect("parsing enum should succeed");
         assert!(
             matches!(&parsed.types[0], AvroType::Enum { .. }),
             "Expected enum type"
@@ -359,7 +359,7 @@ mod tests {
         let result = parser.parse_str(json);
         assert!(result.is_ok());
 
-        let parsed = result.unwrap();
+        let parsed = result.expect("parsing fixed type should succeed");
         assert!(
             matches!(&parsed.types[0], AvroType::Fixed { .. }),
             "Expected fixed type"
@@ -398,7 +398,7 @@ mod tests {
         ]);
         let unwrapped = optional.unwrap_optional();
         assert!(unwrapped.is_some());
-        assert!(matches!(unwrapped.unwrap(), AvroSchema::Name(name) if name == "string"));
+        assert!(matches!(unwrapped.expect("unwrap_optional should return the non-null type"), AvroSchema::Name(name) if name == "string"));
     }
 
     #[test]
