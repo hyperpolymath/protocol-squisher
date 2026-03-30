@@ -195,7 +195,7 @@ mod tests {
             syntax = "proto3";
             message Ping { string msg = 1; }
         "#;
-        let ir = SchemaAnalyzer::analyze_str(&analyzer, proto, "ping").unwrap();
+        let ir = SchemaAnalyzer::analyze_str(&analyzer, proto, "ping").expect("analyze_str should parse a valid proto3 Ping message");
         assert!(ir.types.contains_key("Ping"));
     }
 
@@ -214,7 +214,7 @@ mod tests {
         let result = analyzer.analyze_str(proto, "person");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
+        let ir = result.expect("analyze_str should parse a simple Person message");
         assert!(ir.types.contains_key("Person"));
     }
 
@@ -238,7 +238,7 @@ mod tests {
         let result = analyzer.analyze_str(proto, "person");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
+        let ir = result.expect("analyze_str should parse nested Person/Address messages");
         assert!(ir.types.contains_key("Person"));
         assert!(ir.types.contains_key("Person_Address"));
     }
@@ -264,7 +264,7 @@ mod tests {
         let result = analyzer.analyze_str(proto, "task");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
+        let ir = result.expect("analyze_str should parse enum Status and message Task");
         assert!(ir.types.contains_key("Status"));
         assert!(ir.types.contains_key("Task"));
     }
@@ -376,7 +376,7 @@ mod tests {
         let result = analyzer.analyze_str(proto, "company");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
+        let ir = result.expect("analyze_str should parse deeply nested Company/Employee/Address");
         assert!(ir.types.contains_key("Company"));
         assert!(ir.types.contains_key("Company_Employee"));
         assert!(ir.types.contains_key("Company_Employee_Address"));
@@ -410,8 +410,8 @@ mod tests {
         let result = analyzer.analyze_str(proto, "alltypes");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
-        let all_types = ir.types.get("AllTypes").unwrap();
+        let ir = result.expect("analyze_str should parse AllTypes message with 15 scalar fields");
+        let all_types = ir.types.get("AllTypes").expect("IR should contain AllTypes definition");
 
         assert!(
             matches!(all_types, protocol_squisher_ir::TypeDef::Struct(_)),
@@ -449,7 +449,7 @@ mod tests {
         let result = analyzer.analyze_str(proto, "schema");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
+        let ir = result.expect("analyze_str should parse User, Post, and Comment messages");
         assert_eq!(ir.types.len(), 3);
         assert!(ir.types.contains_key("User"));
         assert!(ir.types.contains_key("Post"));
@@ -478,7 +478,7 @@ mod tests {
         let result = analyzer.analyze_str(proto, "task");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
+        let ir = result.expect("analyze_str should parse Task with nested Priority enum");
         assert!(ir.types.contains_key("Task"));
         assert!(ir.types.contains_key("Task_Priority"));
     }
@@ -499,8 +499,8 @@ mod tests {
         let result = analyzer.analyze_str(proto, "prefs");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
-        let prefs = ir.types.get("UserPreferences").unwrap();
+        let ir = result.expect("analyze_str should parse UserPreferences with map fields");
+        let prefs = ir.types.get("UserPreferences").expect("IR should contain UserPreferences definition");
 
         assert!(
             matches!(prefs, protocol_squisher_ir::TypeDef::Struct(_)),
@@ -548,7 +548,7 @@ mod tests {
         let result = analyzer.analyze_str(proto, "search");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
+        let ir = result.expect("analyze_str should parse SearchQuery with multiple oneofs");
         assert!(ir.types.contains_key("SearchQuery"));
         assert!(ir.types.contains_key("SearchQuery_QueryType"));
         assert!(ir.types.contains_key("SearchQuery_ResultFormat"));
@@ -574,7 +574,7 @@ mod tests {
         let result = analyzer.analyze_str(proto, "user");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
+        let ir = result.expect("analyze_str should parse User message with comments stripped");
         assert!(ir.types.contains_key("User"));
     }
 
@@ -593,7 +593,7 @@ mod tests {
         let result = analyzer.analyze_str(proto, "api");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
+        let ir = result.expect("analyze_str should parse Request message with package declaration");
         assert!(ir.types.contains_key("Request"));
     }
 
@@ -612,12 +612,12 @@ mod tests {
         "#;
 
         let analyzer = ProtobufAnalyzer::new();
-        let result = analyzer.analyze_str(proto, "data").unwrap();
+        let result = analyzer.analyze_str(proto, "data").expect("analyze_str should parse Data message with int32 field");
 
         // Get the field type for the int32 field
-        let data_type = result.types.get("Data").unwrap();
+        let data_type = result.types.get("Data").expect("IR should contain Data type definition");
         if let protocol_squisher_ir::TypeDef::Struct(s) = data_type {
-            let field = s.fields.first().unwrap();
+            let field = s.fields.first().expect("Data struct should have at least one field");
 
             // The field type is I32 (since proto3 fields are non-optional by default)
             // Test transport analysis
@@ -625,7 +625,7 @@ mod tests {
             let target_type = IrType::Primitive(PrimitiveType::I32);
 
             // In proto3, non-optional fields are just the primitive type
-            let analysis = TransportAnalysis::new(&ctx, &field.ty, &target_type).unwrap();
+            let analysis = TransportAnalysis::new(&ctx, &field.ty, &target_type).expect("transport analysis should succeed for I32 -> I32");
 
             // Should be zero-copy for I32 -> I32
             assert!(

@@ -213,7 +213,7 @@ mod tests {
         let ctx = IRContext::new();
         let i32_type = IrType::Primitive(IrPrim::I32);
 
-        let analysis = TransportAnalysis::new(&ctx, &i32_type, &i32_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &i32_type, &i32_type).expect("transport analysis should succeed for identical I32 types");
 
         assert!(analysis.is_zero_copy());
         assert!(analysis.is_safe());
@@ -228,7 +228,7 @@ mod tests {
         let i32_type = IrType::Primitive(IrPrim::I32);
         let i64_type = IrType::Primitive(IrPrim::I64);
 
-        let analysis = TransportAnalysis::new(&ctx, &i32_type, &i64_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &i32_type, &i64_type).expect("transport analysis should succeed for I32 -> I64 widening");
 
         assert!(!analysis.is_zero_copy());
         assert!(analysis.is_safe());
@@ -243,7 +243,7 @@ mod tests {
         let i32_type = IrType::Primitive(IrPrim::I32);
         let string_type = IrType::Primitive(IrPrim::String);
 
-        let analysis = TransportAnalysis::new(&ctx, &i32_type, &string_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &i32_type, &string_type).expect("transport analysis should succeed for incompatible I32 vs String");
 
         assert!(!analysis.is_zero_copy());
         assert!(!analysis.is_safe());
@@ -261,7 +261,7 @@ mod tests {
         let source = IrType::Container(ContainerType::Option(Box::new(i64_type.clone())));
         let target = IrType::Container(ContainerType::Option(Box::new(i64_type)));
 
-        let class = analyze_transport_compatibility(&ctx, &source, &target).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &source, &target).expect("compatibility analysis should succeed for Option<I64> -> Option<I64>");
         assert_eq!(class, TransportClass::Concorde);
     }
 
@@ -277,7 +277,7 @@ mod tests {
             IrPrim::I32,
         ))));
 
-        let class = analyze_transport_compatibility(&ctx, &source, &target).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &source, &target).expect("compatibility analysis should succeed for Option<I64> -> Option<I32> narrowing");
         assert_eq!(class, TransportClass::Wheelbarrow);
     }
 
@@ -290,7 +290,7 @@ mod tests {
         let source = IrType::Container(ContainerType::Vec(Box::new(i64_type.clone())));
         let target = IrType::Container(ContainerType::Vec(Box::new(i64_type)));
 
-        let class = analyze_transport_compatibility(&ctx, &source, &target).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &source, &target).expect("compatibility analysis should succeed for Vec<I64> -> Vec<I64>");
         assert_eq!(class, TransportClass::Concorde);
     }
 
@@ -304,7 +304,7 @@ mod tests {
         let target =
             IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(IrPrim::I32))));
 
-        let class = analyze_transport_compatibility(&ctx, &source, &target).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &source, &target).expect("compatibility analysis should succeed for Vec<I64> -> Vec<I32> narrowing");
         assert_eq!(class, TransportClass::Wheelbarrow);
     }
 
@@ -322,7 +322,7 @@ mod tests {
             Box::new(IrType::Primitive(IrPrim::I32)),
         ));
 
-        let class = analyze_transport_compatibility(&ctx, &source, &target).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &source, &target).expect("compatibility analysis should succeed for Map with narrowing value");
         assert_eq!(class, TransportClass::Wheelbarrow);
     }
 
@@ -340,7 +340,7 @@ mod tests {
             IrType::Primitive(IrPrim::String),
         ]));
 
-        let class = analyze_transport_compatibility(&ctx, &source, &target).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &source, &target).expect("compatibility analysis should succeed for Tuple with narrowing element");
         assert_eq!(class, TransportClass::Wheelbarrow);
     }
 
@@ -350,7 +350,7 @@ mod tests {
         let double_type = IrType::Primitive(IrPrim::F64);
         let f64_type = IrType::Primitive(IrPrim::F64);
 
-        let analysis = TransportAnalysis::new(&ctx, &double_type, &f64_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &double_type, &f64_type).expect("transport analysis should succeed for F64 -> F64 (proto double)");
         assert!(analysis.is_zero_copy());
     }
 
@@ -360,7 +360,7 @@ mod tests {
         let float_type = IrType::Primitive(IrPrim::F32);
         let f32_type = IrType::Primitive(IrPrim::F32);
 
-        let analysis = TransportAnalysis::new(&ctx, &float_type, &f32_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &float_type, &f32_type).expect("transport analysis should succeed for F32 -> F32 (proto float)");
         assert!(analysis.is_zero_copy());
     }
 
@@ -370,7 +370,7 @@ mod tests {
         let int32_type = IrType::Primitive(IrPrim::I32);
         let i32_type = IrType::Primitive(IrPrim::I32);
 
-        let analysis = TransportAnalysis::new(&ctx, &int32_type, &i32_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &int32_type, &i32_type).expect("transport analysis should succeed for I32 -> I32 (proto int32)");
         assert!(analysis.is_zero_copy());
     }
 
@@ -386,7 +386,7 @@ mod tests {
             IrType::Primitive(IrPrim::U8),
         )));
 
-        let analysis = TransportAnalysis::new(&ctx, &bytes_as_vec, &vec_u8).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &bytes_as_vec, &vec_u8).expect("transport analysis should succeed for Vec<U8> -> Vec<U8> (proto bytes)");
         assert!(analysis.is_zero_copy());
     }
 }

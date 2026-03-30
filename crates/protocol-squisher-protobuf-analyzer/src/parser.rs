@@ -549,7 +549,7 @@ mod tests {
         "#;
 
         let parser = ProtoParser::new();
-        let result = parser.parse_str(content).unwrap();
+        let result = parser.parse_str(content).expect("parse_str should parse a simple proto3 Person message");
 
         assert_eq!(result.syntax, ProtoSyntax::Proto3);
         assert_eq!(result.messages.len(), 1);
@@ -569,7 +569,7 @@ mod tests {
         "#;
 
         let parser = ProtoParser::new();
-        let result = parser.parse_str(content).unwrap();
+        let result = parser.parse_str(content).expect("parse_str should parse a proto3 Status enum");
 
         assert_eq!(result.enums.len(), 1);
         assert_eq!(result.enums[0].name, "Status");
@@ -587,13 +587,13 @@ mod tests {
         "#;
 
         let parser = ProtoParser::new();
-        let result = parser.parse_str(content).unwrap();
+        let result = parser.parse_str(content).expect("parse_str should parse TaggedItem with repeated field");
 
         let tags_field = result.messages[0]
             .fields
             .iter()
             .find(|f| f.name == "tags")
-            .unwrap();
+            .expect("TaggedItem should have a 'tags' field");
         assert_eq!(tags_field.label, FieldLabel::Repeated);
     }
 
@@ -607,13 +607,13 @@ mod tests {
         "#;
 
         let parser = ProtoParser::new();
-        let result = parser.parse_str(content).unwrap();
+        let result = parser.parse_str(content).expect("parse_str should parse Config with map field");
 
         let settings_field = result.messages[0]
             .fields
             .iter()
             .find(|f| f.name == "settings")
-            .unwrap();
+            .expect("Config should have a 'settings' map field");
         assert_eq!(settings_field.field_type, "map");
         assert_eq!(settings_field.map_key_type, Some("string".to_string()));
         assert_eq!(settings_field.map_value_type, Some("string".to_string()));
@@ -632,7 +632,7 @@ mod tests {
         "#;
 
         let parser = ProtoParser::new();
-        let result = parser.parse_str(content).unwrap();
+        let result = parser.parse_str(content).expect("parse_str should parse Payment with oneof method");
 
         assert_eq!(result.messages[0].oneofs.len(), 1);
         assert_eq!(result.messages[0].oneofs[0].name, "method");
