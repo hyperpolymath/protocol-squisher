@@ -87,7 +87,7 @@ fn object_retrieval() {
 #[test]
 fn arrow_retrieval() {
     let cat = int_widening_category();
-    let m = cat.arrow("i8", "i16").unwrap();
+    let m = cat.arrow("i8", "i16").expect("arrow i8->i16 should exist");
     assert_eq!(m.transport_class, TransportClass::Business);
 }
 
@@ -99,7 +99,7 @@ fn arrow_retrieval() {
 fn identity_exists_for_all_objects() {
     let cat = int_widening_category();
     for id in cat.object_ids() {
-        let identity = cat.identity(id).unwrap();
+        let identity = cat.identity(id).expect("identity morphism should exist for every object");
         assert_eq!(identity.transport_class, TransportClass::Concorde);
         assert!(identity.is_identity());
     }
@@ -109,10 +109,10 @@ fn identity_exists_for_all_objects() {
 fn left_identity_law() {
     // id_B ∘ f = f  (transport class and cost)
     let cat = int_widening_category();
-    let f = cat.arrow("i8", "i16").unwrap();
-    let id_b = cat.identity("i16").unwrap();
+    let f = cat.arrow("i8", "i16").expect("arrow i8->i16 should exist for left identity test");
+    let id_b = cat.identity("i16").expect("identity for i16 should exist");
 
-    let composed = compose(f, &id_b).unwrap();
+    let composed = compose(f, &id_b).expect("composing f with id_B should succeed");
     assert_eq!(composed.transport_class, f.transport_class);
     assert_eq!(composed.source, f.source);
     assert_eq!(composed.target, f.target);
@@ -130,10 +130,10 @@ fn left_identity_law() {
 fn right_identity_law() {
     // f ∘ id_A = f  (transport class and cost)
     let cat = int_widening_category();
-    let f = cat.arrow("i8", "i16").unwrap();
-    let id_a = cat.identity("i8").unwrap();
+    let f = cat.arrow("i8", "i16").expect("arrow i8->i16 should exist for right identity test");
+    let id_a = cat.identity("i8").expect("identity for i8 should exist");
 
-    let composed = compose(&id_a, f).unwrap();
+    let composed = compose(&id_a, f).expect("composing id_A with f should succeed");
     assert_eq!(composed.transport_class, f.transport_class);
     assert_eq!(composed.source, f.source);
     assert_eq!(composed.target, f.target);
@@ -155,15 +155,15 @@ fn right_identity_law() {
 fn composition_associativity() {
     // (h ∘ g) ∘ f = h ∘ (g ∘ f)
     let cat = int_widening_category();
-    let f = cat.arrow("i8", "i16").unwrap();
-    let g = cat.arrow("i16", "i32").unwrap();
-    let h = cat.arrow("i32", "i64").unwrap();
+    let f = cat.arrow("i8", "i16").expect("arrow i8->i16 should exist for associativity test");
+    let g = cat.arrow("i16", "i32").expect("arrow i16->i32 should exist for associativity test");
+    let h = cat.arrow("i32", "i64").expect("arrow i32->i64 should exist for associativity test");
 
-    let gf = compose(f, g).unwrap();
-    let hg = compose(g, h).unwrap();
+    let gf = compose(f, g).expect("composing f then g should succeed");
+    let hg = compose(g, h).expect("composing g then h should succeed");
 
-    let left = compose(&gf, h).unwrap(); // (g ∘ f) ∘ h
-    let right = compose(f, &hg).unwrap(); // f ∘ (h ∘ g)
+    let left = compose(&gf, h).expect("composing (g∘f) then h should succeed"); // (g ∘ f) ∘ h
+    let right = compose(f, &hg).expect("composing f then (h∘g) should succeed"); // f ∘ (h ∘ g)
 
     assert_eq!(left.transport_class, right.transport_class);
     assert_eq!(left.source, right.source);
@@ -177,14 +177,14 @@ fn composition_associativity() {
 #[test]
 fn find_path_identity() {
     let cat = int_widening_category();
-    let path = cat.find_path("i32", "i32").unwrap();
+    let path = cat.find_path("i32", "i32").expect("self-path should always be found");
     assert!(path.is_empty());
 }
 
 #[test]
 fn find_path_direct() {
     let cat = int_widening_category();
-    let path = cat.find_path("i8", "i16").unwrap();
+    let path = cat.find_path("i8", "i16").expect("direct path i8->i16 should be found");
     assert_eq!(path.len(), 1);
     assert_eq!(path[0], ("i8".to_string(), "i16".to_string()));
 }
@@ -192,7 +192,7 @@ fn find_path_direct() {
 #[test]
 fn find_path_transitive() {
     let cat = int_widening_category();
-    let path = cat.find_path("i8", "i64").unwrap();
+    let path = cat.find_path("i8", "i64").expect("transitive path i8->i64 should be found");
     // Should find i8 → i16 → i32 → i64 (3 hops)
     assert_eq!(path.len(), 3);
     assert_eq!(path[0].0, "i8");
@@ -228,7 +228,7 @@ fn find_path_prefers_better_transport_class() {
     cat.add_arrow("A", "B", compare(&a, &b));
     cat.add_arrow("B", "C", compare(&b, &c));
 
-    let path = cat.find_path("A", "C").unwrap();
+    let path = cat.find_path("A", "C").expect("path A->C should be found preferring better transport class");
     // Should prefer the indirect path (Business) over direct (Economy)
     assert_eq!(path.len(), 2);
 }
@@ -240,8 +240,8 @@ fn find_path_prefers_better_transport_class() {
 #[test]
 fn compose_path_produces_valid_morphism() {
     let cat = int_widening_category();
-    let path = cat.find_path("i8", "i64").unwrap();
-    let composed = cat.compose_path(&path).unwrap();
+    let path = cat.find_path("i8", "i64").expect("path i8->i64 should be found for compose test");
+    let composed = cat.compose_path(&path).expect("composing path i8->i64 should produce a valid morphism");
 
     assert_eq!(composed.transport_class, TransportClass::Business);
     assert_eq!(
@@ -375,10 +375,10 @@ fn struct_category_with_evolution() {
     cat.add_arrow("v2", "v3", compare(&v2, &v3));
 
     // v1 → v3 should be findable via v2
-    let path = cat.find_path("v1", "v3").unwrap();
+    let path = cat.find_path("v1", "v3").expect("path v1->v3 should be found via v2");
     assert_eq!(path.len(), 2);
 
-    let composed = cat.compose_path(&path).unwrap();
+    let composed = cat.compose_path(&path).expect("composing v1->v3 path should produce a valid morphism");
     assert_eq!(composed.transport_class, TransportClass::Business);
 }
 
@@ -396,7 +396,7 @@ fn roundtrip_concorde_is_concorde() {
     cat.add_arrow("a", "b", compare(&s, &s));
     cat.add_arrow("b", "a", compare(&s, &s));
 
-    let rt = cat.roundtrip_class("a", "b").unwrap();
+    let rt = cat.roundtrip_class("a", "b").expect("roundtrip class a<->b should be computable for identical shapes");
     assert_eq!(rt, TransportClass::Concorde);
 }
 
@@ -404,7 +404,7 @@ fn roundtrip_concorde_is_concorde() {
 fn roundtrip_widening_is_economy() {
     // i32→i64 (Business) then i64→i32 (Economy) = Economy roundtrip
     let cat = int_widening_category();
-    let rt = cat.roundtrip_class("i32", "i64").unwrap();
+    let rt = cat.roundtrip_class("i32", "i64").expect("roundtrip class i32<->i64 should be computable");
     assert_eq!(rt, TransportClass::Economy);
 }
 
@@ -412,7 +412,7 @@ fn roundtrip_widening_is_economy() {
 fn roundtrip_narrowing_is_economy() {
     // i64→i32 (Economy) then i32→i64 (Business) = Economy roundtrip
     let cat = int_widening_category();
-    let rt = cat.roundtrip_class("i64", "i32").unwrap();
+    let rt = cat.roundtrip_class("i64", "i32").expect("roundtrip class i64<->i32 should be computable");
     assert_eq!(rt, TransportClass::Economy);
 }
 
@@ -456,7 +456,7 @@ fn product_creates_pair_shape() {
 
     cat.add_product("pair", "i32", "bool");
 
-    let pair_shape = cat.object("pair").unwrap();
+    let pair_shape = cat.object("pair").expect("product object 'pair' should exist after add_product");
     let labels = pair_shape.field_labels();
     assert_eq!(labels.len(), 2);
     assert_eq!(labels[0].name, "fst");
@@ -492,7 +492,7 @@ fn unit_is_monoidal_unit() {
     cat.add_product("pair", "i32", "unit");
 
     // pair → i32 exists (projection drops the Unit field)
-    let arrow = cat.arrow("pair", "i32").unwrap();
+    let arrow = cat.arrow("pair", "i32").expect("projection arrow pair->i32 should exist");
     // Unit carries zero bits, so bits_lost should be 0
     assert_eq!(arrow.information_cost.bits_lost, 0);
 }
@@ -509,7 +509,7 @@ fn coproduct_creates_sum_shape() {
 
     cat.add_coproduct("either", "i32", "str");
 
-    let either = cat.object("either").unwrap();
+    let either = cat.object("either").expect("coproduct object 'either' should exist after add_coproduct");
     // Should be a Sum
     match either {
         Shape::Sum { label, .. } => assert_eq!(label.name, "left"),
@@ -539,9 +539,9 @@ fn compose_arrows_direct() {
     // i8 → i16, i16 → i32 compose to i8 → i32
     let result = cat.compose_arrows("i8", "i16", "i32");
     assert!(result.is_ok());
-    let composed = result.unwrap();
+    let composed = result.expect("compose_arrows i8->i16->i32 should not error");
     assert!(composed.is_some());
-    let m = composed.unwrap();
+    let m = composed.expect("compose_arrows i8->i16->i32 should produce a morphism");
     assert_eq!(m.transport_class, TransportClass::Business);
 }
 
@@ -558,6 +558,6 @@ fn compose_arrows_missing_intermediate() {
 fn is_lossless_direct() {
     let cat = int_widening_category();
     // i8 → i16 is Business, which is lossless
-    let arrow = cat.arrow("i8", "i16").unwrap();
+    let arrow = cat.arrow("i8", "i16").expect("arrow i8->i16 should exist for lossless check");
     assert!(arrow.is_lossless());
 }

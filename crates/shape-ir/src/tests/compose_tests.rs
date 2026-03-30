@@ -15,7 +15,7 @@ fn compose_two_widenings() {
 
     let f = compare(&a, &b); // i32 -> i64
     let g = compare(&b, &c); // i64 -> i128
-    let h = compose(&f, &g).unwrap();
+    let h = compose(&f, &g).expect("composing two widenings should succeed");
 
     assert_eq!(h.source, a);
     assert_eq!(h.target, c);
@@ -30,7 +30,7 @@ fn compose_widening_then_narrowing() {
 
     let f = compare(&a, &b); // Business (widen)
     let g = compare(&b, &a); // Economy (narrow)
-    let h = compose(&f, &g).unwrap();
+    let h = compose(&f, &g).expect("composing widening then narrowing should succeed");
 
     // Worst of Business and Economy is Economy
     assert_eq!(h.transport_class, TransportClass::Economy);
@@ -43,7 +43,7 @@ fn compose_identities() {
     let s = Shape::Atom(AtomKind::I32);
     let f = compare(&s, &s);
     let g = compare(&s, &s);
-    let h = compose(&f, &g).unwrap();
+    let h = compose(&f, &g).expect("composing two identities should succeed");
     assert_eq!(h.transport_class, TransportClass::Concorde);
 }
 
@@ -68,7 +68,7 @@ fn compose_preserves_information_cost() {
 
     let f = compare(&a, &b);
     let g = compare(&b, &c);
-    let h = compose(&f, &g).unwrap();
+    let h = compose(&f, &g).expect("composing widenings should succeed for information cost test");
 
     assert_eq!(
         h.information_cost.bits_added,
@@ -91,7 +91,7 @@ fn compose_structs() {
 
     let f = compare(&a, &b);
     let g = compare(&b, &c);
-    let h = compose(&f, &g).unwrap();
+    let h = compose(&f, &g).expect("composing struct widenings should succeed");
 
     assert_eq!(h.transport_class, TransportClass::Business);
     assert_eq!(h.source, a);
@@ -107,7 +107,7 @@ fn compose_sequences() {
 
     let f = compare(&a, &b);
     let g = compare(&b, &c);
-    let h = compose(&f, &g).unwrap();
+    let h = compose(&f, &g).expect("composing sequence widenings should succeed");
 
     assert_eq!(h.transport_class, TransportClass::Business);
     assert_eq!(h.source, a);
@@ -123,7 +123,7 @@ fn compose_maps() {
 
     let f = compare(&a, &b);
     let g = compare(&b, &c);
-    let h = compose(&f, &g).unwrap();
+    let h = compose(&f, &g).expect("composing map widenings should succeed");
 
     assert_eq!(h.transport_class, TransportClass::Business);
     assert_eq!(h.source, a);
@@ -139,7 +139,7 @@ fn compose_optionals() {
 
     let f = compare(&a, &b);
     let g = compare(&b, &c);
-    let h = compose(&f, &g).unwrap();
+    let h = compose(&f, &g).expect("composing optional widenings should succeed");
 
     assert_eq!(h.transport_class, TransportClass::Business);
     assert_eq!(h.source, a);
@@ -164,7 +164,7 @@ fn compose_sums() {
 
     let f = compare(&a, &b);
     let g = compare(&b, &c);
-    let h = compose(&f, &g).unwrap();
+    let h = compose(&f, &g).expect("composing sum widenings should succeed");
 
     assert_eq!(h.transport_class, TransportClass::Business);
 }
@@ -186,7 +186,7 @@ fn compose_annotated() {
 
     let f = compare(&a, &b);
     let g = compare(&b, &c);
-    let h = compose(&f, &g).unwrap();
+    let h = compose(&f, &g).expect("composing annotated widenings should succeed");
 
     assert_eq!(h.transport_class, TransportClass::Business);
 }
@@ -204,7 +204,7 @@ fn compose_nested_product_with_widening() {
 
     let f = compare(&a, &b);
     let g = compare(&b, &c);
-    let h = compose(&f, &g).unwrap();
+    let h = compose(&f, &g).expect("composing nested product widenings should succeed");
 
     assert_eq!(h.transport_class, TransportClass::Business);
 }
@@ -221,7 +221,7 @@ fn compose_cross_constructor_fails() {
 
     // Should compose fine (Wheelbarrow composes), but the result
     // should be at least Wheelbarrow
-    let h = compose(&f, &g).unwrap();
+    let h = compose(&f, &g).expect("composing cross-constructor morphisms should succeed as Wheelbarrow");
     assert_eq!(h.transport_class, TransportClass::Wheelbarrow);
 }
 
@@ -232,7 +232,7 @@ fn compose_identity_left() {
 
     let id = compare(&s, &s);
     let f = compare(&s, &t);
-    let h = compose(&id, &f).unwrap();
+    let h = compose(&id, &f).expect("composing left identity with f should succeed");
 
     assert_eq!(h.transport_class, f.transport_class);
     assert_eq!(h.source, s);
@@ -246,7 +246,7 @@ fn compose_identity_right() {
 
     let f = compare(&s, &t);
     let id = compare(&t, &t);
-    let h = compose(&f, &id).unwrap();
+    let h = compose(&f, &id).expect("composing f with right identity should succeed");
 
     assert_eq!(h.transport_class, f.transport_class);
     assert_eq!(h.source, s);

@@ -338,11 +338,11 @@ proptest! {
         let g = compare(&Shape::Atom(b), &Shape::Atom(c.clone()));
         let h = compare(&Shape::Atom(c), &Shape::Atom(d));
 
-        let gf = compose(&f, &g).unwrap();
-        let hg = compose(&g, &h).unwrap();
+        let gf = compose(&f, &g).expect("composing f then g should succeed in associativity test");
+        let hg = compose(&g, &h).expect("composing g then h should succeed in associativity test");
 
-        let left = compose(&gf, &h).unwrap();   // (g ∘ f) ∘ h  -- note: our compose is f then g
-        let right = compose(&f, &hg).unwrap();  // f ∘ (h ∘ g)
+        let left = compose(&gf, &h).expect("composing (g∘f) then h should succeed");   // (g ∘ f) ∘ h  -- note: our compose is f then g
+        let right = compose(&f, &hg).expect("composing f then (h∘g) should succeed");  // f ∘ (h ∘ g)
 
         prop_assert_eq!(left.transport_class, right.transport_class);
         prop_assert_eq!(left.source, right.source);
@@ -739,7 +739,7 @@ proptest! {
     fn pathfinding_self_is_empty(kind in arb_atom_kind()) {
         let mut cat = crate::category::ShapeCategory::new();
         cat.add_object("x", Shape::Atom(kind));
-        let path = cat.find_path("x", "x").unwrap();
+        let path = cat.find_path("x", "x").expect("self-path should always be found");
         prop_assert!(path.is_empty(), "Self-path should be empty, got {:?}", path);
     }
 
@@ -756,7 +756,7 @@ proptest! {
         cat.add_object("b", b.clone());
         cat.add_arrow("a", "b", compare(&a, &b));
 
-        let path = cat.find_path("a", "b").unwrap();
+        let path = cat.find_path("a", "b").expect("direct path a->b should be found");
         prop_assert_eq!(path.len(), 1, "Direct edge should give 1-hop path");
         prop_assert_eq!(&path[0].0, "a");
         prop_assert_eq!(&path[0].1, "b");
@@ -787,8 +787,8 @@ proptest! {
         cat.add_arrow("a", "b", m_ab.clone());
         cat.add_arrow("b", "c", m_bc.clone());
 
-        let path = cat.find_path("a", "c").unwrap();
-        let composed = cat.compose_path(&path).unwrap();
+        let path = cat.find_path("a", "c").expect("path a->c should be found via b");
+        let composed = cat.compose_path(&path).expect("composing path a->c should produce a valid morphism");
 
         // Composed class should be the worst of the two edges
         let expected = crate::TransportClass::compose(
@@ -832,8 +832,8 @@ proptest! {
 
         let pairs = cat.isomorphic_pairs();
         for (a, b) in &pairs {
-            let forward = cat.arrow(a, b).unwrap();
-            let backward = cat.arrow(b, a).unwrap();
+            let forward = cat.arrow(a, b).expect("forward arrow should exist for isomorphic pair");
+            let backward = cat.arrow(b, a).expect("backward arrow should exist for isomorphic pair");
             prop_assert_eq!(forward.transport_class, crate::TransportClass::Concorde);
             prop_assert_eq!(backward.transport_class, crate::TransportClass::Concorde);
         }
