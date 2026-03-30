@@ -156,7 +156,7 @@ mod tests {
                 msg: string,
             }
         "#;
-        let ir = SchemaAnalyzer::analyze_str(&analyzer, rescript, "ping").unwrap();
+        let ir = SchemaAnalyzer::analyze_str(&analyzer, rescript, "ping").expect("analyze ping via SchemaAnalyzer trait");
         assert!(ir.types.contains_key("ping"));
     }
 
@@ -171,10 +171,7 @@ mod tests {
         "#;
 
         let analyzer = ReScriptAnalyzer::new();
-        let result = analyzer.analyze_str(rescript, "person");
-        assert!(result.is_ok());
-
-        let ir = result.unwrap();
+        let ir = analyzer.analyze_str(rescript, "person").expect("analyze person record");
         assert!(ir.types.contains_key("person"));
     }
 
@@ -188,10 +185,7 @@ mod tests {
         "#;
 
         let analyzer = ReScriptAnalyzer::new();
-        let result = analyzer.analyze_str(rescript, "status");
-        assert!(result.is_ok());
-
-        let ir = result.unwrap();
+        let ir = analyzer.analyze_str(rescript, "status").expect("analyze status variant");
         assert!(ir.types.contains_key("status"));
     }
 
@@ -287,10 +281,7 @@ mod tests {
         "#;
 
         let analyzer = ReScriptAnalyzer::new();
-        let result = analyzer.analyze_str(rescript, "schema");
-        assert!(result.is_ok());
-
-        let ir = result.unwrap();
+        let ir = analyzer.analyze_str(rescript, "schema").expect("analyze multi-type schema");
         assert_eq!(ir.types.len(), 3);
         assert!(ir.types.contains_key("userId"));
         assert!(ir.types.contains_key("user"));

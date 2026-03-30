@@ -258,19 +258,19 @@ mod tests {
         let converter = ReScriptConverter::new();
 
         assert!(matches!(
-            converter.rescript_type_to_ir("string").unwrap(),
+            converter.rescript_type_to_ir("string").expect("convert string type"),
             IrType::Primitive(PrimitiveType::String)
         ));
         assert!(matches!(
-            converter.rescript_type_to_ir("int").unwrap(),
+            converter.rescript_type_to_ir("int").expect("convert int type"),
             IrType::Primitive(PrimitiveType::I64)
         ));
         assert!(matches!(
-            converter.rescript_type_to_ir("float").unwrap(),
+            converter.rescript_type_to_ir("float").expect("convert float type"),
             IrType::Primitive(PrimitiveType::F64)
         ));
         assert!(matches!(
-            converter.rescript_type_to_ir("bool").unwrap(),
+            converter.rescript_type_to_ir("bool").expect("convert bool type"),
             IrType::Primitive(PrimitiveType::Bool)
         ));
     }
@@ -278,7 +278,7 @@ mod tests {
     #[test]
     fn test_option_type_conversion() {
         let converter = ReScriptConverter::new();
-        let result = converter.rescript_type_to_ir("option<string>").unwrap();
+        let result = converter.rescript_type_to_ir("option<string>").expect("convert option<string>");
 
         let IrType::Container(ContainerType::Option(inner)) = result else {
             unreachable!("option<string> should map to Option");
@@ -289,7 +289,7 @@ mod tests {
     #[test]
     fn test_array_type_conversion() {
         let converter = ReScriptConverter::new();
-        let result = converter.rescript_type_to_ir("array<int>").unwrap();
+        let result = converter.rescript_type_to_ir("array<int>").expect("convert array<int>");
 
         let IrType::Container(ContainerType::Vec(inner)) = result else {
             unreachable!("array<int> should map to Vec");
@@ -300,7 +300,7 @@ mod tests {
     #[test]
     fn test_js_dict_conversion() {
         let converter = ReScriptConverter::new();
-        let result = converter.rescript_type_to_ir("Js.Dict.t<string>").unwrap();
+        let result = converter.rescript_type_to_ir("Js.Dict.t<string>").expect("convert Js.Dict.t<string>");
 
         let IrType::Container(ContainerType::Map(key, value)) = result else {
             unreachable!("Js.Dict.t<T> should map to Map");
@@ -312,7 +312,7 @@ mod tests {
     #[test]
     fn test_tuple_conversion() {
         let converter = ReScriptConverter::new();
-        let result = converter.rescript_type_to_ir("(int, string)").unwrap();
+        let result = converter.rescript_type_to_ir("(int, string)").expect("convert (int, string) tuple");
 
         let IrType::Container(ContainerType::Tuple(elements)) = result else {
             unreachable!("tuple should map to Tuple container");
@@ -328,7 +328,7 @@ mod tests {
     #[test]
     fn test_reference_type() {
         let converter = ReScriptConverter::new();
-        let result = converter.rescript_type_to_ir("CustomType").unwrap();
+        let result = converter.rescript_type_to_ir("CustomType").expect("convert CustomType reference");
 
         let IrType::Reference(name) = result else {
             unreachable!("CustomType should map to reference");
@@ -339,7 +339,7 @@ mod tests {
     #[test]
     fn test_type_parameter() {
         let converter = ReScriptConverter::new();
-        let result = converter.rescript_type_to_ir("'a").unwrap();
+        let result = converter.rescript_type_to_ir("'a").expect("convert type parameter 'a");
 
         let IrType::Reference(name) = result else {
             unreachable!("type parameter should map to reference");
@@ -361,7 +361,7 @@ mod tests {
         let converter = ReScriptConverter::new();
         let result = converter
             .rescript_type_to_ir("option<array<string>>")
-            .unwrap();
+            .expect("convert nested option<array<string>>");
 
         let IrType::Container(ContainerType::Option(inner)) = result else {
             unreachable!("outer type should be Option");
@@ -397,10 +397,7 @@ mod tests {
             ],
         };
 
-        let result = converter.convert_record(&record);
-        assert!(result.is_ok());
-
-        let struct_def = result.unwrap();
+        let struct_def = converter.convert_record(&record).expect("convert simple record");
         assert_eq!(struct_def.name, "person");
         assert_eq!(struct_def.fields.len(), 2);
     }
@@ -426,10 +423,7 @@ mod tests {
             ],
         };
 
-        let result = converter.convert_variant(&variant);
-        assert!(result.is_ok());
-
-        let enum_def = result.unwrap();
+        let enum_def = converter.convert_variant(&variant).expect("convert simple variant");
         assert_eq!(enum_def.name, "status");
         assert_eq!(enum_def.variants.len(), 2);
     }
@@ -445,10 +439,7 @@ mod tests {
             js_name: Some("user_id".to_string()),
         };
 
-        let result = converter.convert_field(&field);
-        assert!(result.is_ok());
-
-        let field_def = result.unwrap();
+        let field_def = converter.convert_field(&field).expect("convert field with js alias");
         assert_eq!(field_def.name, "id");
         assert_eq!(field_def.metadata.aliases.len(), 1);
         assert_eq!(field_def.metadata.aliases[0], "user_id");

@@ -21,7 +21,7 @@
 | # | Crate | Files | unwrap() | Status | Notes |
 |---|-------|-------|----------|--------|-------|
 | 1 | messagepack-analyzer | converter(22) parser(20) ephapax_bridge(10) lib(6) | 58 | **DONE** | All test code→expect(). 2 in doc comments left (standard). Compiles clean. |
-| 2 | rescript-analyzer | tests/interop(33) ephapax_bridge(15) converter(14) examples(8) lib(6) parser(5) | 81 | NOT STARTED | 33 in tests |
+| 2 | rescript-analyzer | tests/interop(33) ephapax_bridge(15) converter(14) examples(8) lib(6) parser(5) | 81 | **IN PROGRESS** | ephapax_bridge.rs DONE, converter.rs DONE, lib.rs DONE, parser.rs DONE. **REMAINING: tests/interop_tests.rs (33) + examples/basic_usage.rs (8) — NOT YET TOUCHED.** Production code had 0 real unwrap()s. |
 | 3 | shape-ir | tests(74) category(3) compose(1) benches(1) | 81 | NOT STARTED | 74 in tests |
 | 4 | flatbuffers-analyzer | ephapax_bridge(15) converter(11) parser(8) lib(7) | 41 | NOT STARTED | |
 | 5 | avro-analyzer | converter(18) ephapax_bridge(13) parser(5) lib(4) | 40 | NOT STARTED | |
@@ -63,17 +63,19 @@
 ## Progress Summary
 
 - **Total crates:** 29 (grouped from 35 workspace members)
-- **Completed:** 1/29
-- **unwrap() remaining:** ~876
-- **unwrap() removed:** 56 (messagepack-analyzer)
+- **Completed:** 1/29 (messagepack-analyzer committed)
+- **In progress:** 1/29 (rescript-analyzer — src/ done, tests/examples remain)
+- **unwrap() remaining:** ~836
+- **unwrap() removed:** ~96 (56 messagepack + ~40 rescript src/)
 
 ## Session Log
 
 ### Session 1 — 2026-03-30
 - Created progress tracker
 - Assessed error handling landscape
-- **DONE: messagepack-analyzer** — 56 unwrap()→expect() in 4 test files. 0 production unwraps (only unwrap_or). 2 doc-comment unwraps left (standard practice). cargo check clean.
-- Next: rescript-analyzer (Crate #2)
+- **DONE: messagepack-analyzer** — 56 unwrap()→expect() in 4 test files. 0 production unwraps (only unwrap_or). 2 doc-comment unwraps left (standard practice). cargo check clean. COMMITTED.
+- **IN PROGRESS: rescript-analyzer** — src/ files all done (ephapax_bridge.rs, converter.rs, lib.rs, parser.rs). **REMAINING: tests/interop_tests.rs (33 unwraps) and examples/basic_usage.rs (8 unwraps). These are NOT YET EDITED.** Production code had 0 real unwrap()s (all were unwrap_or/unwrap_or_default). NOT YET COMMITTED — changes staged but not committed.
+- Session ended due to credit limit. Next agent: finish interop_tests.rs + basic_usage.rs, cargo check, commit, then proceed to shape-ir (Crate #3).
 
 ## Pickup Instructions for New Agents
 

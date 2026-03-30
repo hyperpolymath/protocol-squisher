@@ -214,7 +214,7 @@ mod tests {
         let ctx = IRContext::new();
         let i64_type = IrType::Primitive(IrPrim::I64);
 
-        let analysis = TransportAnalysis::new(&ctx, &i64_type, &i64_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &i64_type, &i64_type).expect("transport analysis for identical i64");
 
         assert!(analysis.is_zero_copy());
         assert!(analysis.is_safe());
@@ -229,7 +229,7 @@ mod tests {
         let i32_type = IrType::Primitive(IrPrim::I32);
         let i64_type = IrType::Primitive(IrPrim::I64);
 
-        let analysis = TransportAnalysis::new(&ctx, &i32_type, &i64_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &i32_type, &i64_type).expect("transport analysis for i32→i64 widening");
 
         assert!(!analysis.is_zero_copy());
         assert!(analysis.is_safe());
@@ -244,7 +244,7 @@ mod tests {
         let i64_type = IrType::Primitive(IrPrim::I64);
         let string_type = IrType::Primitive(IrPrim::String);
 
-        let analysis = TransportAnalysis::new(&ctx, &i64_type, &string_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &i64_type, &string_type).expect("transport analysis for i64→String incompatible");
 
         assert!(!analysis.is_zero_copy());
         assert!(!analysis.is_safe());
@@ -259,7 +259,7 @@ mod tests {
         let int_type = IrType::Primitive(IrPrim::I64);
         let i64_type = IrType::Primitive(IrPrim::I64);
 
-        let analysis = TransportAnalysis::new(&ctx, &int_type, &i64_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &int_type, &i64_type).expect("transport analysis for ReScript int→i64");
         assert!(analysis.is_zero_copy());
     }
 
@@ -269,7 +269,7 @@ mod tests {
         let float_type = IrType::Primitive(IrPrim::F64);
         let f64_type = IrType::Primitive(IrPrim::F64);
 
-        let analysis = TransportAnalysis::new(&ctx, &float_type, &f64_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &float_type, &f64_type).expect("transport analysis for ReScript float→f64");
         assert!(analysis.is_zero_copy());
     }
 
@@ -278,7 +278,7 @@ mod tests {
         let ctx = IRContext::new();
         let string_type = IrType::Primitive(IrPrim::String);
 
-        let analysis = TransportAnalysis::new(&ctx, &string_type, &string_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &string_type, &string_type).expect("transport analysis for String→String");
         assert!(analysis.is_zero_copy());
     }
 
@@ -292,7 +292,7 @@ mod tests {
         let vec_type =
             IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(IrPrim::I64))));
 
-        let analysis = TransportAnalysis::new(&ctx, &array_type, &vec_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &array_type, &vec_type).expect("transport analysis for array→Vec");
         assert!(analysis.is_zero_copy());
     }
 
@@ -305,7 +305,7 @@ mod tests {
             IrPrim::String,
         ))));
 
-        let analysis = TransportAnalysis::new(&ctx, &option_type, &option_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &option_type, &option_type).expect("transport analysis for Option→Option");
         assert!(analysis.is_zero_copy());
     }
 
@@ -319,7 +319,7 @@ mod tests {
             IrType::Primitive(IrPrim::String),
         ]));
 
-        let analysis = TransportAnalysis::new(&ctx, &tuple_type, &tuple_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &tuple_type, &tuple_type).expect("transport analysis for tuple→tuple");
         assert!(analysis.is_zero_copy());
     }
 
@@ -333,7 +333,7 @@ mod tests {
             Box::new(IrType::Primitive(IrPrim::String)),
         ));
 
-        let analysis = TransportAnalysis::new(&ctx, &js_dict, &js_dict).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &js_dict, &js_dict).expect("transport analysis for Js.Dict→Map");
         assert!(analysis.is_zero_copy());
     }
 
@@ -346,7 +346,7 @@ mod tests {
         let source = IrType::Container(ContainerType::Option(Box::new(i64_type.clone())));
         let target = IrType::Container(ContainerType::Option(Box::new(i64_type)));
 
-        let class = analyze_transport_compatibility(&ctx, &source, &target).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &source, &target).expect("Option identical elements compatibility");
         assert_eq!(class, TransportClass::Concorde);
     }
 
@@ -360,7 +360,7 @@ mod tests {
         let target =
             IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(IrPrim::I32))));
 
-        let class = analyze_transport_compatibility(&ctx, &source, &target).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &source, &target).expect("Vec narrowing compatibility");
         assert_eq!(class, TransportClass::Wheelbarrow);
     }
 
@@ -375,7 +375,7 @@ mod tests {
         ]));
         let target = IrType::Container(ContainerType::Tuple(vec![IrType::Primitive(IrPrim::I64)]));
 
-        let class = analyze_transport_compatibility(&ctx, &source, &target).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &source, &target).expect("tuple different length compatibility");
         assert_eq!(class, TransportClass::Wheelbarrow);
     }
 
@@ -393,7 +393,7 @@ mod tests {
             Box::new(IrType::Primitive(IrPrim::I32)),
         ));
 
-        let class = analyze_transport_compatibility(&ctx, &source, &target).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &source, &target).expect("Map narrowing value compatibility");
         assert_eq!(class, TransportClass::Wheelbarrow);
     }
 
@@ -406,7 +406,7 @@ mod tests {
             ContainerType::Vec(Box::new(IrType::Primitive(IrPrim::String))),
         ))));
 
-        let analysis = TransportAnalysis::new(&ctx, &nested, &nested).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &nested, &nested).expect("nested container transport analysis");
         assert!(analysis.is_zero_copy());
     }
 }

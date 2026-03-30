@@ -377,7 +377,7 @@ mod tests {
     #[test]
     fn test_parse_type_alias() {
         let content = "type userId = int";
-        let aliases = parse_type_aliases(content).unwrap();
+        let aliases = parse_type_aliases(content).expect("parse type alias");
         assert_eq!(aliases.len(), 1);
         assert_eq!(aliases[0].name, "userId");
         assert_eq!(aliases[0].target, "int");
@@ -391,7 +391,7 @@ mod tests {
                 age: int,
             }
         "#;
-        let records = parse_records(content).unwrap();
+        let records = parse_records(content).expect("parse simple record");
         assert_eq!(records.len(), 1);
         assert_eq!(records[0].name, "person");
         assert_eq!(records[0].fields.len(), 2);
@@ -405,7 +405,7 @@ mod tests {
               | Inactive
               | Pending
         "#;
-        let variants = parse_variants(content).unwrap();
+        let variants = parse_variants(content).expect("parse variant type");
         assert_eq!(variants.len(), 1);
         assert_eq!(variants[0].name, "status");
         assert_eq!(variants[0].constructors.len(), 3);
@@ -418,7 +418,7 @@ mod tests {
               | Ok('a)
               | Error('e)
         "#;
-        let variants = parse_variants(content).unwrap();
+        let variants = parse_variants(content).expect("parse variant with payload");
         assert_eq!(variants.len(), 1);
         assert_eq!(variants[0].name, "result");
         assert_eq!(variants[0].constructors.len(), 2);
@@ -450,7 +450,7 @@ mod tests {
                 data: 'data,
             }
         "#;
-        let records = parse_records(content).unwrap();
+        let records = parse_records(content).expect("parse polymorphic record");
         assert_eq!(records.len(), 1);
         assert_eq!(records[0].type_params.len(), 1);
         assert_eq!(records[0].type_params[0], "'data");
