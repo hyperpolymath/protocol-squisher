@@ -22,10 +22,10 @@
 |---|-------|-------|----------|--------|-------|
 | 1 | messagepack-analyzer | converter(22) parser(20) ephapax_bridge(10) lib(6) | 58 | **DONE** | All test code→expect(). 2 in doc comments left (standard). Compiles clean. |
 | 2 | rescript-analyzer | tests/interop(33) ephapax_bridge(15) converter(14) examples(8) lib(6) parser(5) | 81 | **DONE** | All test/example code→expect(). 0 production unwraps. Committed+pushed. |
-| 3 | shape-ir | tests(74) category(3) compose(1) benches(1) | 81 | **AGENT RUNNING** | Background agent processing |
-| 4 | flatbuffers-analyzer | ephapax_bridge(15) converter(11) parser(8) lib(7) | 41 | **AGENT RUNNING** | Background agent processing |
-| 5 | avro-analyzer | converter(18) ephapax_bridge(13) parser(5) lib(4) | 40 | **AGENT RUNNING** | Background agent processing |
-| 6 | protobuf-analyzer | lib(18) ephapax_bridge(13) parser(7) | 38 | **AGENT RUNNING** | Background agent processing |
+| 3 | shape-ir | tests(74) category(3) compose(1) benches(1) | 81 | **NOT DONE — AGENT FAILED (credit limit)** | Next agent: grep to check state, then do manually. All test code. |
+| 4 | flatbuffers-analyzer | ephapax_bridge(15) converter(11) parser(8) lib(7) | 41 | **DONE** | Committed+pushed. |
+| 5 | avro-analyzer | converter(18) ephapax_bridge(13) parser(5) lib(4) | 40 | **DONE** | Committed+pushed. |
+| 6 | protobuf-analyzer | lib(18) ephapax_bridge(13) parser(7) | 38 | **DONE** | Committed+pushed. |
 | 7 | capnproto-analyzer | converter(11) parser(10) ephapax_bridge(10) lib(6) | 37 | **DONE** | All test code→expect(). Committed+pushed. |
 | 8 | thrift-analyzer | converter(16) ephapax_bridge(13) lib(6) | 35 | **DONE** | All test code→expect(). Committed+pushed. |
 | 9 | rust-analyzer | converter(12) ephapax_bridge(9) lib(6) parser(3) attr(1) | 31 | **DONE** | All test code→expect(). Committed+pushed. |
@@ -63,10 +63,11 @@
 ## Progress Summary
 
 - **Total crates:** 29 (grouped from 35 workspace members)
-- **Completed:** 5/29 (messagepack, rescript, capnproto, thrift, rust-analyzer)
-- **In progress:** 4/29 (shape-ir, flatbuffers, avro, protobuf — agents running)
-- **unwrap() remaining:** ~549
-- **unwrap() removed:** ~383 (5 completed + agents pending commit)
+- **Completed:** 8/29 (messagepack, rescript, capnproto, thrift, rust-analyzer, flatbuffers, avro, protobuf)
+- **FAILED (redo needed):** shape-ir (agent hit credit limit — NOT DONE)
+- **NOT STARTED:** Tier 2 (12 crates) + Tier 3 (8 crates)
+- **unwrap() removed:** ~399
+- **unwrap() remaining:** ~533 (incl shape-ir 81)
 
 ## Session Log
 
