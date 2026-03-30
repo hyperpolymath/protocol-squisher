@@ -214,13 +214,10 @@ mod tests {
         }"#;
 
         let parser = MessagePackParser::new();
-        let parsed = parser.parse_str(json).unwrap();
+        let parsed = parser.parse_str(json).expect("parse simple object schema");
 
         let converter = MessagePackConverter::new();
-        let result = converter.convert(&parsed, "person");
-        assert!(result.is_ok());
-
-        let ir = result.unwrap();
+        let ir = converter.convert(&parsed, "person").expect("convert simple object to IR");
         assert_eq!(ir.types.len(), 1);
         assert!(ir.types.contains_key("Person"));
     }
@@ -237,10 +234,10 @@ mod tests {
         }"#;
 
         let parser = MessagePackParser::new();
-        let parsed = parser.parse_str(json).unwrap();
+        let parsed = parser.parse_str(json).expect("parse required fields schema");
 
         let converter = MessagePackConverter::new();
-        let ir = converter.convert(&parsed, "user").unwrap();
+        let ir = converter.convert(&parsed, "user").expect("convert user schema to IR");
 
         let user = ir.types.get("User");
         assert!(
@@ -251,11 +248,11 @@ mod tests {
             unreachable!("asserted struct");
         };
         // id is required (not wrapped in Option)
-        let id_field = s.fields.iter().find(|f| f.name == "id").unwrap();
+        let id_field = s.fields.iter().find(|f| f.name == "id").expect("id field must exist");
         assert!(!id_field.optional);
 
         // name is optional (wrapped in Option)
-        let name_field = s.fields.iter().find(|f| f.name == "name").unwrap();
+        let name_field = s.fields.iter().find(|f| f.name == "name").expect("name field must exist");
         assert!(name_field.optional);
     }
 
@@ -272,10 +269,10 @@ mod tests {
         }"#;
 
         let parser = MessagePackParser::new();
-        let parsed = parser.parse_str(json).unwrap();
+        let parsed = parser.parse_str(json).expect("parse array field schema");
 
         let converter = MessagePackConverter::new();
-        let ir = converter.convert(&parsed, "tagged").unwrap();
+        let ir = converter.convert(&parsed, "tagged").expect("convert tagged schema to IR");
 
         let tagged = ir.types.get("Tagged");
         assert!(
@@ -285,7 +282,7 @@ mod tests {
         let Some(TypeDef::Struct(s)) = tagged else {
             unreachable!("asserted struct");
         };
-        let tags_field = s.fields.iter().find(|f| f.name == "tags").unwrap();
+        let tags_field = s.fields.iter().find(|f| f.name == "tags").expect("tags field must exist");
         // Should be Vec<String> wrapped in Option (since not required)
         assert!(
             matches!(
@@ -321,10 +318,10 @@ mod tests {
         }"#;
 
         let parser = MessagePackParser::new();
-        let parsed = parser.parse_str(json).unwrap();
+        let parsed = parser.parse_str(json).expect("parse constraints schema");
 
         let converter = MessagePackConverter::new();
-        let ir = converter.convert(&parsed, "user").unwrap();
+        let ir = converter.convert(&parsed, "user").expect("convert user constraints to IR");
 
         let user = ir.types.get("User");
         assert!(
@@ -334,7 +331,7 @@ mod tests {
         let Some(TypeDef::Struct(s)) = user else {
             unreachable!("asserted struct");
         };
-        let age_field = s.fields.iter().find(|f| f.name == "age").unwrap();
+        let age_field = s.fields.iter().find(|f| f.name == "age").expect("age field must exist");
         assert!(age_field
             .constraints
             .contains(&Constraint::Min(NumberValue::Float(0.0))));
@@ -342,7 +339,7 @@ mod tests {
             .constraints
             .contains(&Constraint::Max(NumberValue::Float(150.0))));
 
-        let username_field = s.fields.iter().find(|f| f.name == "username").unwrap();
+        let username_field = s.fields.iter().find(|f| f.name == "username").expect("username field must exist");
         assert!(username_field
             .constraints
             .contains(&Constraint::MinLength(3)));
@@ -372,10 +369,10 @@ mod tests {
         }"#;
 
         let parser = MessagePackParser::new();
-        let parsed = parser.parse_str(json).unwrap();
+        let parsed = parser.parse_str(json).expect("parse format hints schema");
 
         let converter = MessagePackConverter::new();
-        let ir = converter.convert(&parsed, "record").unwrap();
+        let ir = converter.convert(&parsed, "record").expect("convert record schema to IR");
 
         let record = ir.types.get("Record");
         assert!(
@@ -385,7 +382,7 @@ mod tests {
         let Some(TypeDef::Struct(s)) = record else {
             unreachable!("asserted struct");
         };
-        let created_field = s.fields.iter().find(|f| f.name == "created_at").unwrap();
+        let created_field = s.fields.iter().find(|f| f.name == "created_at").expect("created_at field must exist");
         assert!(
             matches!(
                 &created_field.ty,
@@ -395,7 +392,7 @@ mod tests {
             "Expected Option<DateTime> for created_at"
         );
 
-        let id_field = s.fields.iter().find(|f| f.name == "user_id").unwrap();
+        let id_field = s.fields.iter().find(|f| f.name == "user_id").expect("user_id field must exist");
         assert!(
             matches!(
                 &id_field.ty,
@@ -416,10 +413,10 @@ mod tests {
         }"#;
 
         let parser = MessagePackParser::new();
-        let parsed = parser.parse_str(json).unwrap();
+        let parsed = parser.parse_str(json).expect("parse dynamic field schema");
 
         let converter = MessagePackConverter::new();
-        let ir = converter.convert(&parsed, "dynamic").unwrap();
+        let ir = converter.convert(&parsed, "dynamic").expect("convert dynamic schema to IR");
 
         let dynamic = ir.types.get("Dynamic");
         assert!(
@@ -429,7 +426,7 @@ mod tests {
         let Some(TypeDef::Struct(s)) = dynamic else {
             unreachable!("asserted struct");
         };
-        let field = s.fields.iter().find(|f| f.name == "dynamic_field").unwrap();
+        let field = s.fields.iter().find(|f| f.name == "dynamic_field").expect("dynamic_field must exist");
         // Should map to Any type (dynamic)
         assert!(
             matches!(
@@ -451,10 +448,10 @@ mod tests {
         }"#;
 
         let parser = MessagePackParser::new();
-        let parsed = parser.parse_str(json).unwrap();
+        let parsed = parser.parse_str(json).expect("parse metadata test schema");
 
         let converter = MessagePackConverter::new();
-        let ir = converter.convert(&parsed, "test").unwrap();
+        let ir = converter.convert(&parsed, "test").expect("convert test schema to IR");
 
         let test_ty = ir.types.get("Test");
         assert!(

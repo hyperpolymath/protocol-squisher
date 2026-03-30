@@ -236,7 +236,7 @@ mod tests {
         let ctx = IRContext::new();
         let i64_type = IrType::Primitive(IrPrim::I64);
 
-        let analysis = TransportAnalysis::new(&ctx, &i64_type, &i64_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &i64_type, &i64_type).expect("transport analysis for identical i64");
 
         // MessagePack: even exact matches need runtime validation
         assert!(!analysis.is_zero_copy());
@@ -251,7 +251,7 @@ mod tests {
         let any_type = IrType::Special(protocol_squisher_ir::SpecialType::Any);
         let i64_type = IrType::Primitive(IrPrim::I64);
 
-        let analysis = TransportAnalysis::new(&ctx, &any_type, &i64_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &any_type, &i64_type).expect("transport analysis for Any→i64");
 
         assert!(analysis.requires_json_fallback());
         assert_eq!(analysis.class, TransportClass::Wheelbarrow);
@@ -265,7 +265,7 @@ mod tests {
         let vec_i64 =
             IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(IrPrim::I64))));
 
-        let analysis = TransportAnalysis::new(&ctx, &vec_i64, &vec_i64).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &vec_i64, &vec_i64).expect("transport analysis for Vec<i64>");
 
         // Even identical Vec types need Wheelbarrow in MessagePack
         assert!(analysis.requires_json_fallback());
@@ -282,7 +282,7 @@ mod tests {
             Box::new(IrType::Primitive(IrPrim::I64)),
         ));
 
-        let analysis = TransportAnalysis::new(&ctx, &map_type, &map_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &map_type, &map_type).expect("transport analysis for Map<String,i64>");
 
         assert!(analysis.requires_json_fallback());
         assert_eq!(analysis.class, TransportClass::Wheelbarrow);
@@ -297,7 +297,7 @@ mod tests {
             IrPrim::String,
         ))));
 
-        let analysis = TransportAnalysis::new(&ctx, &opt_string, &opt_string).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &opt_string, &opt_string).expect("transport analysis for Option<String>");
 
         assert!(analysis.requires_json_fallback());
         assert_eq!(analysis.class, TransportClass::Wheelbarrow);
@@ -315,7 +315,7 @@ mod tests {
         let i64_array =
             IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(IrPrim::I64))));
 
-        let analysis = TransportAnalysis::new(&ctx, &dynamic_array, &i64_array).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &dynamic_array, &i64_array).expect("transport analysis for dynamic→typed array");
 
         assert!(analysis.requires_json_fallback());
         assert_eq!(analysis.class, TransportClass::Wheelbarrow);
@@ -327,7 +327,7 @@ mod tests {
         let ctx = IRContext::new();
         let string_type = IrType::Primitive(IrPrim::String);
 
-        let analysis = TransportAnalysis::new(&ctx, &string_type, &string_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &string_type, &string_type).expect("transport analysis for String→String");
 
         assert!(analysis.requires_json_fallback());
         assert_eq!(analysis.class, TransportClass::Wheelbarrow);
@@ -338,7 +338,7 @@ mod tests {
         let ctx = IRContext::new();
         let i64_type = IrType::Primitive(IrPrim::I64);
 
-        let analysis = TransportAnalysis::new(&ctx, &i64_type, &i64_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &i64_type, &i64_type).expect("transport analysis for fidelity/overhead check");
 
         // Wheelbarrow class has low fidelity and high overhead
         assert_eq!(analysis.fidelity, 50);
@@ -351,7 +351,7 @@ mod tests {
         let i64_type = IrType::Primitive(IrPrim::I64);
         let string_type = IrType::Primitive(IrPrim::String);
 
-        let analysis = TransportAnalysis::new(&ctx, &i64_type, &string_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &i64_type, &string_type).expect("transport analysis for i64→String mismatch");
 
         assert!(analysis.requires_json_fallback());
         assert_eq!(analysis.class, TransportClass::Wheelbarrow);
@@ -381,7 +381,7 @@ mod tests {
         ];
 
         for (source, target) in test_cases {
-            let class = analyze_transport_compatibility(&ctx, &source, &target).unwrap();
+            let class = analyze_transport_compatibility(&ctx, &source, &target).expect("transport compatibility for primitive pair");
             assert_eq!(
                 class,
                 TransportClass::Wheelbarrow,

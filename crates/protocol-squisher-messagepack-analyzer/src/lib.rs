@@ -173,7 +173,7 @@ mod tests {
                 "msg": { "type": "string" }
             }
         }"#;
-        let ir = SchemaAnalyzer::analyze_str(&analyzer, json_schema, "ping").unwrap();
+        let ir = SchemaAnalyzer::analyze_str(&analyzer, json_schema, "ping").expect("analyze ping via SchemaAnalyzer trait");
         assert!(ir.types.contains_key("Ping"));
     }
 
@@ -188,10 +188,7 @@ mod tests {
         }"#;
 
         let analyzer = MessagePackAnalyzer::new();
-        let result = analyzer.analyze_str(json_schema, "person");
-        assert!(result.is_ok());
-
-        let ir = result.unwrap();
+        let ir = analyzer.analyze_str(json_schema, "person").expect("analyze person schema");
         assert!(ir.types.contains_key("Person"));
     }
 
@@ -267,8 +264,8 @@ mod tests {
         let result = analyzer.analyze_str(json_schema, "alltypes");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
-        let all_types = ir.types.get("Alltypes").unwrap();
+        let ir = result.expect("analyze alltypes schema");
+        let all_types = ir.types.get("Alltypes").expect("Alltypes type must exist");
 
         assert!(
             matches!(all_types, protocol_squisher_ir::TypeDef::Struct(_)),

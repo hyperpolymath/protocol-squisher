@@ -140,10 +140,7 @@ mod tests {
         }"#;
 
         let parser = MessagePackParser::new();
-        let result = parser.parse_str(json);
-        assert!(result.is_ok());
-
-        let parsed = result.unwrap();
+        let parsed = parser.parse_str(json).expect("parse simple object");
         assert_eq!(parsed.root.schema_type, Some(SchemaType::Object));
         assert_eq!(parsed.root.properties.len(), 2);
     }
@@ -160,10 +157,7 @@ mod tests {
         }"#;
 
         let parser = MessagePackParser::new();
-        let result = parser.parse_str(json);
-        assert!(result.is_ok());
-
-        let parsed = result.unwrap();
+        let parsed = parser.parse_str(json).expect("parse required fields");
         assert_eq!(parsed.root.required.len(), 2);
         assert!(parsed.root.required.contains(&"id".to_string()));
         assert!(parsed.root.required.contains(&"name".to_string()));
@@ -182,11 +176,8 @@ mod tests {
         }"#;
 
         let parser = MessagePackParser::new();
-        let result = parser.parse_str(json);
-        assert!(result.is_ok());
-
-        let parsed = result.unwrap();
-        let tags = parsed.root.properties.get("tags").unwrap();
+        let parsed = parser.parse_str(json).expect("parse array field");
+        let tags = parsed.root.properties.get("tags").expect("tags property must exist");
         assert_eq!(tags.schema_type, Some(SchemaType::Array));
         assert!(tags.items.is_some());
     }
@@ -210,15 +201,12 @@ mod tests {
         }"#;
 
         let parser = MessagePackParser::new();
-        let result = parser.parse_str(json);
-        assert!(result.is_ok());
-
-        let parsed = result.unwrap();
-        let age = parsed.root.properties.get("age").unwrap();
+        let parsed = parser.parse_str(json).expect("parse constraints");
+        let age = parsed.root.properties.get("age").expect("age property must exist");
         assert_eq!(age.minimum, Some(0.0));
         assert_eq!(age.maximum, Some(150.0));
 
-        let username = parsed.root.properties.get("username").unwrap();
+        let username = parsed.root.properties.get("username").expect("username property must exist");
         assert_eq!(username.min_length, Some(3));
         assert_eq!(username.max_length, Some(20));
     }
@@ -236,13 +224,10 @@ mod tests {
         }"#;
 
         let parser = MessagePackParser::new();
-        let result = parser.parse_str(json);
-        assert!(result.is_ok());
-
-        let parsed = result.unwrap();
-        let status = parsed.root.properties.get("status").unwrap();
+        let parsed = parser.parse_str(json).expect("parse enum schema");
+        let status = parsed.root.properties.get("status").expect("status property must exist");
         assert!(status.enum_values.is_some());
-        assert_eq!(status.enum_values.as_ref().unwrap().len(), 3);
+        assert_eq!(status.enum_values.as_ref().expect("enum_values must be Some").len(), 3);
     }
 
     #[test]
@@ -261,11 +246,8 @@ mod tests {
         }"#;
 
         let parser = MessagePackParser::new();
-        let result = parser.parse_str(json);
-        assert!(result.is_ok());
-
-        let parsed = result.unwrap();
-        let address = parsed.root.properties.get("address").unwrap();
+        let parsed = parser.parse_str(json).expect("parse nested object");
+        let address = parsed.root.properties.get("address").expect("address property must exist");
         assert_eq!(address.schema_type, Some(SchemaType::Object));
         assert_eq!(address.properties.len(), 2);
     }
@@ -287,15 +269,12 @@ mod tests {
         }"#;
 
         let parser = MessagePackParser::new();
-        let result = parser.parse_str(json);
-        assert!(result.is_ok());
+        let parsed = parser.parse_str(json).expect("parse format hints");
+        let created_at = parsed.root.properties.get("created_at").expect("created_at property must exist");
+        assert_eq!(created_at.format.as_ref().expect("created_at format must be Some"), "date-time");
 
-        let parsed = result.unwrap();
-        let created_at = parsed.root.properties.get("created_at").unwrap();
-        assert_eq!(created_at.format.as_ref().unwrap(), "date-time");
-
-        let user_id = parsed.root.properties.get("user_id").unwrap();
-        assert_eq!(user_id.format.as_ref().unwrap(), "uuid");
+        let user_id = parsed.root.properties.get("user_id").expect("user_id property must exist");
+        assert_eq!(user_id.format.as_ref().expect("user_id format must be Some"), "uuid");
     }
 
     #[test]
@@ -304,10 +283,7 @@ mod tests {
         let json = "{}";
 
         let parser = MessagePackParser::new();
-        let result = parser.parse_str(json);
-        assert!(result.is_ok());
-
-        let parsed = result.unwrap();
+        let parsed = parser.parse_str(json).expect("parse empty schema");
         assert!(parsed.root.schema_type.is_none());
     }
 
@@ -325,10 +301,7 @@ mod tests {
         }"#;
 
         let parser = MessagePackParser::new();
-        let result = parser.parse_str(json);
-        assert!(result.is_ok());
-
-        let parsed = result.unwrap();
+        let parsed = parser.parse_str(json).expect("parse all primitive types");
         assert_eq!(parsed.root.properties.len(), 5);
     }
 
@@ -345,7 +318,7 @@ mod tests {
         }"#;
 
         let parser = MessagePackParser::new();
-        let parsed = parser.parse_str(json).unwrap();
+        let parsed = parser.parse_str(json).expect("parse definitions and $defs");
 
         assert_eq!(parsed.definitions.len(), 2);
         assert!(parsed.definitions.contains_key("LegacyUserId"));
