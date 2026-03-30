@@ -300,23 +300,23 @@ mod tests {
         let converter = FlatBuffersConverter::new();
 
         assert!(matches!(
-            converter.fbs_type_to_ir("string").unwrap(),
+            converter.fbs_type_to_ir("string").expect("string type conversion should succeed"),
             IrType::Primitive(PrimitiveType::String)
         ));
         assert!(matches!(
-            converter.fbs_type_to_ir("int").unwrap(),
+            converter.fbs_type_to_ir("int").expect("int type conversion should succeed"),
             IrType::Primitive(PrimitiveType::I32)
         ));
         assert!(matches!(
-            converter.fbs_type_to_ir("bool").unwrap(),
+            converter.fbs_type_to_ir("bool").expect("bool type conversion should succeed"),
             IrType::Primitive(PrimitiveType::Bool)
         ));
         assert!(matches!(
-            converter.fbs_type_to_ir("float").unwrap(),
+            converter.fbs_type_to_ir("float").expect("float type conversion should succeed"),
             IrType::Primitive(PrimitiveType::F32)
         ));
         assert!(matches!(
-            converter.fbs_type_to_ir("MyTable").unwrap(),
+            converter.fbs_type_to_ir("MyTable").expect("user-defined type conversion should succeed"),
             IrType::Reference(_)
         ));
     }
@@ -350,7 +350,7 @@ mod tests {
         let result = converter.convert_table(&fbs_table);
         assert!(result.is_ok());
 
-        let struct_def = result.unwrap();
+        let struct_def = result.expect("simple Person table conversion should succeed");
         assert_eq!(struct_def.name, "Person");
         assert_eq!(struct_def.fields.len(), 2);
     }
@@ -392,7 +392,7 @@ mod tests {
         let result = converter.convert_struct(&fbs_struct);
         assert!(result.is_ok());
 
-        let struct_def = result.unwrap();
+        let struct_def = result.expect("Vec3 zero-copy struct conversion should succeed");
         assert_eq!(struct_def.name, "Vec3");
         assert_eq!(struct_def.fields.len(), 3);
         assert_eq!(
@@ -427,7 +427,7 @@ mod tests {
         let result = converter.convert_enum(&fbs_enum);
         assert!(result.is_ok());
 
-        let enum_def = result.unwrap();
+        let enum_def = result.expect("Color enum conversion should succeed");
         assert_eq!(enum_def.name, "Color");
         assert_eq!(enum_def.variants.len(), 3);
     }
@@ -448,7 +448,7 @@ mod tests {
         let result = converter.convert_field(&field);
         assert!(result.is_ok());
 
-        let field_def = result.unwrap();
+        let field_def = result.expect("vector field conversion should succeed");
         assert!(matches!(
             field_def.ty,
             IrType::Container(ContainerType::Vec(_))
@@ -471,7 +471,7 @@ mod tests {
         let result = converter.convert_field(&field);
         assert!(result.is_ok());
 
-        let field_def = result.unwrap();
+        let field_def = result.expect("optional field conversion should succeed");
         assert!(field_def.optional);
         assert!(matches!(
             field_def.ty,
@@ -495,7 +495,7 @@ mod tests {
         let result = converter.convert_field(&field);
         assert!(result.is_ok());
 
-        let field_def = result.unwrap();
+        let field_def = result.expect("required field conversion should succeed");
         assert!(!field_def.optional);
         assert!(matches!(field_def.ty, IrType::Primitive(_)));
     }

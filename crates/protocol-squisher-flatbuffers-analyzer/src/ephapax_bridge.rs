@@ -226,7 +226,7 @@ mod tests {
         let ctx = IRContext::new();
         let i32_type = IrType::Primitive(IrPrim::I32);
 
-        let analysis = TransportAnalysis::new(&ctx, &i32_type, &i32_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &i32_type, &i32_type).expect("exact i32 match should produce valid transport analysis");
 
         assert!(analysis.is_zero_copy());
         assert!(analysis.is_safe());
@@ -241,7 +241,7 @@ mod tests {
         let i32_type = IrType::Primitive(IrPrim::I32);
         let i64_type = IrType::Primitive(IrPrim::I64);
 
-        let analysis = TransportAnalysis::new(&ctx, &i32_type, &i64_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &i32_type, &i64_type).expect("i32-to-i64 widening should produce valid transport analysis");
 
         assert!(!analysis.is_zero_copy());
         assert!(analysis.is_safe());
@@ -256,7 +256,7 @@ mod tests {
         let i32_type = IrType::Primitive(IrPrim::I32);
         let string_type = IrType::Primitive(IrPrim::String);
 
-        let analysis = TransportAnalysis::new(&ctx, &i32_type, &string_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &i32_type, &string_type).expect("i32-to-string incompatible analysis should succeed");
 
         assert!(!analysis.is_zero_copy());
         assert!(!analysis.is_safe());
@@ -270,7 +270,7 @@ mod tests {
         let ctx = IRContext::new();
         let int_type = IrType::Primitive(IrPrim::I32);
 
-        let analysis = TransportAnalysis::new(&ctx, &int_type, &int_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &int_type, &int_type).expect("FBS int-to-i32 exact match analysis should succeed");
         assert!(analysis.is_zero_copy());
     }
 
@@ -279,7 +279,7 @@ mod tests {
         let ctx = IRContext::new();
         let float_type = IrType::Primitive(IrPrim::F32);
 
-        let analysis = TransportAnalysis::new(&ctx, &float_type, &float_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &float_type, &float_type).expect("FBS float-to-f32 exact match analysis should succeed");
         assert!(analysis.is_zero_copy());
     }
 
@@ -288,7 +288,7 @@ mod tests {
         let ctx = IRContext::new();
         let string_type = IrType::Primitive(IrPrim::String);
 
-        let analysis = TransportAnalysis::new(&ctx, &string_type, &string_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &string_type, &string_type).expect("FBS string-to-string exact match analysis should succeed");
         // Strings are zero-copy for exact matches
         assert!(analysis.is_zero_copy());
     }
@@ -301,7 +301,7 @@ mod tests {
         let vector_type =
             IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(IrPrim::I32))));
 
-        let analysis = TransportAnalysis::new(&ctx, &vector_type, &vector_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &vector_type, &vector_type).expect("FBS vector-to-vec transport analysis should succeed");
         // FlatBuffers vectors are heap-allocated (Economy class)
         assert!(!analysis.is_zero_copy());
         assert_eq!(analysis.class, TransportClass::Economy);
@@ -316,7 +316,7 @@ mod tests {
             IrPrim::I32,
         ))));
 
-        let analysis = TransportAnalysis::new(&ctx, &optional_type, &optional_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &optional_type, &optional_type).expect("optional FBS field transport analysis should succeed");
         assert!(analysis.is_zero_copy());
     }
 
@@ -326,7 +326,7 @@ mod tests {
         let ctx = IRContext::new();
         let f32_type = IrType::Primitive(IrPrim::F32);
 
-        let analysis = TransportAnalysis::new(&ctx, &f32_type, &f32_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &f32_type, &f32_type).expect("FBS struct zero-copy f32 analysis should succeed");
         assert!(analysis.is_zero_copy());
     }
 
@@ -339,7 +339,7 @@ mod tests {
         let source = IrType::Container(ContainerType::Option(Box::new(i64_type.clone())));
         let target = IrType::Container(ContainerType::Option(Box::new(i64_type)));
 
-        let class = analyze_transport_compatibility(&ctx, &source, &target).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &source, &target).expect("Option<i64> identical element compatibility should succeed");
         assert_eq!(class, TransportClass::Concorde);
     }
 
@@ -353,7 +353,7 @@ mod tests {
         let target =
             IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(IrPrim::I32))));
 
-        let class = analyze_transport_compatibility(&ctx, &source, &target).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &source, &target).expect("Vec i64-to-i32 narrowing compatibility should succeed");
         assert_eq!(class, TransportClass::Wheelbarrow);
     }
 
@@ -367,7 +367,7 @@ mod tests {
         let target =
             IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(IrPrim::I32))));
 
-        let class = analyze_transport_compatibility(&ctx, &source, &target).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &source, &target).expect("Vec<i32> identical element compatibility should succeed");
         // FlatBuffers vectors are always heap-allocated (Economy class)
         assert_eq!(class, TransportClass::Economy);
     }
@@ -377,7 +377,7 @@ mod tests {
         let ctx = IRContext::new();
         let byte_type = IrType::Primitive(IrPrim::U8);
 
-        let analysis = TransportAnalysis::new(&ctx, &byte_type, &byte_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &byte_type, &byte_type).expect("FBS byte-to-u8 exact match analysis should succeed");
         assert!(analysis.is_zero_copy());
     }
 
@@ -386,7 +386,7 @@ mod tests {
         let ctx = IRContext::new();
         let short_type = IrType::Primitive(IrPrim::I16);
 
-        let analysis = TransportAnalysis::new(&ctx, &short_type, &short_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &short_type, &short_type).expect("FBS short-to-i16 exact match analysis should succeed");
         assert!(analysis.is_zero_copy());
     }
 
@@ -395,7 +395,7 @@ mod tests {
         let ctx = IRContext::new();
         let ulong_type = IrType::Primitive(IrPrim::U64);
 
-        let analysis = TransportAnalysis::new(&ctx, &ulong_type, &ulong_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &ulong_type, &ulong_type).expect("FBS ulong-to-u64 exact match analysis should succeed");
         assert!(analysis.is_zero_copy());
     }
 }

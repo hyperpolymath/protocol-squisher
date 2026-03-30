@@ -372,7 +372,7 @@ mod tests {
         let result = parser.parse_str(fbs);
         assert!(result.is_ok());
 
-        let parsed = result.unwrap();
+        let parsed = result.expect("simple Person table should parse successfully");
         assert_eq!(parsed.tables.len(), 1);
         assert_eq!(parsed.tables[0].name, "Person");
         assert_eq!(parsed.tables[0].fields.len(), 2);
@@ -392,7 +392,7 @@ mod tests {
         let result = parser.parse_str(fbs);
         assert!(result.is_ok());
 
-        let parsed = result.unwrap();
+        let parsed = result.expect("Vec3 struct should parse successfully");
         assert_eq!(parsed.structs.len(), 1);
         assert_eq!(parsed.structs[0].name, "Vec3");
         assert_eq!(parsed.structs[0].fields.len(), 3);
@@ -412,7 +412,7 @@ mod tests {
         let result = parser.parse_str(fbs);
         assert!(result.is_ok());
 
-        let parsed = result.unwrap();
+        let parsed = result.expect("Color enum should parse successfully");
         assert_eq!(parsed.enums.len(), 1);
         assert_eq!(parsed.enums[0].name, "Color");
         assert_eq!(parsed.enums[0].base_type, "byte");
@@ -431,7 +431,7 @@ mod tests {
         let result = parser.parse_str(fbs);
         assert!(result.is_ok());
 
-        let parsed = result.unwrap();
+        let parsed = result.expect("table with vector field should parse successfully");
         assert!(parsed.tables[0].fields[0].is_vector);
     }
 
@@ -447,7 +447,7 @@ mod tests {
         let result = parser.parse_str(fbs);
         assert!(result.is_ok());
 
-        let parsed = result.unwrap();
+        let parsed = result.expect("table with required field should parse successfully");
         assert!(parsed.tables[0].fields[0].required);
     }
 
@@ -463,7 +463,7 @@ mod tests {
         let result = parser.parse_str(fbs);
         assert!(result.is_ok());
 
-        let parsed = result.unwrap();
+        let parsed = result.expect("table with deprecated field should parse successfully");
         assert!(parsed.tables[0].fields[0].deprecated);
     }
 
@@ -480,7 +480,7 @@ mod tests {
         let result = parser.parse_str(fbs);
         assert!(result.is_ok());
 
-        let parsed = result.unwrap();
+        let parsed = result.expect("schema with root_type should parse successfully");
         assert_eq!(parsed.root_type, Some("User".to_string()));
     }
 
@@ -497,7 +497,7 @@ mod tests {
         let result = parser.parse_str(fbs);
         assert!(result.is_ok());
 
-        let parsed = result.unwrap();
+        let parsed = result.expect("Geometry union should parse successfully");
         assert_eq!(parsed.unions.len(), 1);
         assert_eq!(parsed.unions[0].name, "Geometry");
         assert_eq!(parsed.unions[0].variants.len(), 2);

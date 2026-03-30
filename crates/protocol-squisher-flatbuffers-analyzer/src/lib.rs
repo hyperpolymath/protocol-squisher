@@ -170,7 +170,7 @@ mod tests {
                 msg: string;
             }
         "#;
-        let ir = SchemaAnalyzer::analyze_str(&analyzer, fbs, "ping").unwrap();
+        let ir = SchemaAnalyzer::analyze_str(&analyzer, fbs, "ping").expect("schema analyzer should parse simple Ping table");
         assert!(ir.types.contains_key("Ping"));
     }
 
@@ -187,7 +187,7 @@ mod tests {
         let result = analyzer.analyze_str(fbs, "person");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
+        let ir = result.expect("analyzer should parse simple Person table");
         assert!(ir.types.contains_key("Person"));
     }
 
@@ -205,7 +205,7 @@ mod tests {
         let result = analyzer.analyze_str(fbs, "vec3");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
+        let ir = result.expect("analyzer should parse Vec3 struct");
         assert!(ir.types.contains_key("Vec3"));
     }
 
@@ -227,7 +227,7 @@ mod tests {
         let result = analyzer.analyze_str(fbs, "pixel");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
+        let ir = result.expect("analyzer should parse Color enum and Pixel table");
         assert!(ir.types.contains_key("Color"));
         assert!(ir.types.contains_key("Pixel"));
     }
@@ -298,8 +298,8 @@ mod tests {
         let result = analyzer.analyze_str(fbs, "alltypes");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
-        let all_types = ir.types.get("AllTypes").unwrap();
+        let ir = result.expect("analyzer should parse AllTypes table with all FlatBuffers primitives");
+        let all_types = ir.types.get("AllTypes").expect("AllTypes type should exist in IR schema");
 
         assert!(
             matches!(all_types, protocol_squisher_ir::TypeDef::Struct(_)),
@@ -336,7 +336,7 @@ mod tests {
         let result = analyzer.analyze_str(fbs, "schema");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
+        let ir = result.expect("analyzer should parse multiple definitions (User, Post, PostStatus)");
         assert_eq!(ir.types.len(), 3);
         assert!(ir.types.contains_key("User"));
         assert!(ir.types.contains_key("Post"));
