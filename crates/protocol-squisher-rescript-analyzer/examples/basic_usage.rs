@@ -41,7 +41,7 @@ fn example_simple_record() {
     "#;
 
     let analyzer = ReScriptAnalyzer::new();
-    let schema = analyzer.analyze_str(rescript, "user").unwrap();
+    let schema = analyzer.analyze_str(rescript, "user").expect("analyze user record");
 
     println!("Schema name: {}", schema.name);
     println!("Source format: {}", schema.source_format);
@@ -72,7 +72,7 @@ fn example_variant_type() {
     "#;
 
     let analyzer = ReScriptAnalyzer::new();
-    let schema = analyzer.analyze_str(rescript, "enums").unwrap();
+    let schema = analyzer.analyze_str(rescript, "enums").expect("analyze enum types");
 
     println!("Found {} types:", schema.types.len());
 
@@ -115,7 +115,7 @@ fn example_nested_type() {
     "#;
 
     let analyzer = ReScriptAnalyzer::new();
-    let schema = analyzer.analyze_str(rescript, "complex").unwrap();
+    let schema = analyzer.analyze_str(rescript, "complex").expect("analyze complex nested types");
 
     println!("Schema contains {} types:", schema.types.len());
 
@@ -142,7 +142,7 @@ fn example_transport_analysis() {
     println!("\nConcorde (Zero-Copy):");
     let rescript_int = IrType::Primitive(PrimitiveType::I64);
     let rust_i64 = IrType::Primitive(PrimitiveType::I64);
-    let analysis = TransportAnalysis::new(&ctx, &rescript_int, &rust_i64).unwrap();
+    let analysis = TransportAnalysis::new(&ctx, &rescript_int, &rust_i64).expect("Concorde transport");
     println!("  ReScript int → Rust i64");
     println!("  Fidelity: {}%", analysis.fidelity);
     println!("  Overhead: {}%", analysis.overhead);
@@ -152,7 +152,7 @@ fn example_transport_analysis() {
     println!("\nBusiness (Safe Widening):");
     let rescript_int = IrType::Primitive(PrimitiveType::I32);
     let rust_i64 = IrType::Primitive(PrimitiveType::I64);
-    let analysis = TransportAnalysis::new(&ctx, &rescript_int, &rust_i64).unwrap();
+    let analysis = TransportAnalysis::new(&ctx, &rescript_int, &rust_i64).expect("Business transport");
     println!("  ReScript int (as i32) → Rust i64");
     println!("  Fidelity: {}%", analysis.fidelity);
     println!("  Overhead: {}%", analysis.overhead);
@@ -162,7 +162,7 @@ fn example_transport_analysis() {
     println!("\nWheelbarrow (JSON Fallback):");
     let rescript_int = IrType::Primitive(PrimitiveType::I64);
     let rust_string = IrType::Primitive(PrimitiveType::String);
-    let analysis = TransportAnalysis::new(&ctx, &rescript_int, &rust_string).unwrap();
+    let analysis = TransportAnalysis::new(&ctx, &rescript_int, &rust_string).expect("Wheelbarrow transport");
     println!("  ReScript int → Rust String");
     println!("  Fidelity: {}%", analysis.fidelity);
     println!("  Overhead: {}%", analysis.overhead);
@@ -176,7 +176,7 @@ fn example_transport_analysis() {
     let rust_vec = IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(
         PrimitiveType::String,
     ))));
-    let analysis = TransportAnalysis::new(&ctx, &rescript_array, &rust_vec).unwrap();
+    let analysis = TransportAnalysis::new(&ctx, &rescript_array, &rust_vec).expect("container transport");
     println!("  ReScript array<string> → Rust Vec<String>");
     println!("  Zero-copy: {}", analysis.is_zero_copy());
 
@@ -201,7 +201,7 @@ fn example_js_interop() {
     "#;
 
     let analyzer = ReScriptAnalyzer::new();
-    let schema = analyzer.analyze_str(rescript, "js_interop").unwrap();
+    let schema = analyzer.analyze_str(rescript, "js_interop").expect("analyze JS interop types");
 
     println!("JS Interop Features:");
 

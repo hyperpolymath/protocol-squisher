@@ -15,10 +15,7 @@ fn test_parse_interop_test_file() {
     let analyzer = ReScriptAnalyzer::new();
     let path = Path::new("tests/interop_test.res");
 
-    let result = analyzer.analyze_file(path);
-    assert!(result.is_ok());
-
-    let schema = result.unwrap();
+    let schema = analyzer.analyze_file(path).expect("analyze interop test .res file");
 
     // Verify all types were parsed
     assert!(schema.types.contains_key("user"));
@@ -44,7 +41,7 @@ fn test_rescript_to_rust_interop() {
     let rescript_int = IrType::Primitive(PrimitiveType::I64);
     let rust_i64 = IrType::Primitive(PrimitiveType::I64);
 
-    let class = analyze_transport_compatibility(&ctx, &rescript_int, &rust_i64).unwrap();
+    let class = analyze_transport_compatibility(&ctx, &rescript_int, &rust_i64).expect("ReScript int→Rust i64 transport");
     assert_eq!(
         class,
         protocol_squisher_transport_primitives::TransportClass::Concorde
@@ -54,7 +51,7 @@ fn test_rescript_to_rust_interop() {
     let rescript_string = IrType::Primitive(PrimitiveType::String);
     let rust_string = IrType::Primitive(PrimitiveType::String);
 
-    let class = analyze_transport_compatibility(&ctx, &rescript_string, &rust_string).unwrap();
+    let class = analyze_transport_compatibility(&ctx, &rescript_string, &rust_string).expect("ReScript string→Rust String transport");
     assert_eq!(
         class,
         protocol_squisher_transport_primitives::TransportClass::Concorde
@@ -68,7 +65,7 @@ fn test_rescript_to_rust_interop() {
         PrimitiveType::String,
     ))));
 
-    let class = analyze_transport_compatibility(&ctx, &rescript_array, &rust_vec).unwrap();
+    let class = analyze_transport_compatibility(&ctx, &rescript_array, &rust_vec).expect("ReScript array→Rust Vec transport");
     assert_eq!(
         class,
         protocol_squisher_transport_primitives::TransportClass::Concorde
@@ -83,7 +80,7 @@ fn test_rescript_to_julia_interop() {
     let rescript_int = IrType::Primitive(PrimitiveType::I64);
     let julia_int64 = IrType::Primitive(PrimitiveType::I64);
 
-    let analysis = TransportAnalysis::new(&ctx, &rescript_int, &julia_int64).unwrap();
+    let analysis = TransportAnalysis::new(&ctx, &rescript_int, &julia_int64).expect("ReScript int→Julia Int64 transport");
     assert!(analysis.is_zero_copy());
     assert_eq!(analysis.fidelity, 100);
 
@@ -91,7 +88,7 @@ fn test_rescript_to_julia_interop() {
     let rescript_float = IrType::Primitive(PrimitiveType::F64);
     let julia_float64 = IrType::Primitive(PrimitiveType::F64);
 
-    let analysis = TransportAnalysis::new(&ctx, &rescript_float, &julia_float64).unwrap();
+    let analysis = TransportAnalysis::new(&ctx, &rescript_float, &julia_float64).expect("ReScript float→Julia Float64 transport");
     assert!(analysis.is_zero_copy());
 }
 
@@ -107,7 +104,7 @@ fn test_rescript_to_gleam_interop() {
         PrimitiveType::String,
     ))));
 
-    let analysis = TransportAnalysis::new(&ctx, &rescript_option, &gleam_option).unwrap();
+    let analysis = TransportAnalysis::new(&ctx, &rescript_option, &gleam_option).expect("ReScript option→Gleam Option transport");
     assert!(analysis.is_zero_copy());
 }
 
@@ -123,8 +120,8 @@ fn test_rescript_option_semantics() {
         }
     "#;
 
-    let schema = analyzer.analyze_str(rescript, "user").unwrap();
-    let user_type = schema.types.get("user").unwrap();
+    let schema = analyzer.analyze_str(rescript, "user").expect("analyze user with option field");
+    let user_type = schema.types.get("user").expect("user type must exist");
 
     assert!(
         matches!(user_type, TypeDef::Struct(_)),
@@ -137,7 +134,7 @@ fn test_rescript_option_semantics() {
         .fields
         .iter()
         .find(|f| f.name == "email")
-        .unwrap();
+        .expect("email field must exist");
 
     // ReScript option<T> should map to IR Option container
     assert!(
@@ -163,8 +160,8 @@ fn test_rescript_variant_to_rust_enum() {
           | Pending
     "#;
 
-    let schema = analyzer.analyze_str(rescript, "status").unwrap();
-    let status_type = schema.types.get("status").unwrap();
+    let schema = analyzer.analyze_str(rescript, "status").expect("analyze status variant");
+    let status_type = schema.types.get("status").expect("status type must exist");
 
     assert!(
         matches!(status_type, TypeDef::Enum(_)),
@@ -194,8 +191,8 @@ fn test_rescript_variant_with_payload() {
           | Error('e)
     "#;
 
-    let schema = analyzer.analyze_str(rescript, "result").unwrap();
-    let result_type = schema.types.get("result").unwrap();
+    let schema = analyzer.analyze_str(rescript, "result").expect("analyze result variant with payload");
+    let result_type = schema.types.get("result").expect("result type must exist");
 
     assert!(
         matches!(result_type, TypeDef::Enum(_)),
@@ -223,8 +220,8 @@ fn test_rescript_js_interop_attributes() {
         }
     "#;
 
-    let schema = analyzer.analyze_str(rescript, "apiUser").unwrap();
-    let user_type = schema.types.get("apiUser").unwrap();
+    let schema = analyzer.analyze_str(rescript, "apiUser").expect("analyze apiUser with @as attrs");
+    let user_type = schema.types.get("apiUser").expect("apiUser type must exist");
 
     assert!(
         matches!(user_type, TypeDef::Struct(_)),
@@ -233,8 +230,8 @@ fn test_rescript_js_interop_attributes() {
     let TypeDef::Struct(struct_def) = user_type else {
         unreachable!("asserted struct");
     };
-    let id_field = struct_def.fields.iter().find(|f| f.name == "id").unwrap();
-    let name_field = struct_def.fields.iter().find(|f| f.name == "name").unwrap();
+    let id_field = struct_def.fields.iter().find(|f| f.name == "id").expect("id field must exist");
+    let name_field = struct_def.fields.iter().find(|f| f.name == "name").expect("name field must exist");
 
     // Check that @as attributes are captured as aliases
     assert_eq!(id_field.metadata.aliases.len(), 1);
@@ -252,8 +249,8 @@ fn test_rescript_tuple_interop() {
         type coordinates = (float, float, float)
     "#;
 
-    let schema = analyzer.analyze_str(rescript, "coordinates").unwrap();
-    let coord_type = schema.types.get("coordinates").unwrap();
+    let schema = analyzer.analyze_str(rescript, "coordinates").expect("analyze coordinates tuple");
+    let coord_type = schema.types.get("coordinates").expect("coordinates type must exist");
 
     // Type alias wraps the tuple
     assert!(
@@ -289,8 +286,8 @@ fn test_rescript_js_dict_interop() {
         }
     "#;
 
-    let schema = analyzer.analyze_str(rescript, "config").unwrap();
-    let config_type = schema.types.get("config").unwrap();
+    let schema = analyzer.analyze_str(rescript, "config").expect("analyze config with Js.Dict");
+    let config_type = schema.types.get("config").expect("config type must exist");
 
     assert!(
         matches!(config_type, TypeDef::Struct(_)),
@@ -303,7 +300,7 @@ fn test_rescript_js_dict_interop() {
         .fields
         .iter()
         .find(|f| f.name == "settings")
-        .unwrap();
+        .expect("settings field must exist");
 
     // Js.Dict.t<string> should map to Map<String, String>
     assert!(
@@ -328,8 +325,8 @@ fn test_rescript_polymorphic_type() {
         }
     "#;
 
-    let schema = analyzer.analyze_str(rescript, "response").unwrap();
-    let response_type = schema.types.get("response").unwrap();
+    let schema = analyzer.analyze_str(rescript, "response").expect("analyze polymorphic response");
+    let response_type = schema.types.get("response").expect("response type must exist");
 
     assert!(
         matches!(response_type, TypeDef::Struct(_)),
@@ -338,7 +335,7 @@ fn test_rescript_polymorphic_type() {
     let TypeDef::Struct(struct_def) = response_type else {
         unreachable!("asserted struct");
     };
-    let data_field = struct_def.fields.iter().find(|f| f.name == "data").unwrap();
+    let data_field = struct_def.fields.iter().find(|f| f.name == "data").expect("data field must exist");
 
     // Type parameter should be captured as a Reference
     assert!(
@@ -367,7 +364,7 @@ fn test_complex_nested_structure() {
         }
     "#;
 
-    let schema = analyzer.analyze_str(rescript, "blog").unwrap();
+    let schema = analyzer.analyze_str(rescript, "blog").expect("analyze complex nested blog schema");
 
     // All types should be present
     assert!(schema.types.contains_key("userId"));
@@ -375,7 +372,7 @@ fn test_complex_nested_structure() {
     assert!(schema.types.contains_key("post"));
 
     // Verify post structure
-    let post_type = schema.types.get("post").unwrap();
+    let post_type = schema.types.get("post").expect("post type must exist");
     assert!(
         matches!(post_type, TypeDef::Struct(_)),
         "Expected post to be a struct"
@@ -390,7 +387,7 @@ fn test_complex_nested_structure() {
         .fields
         .iter()
         .find(|f| f.name == "authorId")
-        .unwrap();
+        .expect("authorId field must exist");
     assert!(
         matches!(&author_id.ty, IrType::Reference(name) if name == "userId"),
         "Expected Reference to userId"
@@ -401,7 +398,7 @@ fn test_complex_nested_structure() {
         .fields
         .iter()
         .find(|f| f.name == "status")
-        .unwrap();
+        .expect("status field must exist");
     assert!(
         matches!(&status.ty, IrType::Reference(name) if name == "status"),
         "Expected Reference to status"
@@ -415,7 +412,7 @@ fn test_transport_class_summary() {
     // Concorde: Zero-copy, identical types
     let concorde_source = IrType::Primitive(PrimitiveType::I64);
     let concorde_target = IrType::Primitive(PrimitiveType::I64);
-    let analysis = TransportAnalysis::new(&ctx, &concorde_source, &concorde_target).unwrap();
+    let analysis = TransportAnalysis::new(&ctx, &concorde_source, &concorde_target).expect("Concorde transport analysis");
     assert!(analysis.is_zero_copy());
     assert_eq!(analysis.fidelity, 100);
     assert_eq!(analysis.overhead, 0);
@@ -423,7 +420,7 @@ fn test_transport_class_summary() {
     // Business: Safe widening
     let business_source = IrType::Primitive(PrimitiveType::I32);
     let business_target = IrType::Primitive(PrimitiveType::I64);
-    let analysis = TransportAnalysis::new(&ctx, &business_source, &business_target).unwrap();
+    let analysis = TransportAnalysis::new(&ctx, &business_source, &business_target).expect("Business transport analysis");
     assert!(!analysis.is_zero_copy());
     assert!(analysis.is_safe());
     assert_eq!(analysis.fidelity, 98);
@@ -431,7 +428,7 @@ fn test_transport_class_summary() {
     // Wheelbarrow: Incompatible types
     let wheelbarrow_source = IrType::Primitive(PrimitiveType::I64);
     let wheelbarrow_target = IrType::Primitive(PrimitiveType::String);
-    let analysis = TransportAnalysis::new(&ctx, &wheelbarrow_source, &wheelbarrow_target).unwrap();
+    let analysis = TransportAnalysis::new(&ctx, &wheelbarrow_source, &wheelbarrow_target).expect("Wheelbarrow transport analysis");
     assert!(analysis.requires_json_fallback());
     assert_eq!(analysis.fidelity, 50);
 }
