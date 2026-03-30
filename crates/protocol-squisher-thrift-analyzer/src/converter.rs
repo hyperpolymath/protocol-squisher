@@ -306,20 +306,20 @@ mod tests {
     #[test]
     fn test_extract_generic_type() {
         assert_eq!(
-            extract_generic_type("list<string>", "list").unwrap(),
+            extract_generic_type("list<string>", "list").expect("convert thrift type to IR"),
             "string"
         );
-        assert_eq!(extract_generic_type("list<i32>", "list").unwrap(), "i32");
-        assert_eq!(extract_generic_type("set<User>", "set").unwrap(), "User");
+        assert_eq!(extract_generic_type("list<i32>", "list").expect("extract generic type"), "i32");
+        assert_eq!(extract_generic_type("set<User>", "set").expect("extract generic type"), "User");
     }
 
     #[test]
     fn test_extract_map_types() {
-        let (key, value) = extract_map_types("map<string, i32>").unwrap();
+        let (key, value) = extract_map_types("map<string, i32>").expect("extract map key-value types");
         assert_eq!(key, "string");
         assert_eq!(value, "i32");
 
-        let (key, value) = extract_map_types("map<i64, User>").unwrap();
+        let (key, value) = extract_map_types("map<i64, User>").expect("extract map key-value types");
         assert_eq!(key, "i64");
         assert_eq!(value, "User");
     }
@@ -329,23 +329,23 @@ mod tests {
         let converter = ThriftConverter::new();
 
         assert!(matches!(
-            converter.thrift_type_to_ir("string").unwrap(),
+            converter.thrift_type_to_ir("string").expect("convert thrift type to IR"),
             IrType::Primitive(PrimitiveType::String)
         ));
         assert!(matches!(
-            converter.thrift_type_to_ir("i32").unwrap(),
+            converter.thrift_type_to_ir("i32").expect("convert thrift type to IR"),
             IrType::Primitive(PrimitiveType::I32)
         ));
         assert!(matches!(
-            converter.thrift_type_to_ir("bool").unwrap(),
+            converter.thrift_type_to_ir("bool").expect("convert thrift type to IR"),
             IrType::Primitive(PrimitiveType::Bool)
         ));
         assert!(matches!(
-            converter.thrift_type_to_ir("double").unwrap(),
+            converter.thrift_type_to_ir("double").expect("convert thrift type to IR"),
             IrType::Primitive(PrimitiveType::F64)
         ));
         assert!(matches!(
-            converter.thrift_type_to_ir("MyStruct").unwrap(),
+            converter.thrift_type_to_ir("MyStruct").expect("convert thrift type to IR"),
             IrType::Reference(_)
         ));
     }
@@ -377,7 +377,7 @@ mod tests {
         let result = converter.convert_struct(&thrift_struct);
         assert!(result.is_ok());
 
-        let struct_def = result.unwrap();
+        let struct_def = result.expect("convert thrift definition");
         assert_eq!(struct_def.name, "Person");
         assert_eq!(struct_def.fields.len(), 2);
     }
@@ -407,7 +407,7 @@ mod tests {
         let result = converter.convert_enum(&thrift_enum);
         assert!(result.is_ok());
 
-        let enum_def = result.unwrap();
+        let enum_def = result.expect("convert thrift definition");
         assert_eq!(enum_def.name, "Status");
         assert_eq!(enum_def.variants.len(), 3);
     }
@@ -427,7 +427,7 @@ mod tests {
         let result = converter.convert_field(&field);
         assert!(result.is_ok());
 
-        let field_def = result.unwrap();
+        let field_def = result.expect("convert thrift definition");
         assert!(matches!(
             field_def.ty,
             IrType::Container(ContainerType::Vec(_))
@@ -449,7 +449,7 @@ mod tests {
         let result = converter.convert_field(&field);
         assert!(result.is_ok());
 
-        let field_def = result.unwrap();
+        let field_def = result.expect("convert thrift definition");
         assert!(matches!(
             field_def.ty,
             IrType::Container(ContainerType::Map(_, _))
@@ -471,7 +471,7 @@ mod tests {
         let result = converter.convert_field(&field);
         assert!(result.is_ok());
 
-        let field_def = result.unwrap();
+        let field_def = result.expect("convert thrift definition");
         assert!(field_def.optional);
         assert!(matches!(
             field_def.ty,
@@ -494,7 +494,7 @@ mod tests {
         let result = converter.convert_field(&field);
         assert!(result.is_ok());
 
-        let field_def = result.unwrap();
+        let field_def = result.expect("convert thrift definition");
         assert_eq!(
             field_def.metadata.default,
             Some(serde_json::Value::Number(30.into()))

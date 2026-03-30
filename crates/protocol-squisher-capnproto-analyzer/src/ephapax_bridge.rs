@@ -224,7 +224,7 @@ mod tests {
         let ctx = IRContext::new();
         let i32_type = IrType::Primitive(IrPrim::I32);
 
-        let analysis = TransportAnalysis::new(&ctx, &i32_type, &i32_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &i32_type, &i32_type).expect("capnproto transport analysis");
 
         assert!(analysis.is_zero_copy());
         assert!(analysis.is_safe());
@@ -239,7 +239,7 @@ mod tests {
         let i32_type = IrType::Primitive(IrPrim::I32);
         let i64_type = IrType::Primitive(IrPrim::I64);
 
-        let analysis = TransportAnalysis::new(&ctx, &i32_type, &i64_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &i32_type, &i64_type).expect("capnproto transport analysis");
 
         assert!(!analysis.is_zero_copy());
         assert!(analysis.is_safe());
@@ -254,7 +254,7 @@ mod tests {
         let i32_type = IrType::Primitive(IrPrim::I32);
         let string_type = IrType::Primitive(IrPrim::String);
 
-        let analysis = TransportAnalysis::new(&ctx, &i32_type, &string_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &i32_type, &string_type).expect("capnproto transport analysis");
 
         assert!(!analysis.is_zero_copy());
         assert!(!analysis.is_safe());
@@ -269,7 +269,7 @@ mod tests {
         let int64_type = IrType::Primitive(IrPrim::I64);
         let i64_type = IrType::Primitive(IrPrim::I64);
 
-        let analysis = TransportAnalysis::new(&ctx, &int64_type, &i64_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &int64_type, &i64_type).expect("capnproto transport analysis");
         assert!(analysis.is_zero_copy());
     }
 
@@ -279,7 +279,7 @@ mod tests {
         let float64_type = IrType::Primitive(IrPrim::F64);
         let f64_type = IrType::Primitive(IrPrim::F64);
 
-        let analysis = TransportAnalysis::new(&ctx, &float64_type, &f64_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &float64_type, &f64_type).expect("capnproto transport analysis");
         assert!(analysis.is_zero_copy());
     }
 
@@ -288,7 +288,7 @@ mod tests {
         let ctx = IRContext::new();
         let text_type = IrType::Primitive(IrPrim::String);
 
-        let analysis = TransportAnalysis::new(&ctx, &text_type, &text_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &text_type, &text_type).expect("capnproto transport analysis");
         assert!(analysis.is_zero_copy());
     }
 
@@ -302,7 +302,7 @@ mod tests {
         let vec_type =
             IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(IrPrim::I32))));
 
-        let analysis = TransportAnalysis::new(&ctx, &list_type, &vec_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &list_type, &vec_type).expect("capnproto transport analysis");
         assert!(analysis.is_zero_copy());
     }
 
@@ -313,7 +313,7 @@ mod tests {
         let ctx = IRContext::new();
         let void_type = IrType::Special(SpecialType::Unit);
 
-        let analysis = TransportAnalysis::new(&ctx, &void_type, &void_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &void_type, &void_type).expect("capnproto transport analysis");
         assert!(analysis.is_zero_copy());
     }
 
@@ -325,7 +325,7 @@ mod tests {
         let data_type =
             IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(IrPrim::U8))));
 
-        let analysis = TransportAnalysis::new(&ctx, &data_type, &data_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &data_type, &data_type).expect("capnproto transport analysis");
         assert!(analysis.is_zero_copy());
     }
 
@@ -339,7 +339,7 @@ mod tests {
         let target =
             IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(IrPrim::I32))));
 
-        let class = analyze_transport_compatibility(&ctx, &source, &target).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &source, &target).expect("capnproto transport analysis");
         assert_eq!(class, TransportClass::Wheelbarrow);
     }
 }

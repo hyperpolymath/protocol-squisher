@@ -307,23 +307,23 @@ mod tests {
     #[test]
     fn test_capnp_type_to_ir() {
         assert!(matches!(
-            CapnProtoConverter::capnp_type_to_ir("Text").unwrap(),
+            CapnProtoConverter::capnp_type_to_ir("Text").expect("convert capnproto type to IR"),
             IrType::Primitive(PrimitiveType::String)
         ));
         assert!(matches!(
-            CapnProtoConverter::capnp_type_to_ir("Int32").unwrap(),
+            CapnProtoConverter::capnp_type_to_ir("Int32").expect("convert capnproto type to IR"),
             IrType::Primitive(PrimitiveType::I32)
         ));
         assert!(matches!(
-            CapnProtoConverter::capnp_type_to_ir("Bool").unwrap(),
+            CapnProtoConverter::capnp_type_to_ir("Bool").expect("convert capnproto type to IR"),
             IrType::Primitive(PrimitiveType::Bool)
         ));
         assert!(matches!(
-            CapnProtoConverter::capnp_type_to_ir("Void").unwrap(),
+            CapnProtoConverter::capnp_type_to_ir("Void").expect("convert capnproto type to IR"),
             IrType::Special(SpecialType::Unit)
         ));
         assert!(matches!(
-            CapnProtoConverter::capnp_type_to_ir("MyStruct").unwrap(),
+            CapnProtoConverter::capnp_type_to_ir("MyStruct").expect("convert capnproto type to IR"),
             IrType::Reference(_)
         ));
     }
@@ -357,7 +357,7 @@ mod tests {
         let result = converter.convert_struct(&capnp_struct);
         assert!(result.is_ok());
 
-        let struct_def = result.unwrap();
+        let struct_def = result.expect("convert capnproto definition");
         assert_eq!(struct_def.name, "Person");
         assert_eq!(struct_def.fields.len(), 2);
         assert_eq!(
@@ -395,7 +395,7 @@ mod tests {
         let result = converter.convert_enum(&capnp_enum);
         assert!(result.is_ok());
 
-        let enum_def = result.unwrap();
+        let enum_def = result.expect("convert capnproto definition");
         assert_eq!(enum_def.name, "Status");
         assert_eq!(enum_def.variants.len(), 3);
     }
@@ -415,7 +415,7 @@ mod tests {
         let result = converter.convert_field(&field);
         assert!(result.is_ok());
 
-        let field_def = result.unwrap();
+        let field_def = result.expect("convert capnproto definition");
         assert!(matches!(
             field_def.ty,
             IrType::Container(ContainerType::Vec(_))
@@ -437,7 +437,7 @@ mod tests {
         let result = converter.convert_field(&field);
         assert!(result.is_ok());
 
-        let field_def = result.unwrap();
+        let field_def = result.expect("convert capnproto definition");
         // Data should be Vec<U8>
         assert!(matches!(
             field_def.ty,
@@ -460,7 +460,7 @@ mod tests {
         let result = converter.convert_field(&field);
         assert!(result.is_ok());
 
-        let field_def = result.unwrap();
+        let field_def = result.expect("convert capnproto definition");
         assert_eq!(
             field_def.metadata.serde_hints.get("field_number"),
             Some(&"42".to_string())
@@ -482,7 +482,7 @@ mod tests {
         let result = converter.convert_field(&field);
         assert!(result.is_ok());
 
-        let field_def = result.unwrap();
+        let field_def = result.expect("convert capnproto definition");
         assert_eq!(
             field_def.metadata.default,
             Some(serde_json::Value::Number(30.into()))

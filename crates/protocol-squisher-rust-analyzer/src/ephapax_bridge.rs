@@ -213,7 +213,7 @@ mod tests {
         let ctx = IRContext::new();
         let i32_type = IrType::Primitive(IrPrim::I32);
 
-        let analysis = TransportAnalysis::new(&ctx, &i32_type, &i32_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &i32_type, &i32_type).expect("Rust type transport analysis");
 
         assert!(analysis.is_zero_copy());
         assert!(analysis.is_safe());
@@ -228,7 +228,7 @@ mod tests {
         let i32_type = IrType::Primitive(IrPrim::I32);
         let i64_type = IrType::Primitive(IrPrim::I64);
 
-        let analysis = TransportAnalysis::new(&ctx, &i32_type, &i64_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &i32_type, &i64_type).expect("Rust type transport analysis");
 
         assert!(!analysis.is_zero_copy());
         assert!(analysis.is_safe());
@@ -243,7 +243,7 @@ mod tests {
         let i32_type = IrType::Primitive(IrPrim::I32);
         let string_type = IrType::Primitive(IrPrim::String);
 
-        let analysis = TransportAnalysis::new(&ctx, &i32_type, &string_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &i32_type, &string_type).expect("Rust type transport analysis");
 
         assert!(!analysis.is_zero_copy());
         assert!(!analysis.is_safe());
@@ -261,7 +261,7 @@ mod tests {
         let source = IrType::Container(ContainerType::Option(Box::new(i64_type.clone())));
         let target = IrType::Container(ContainerType::Option(Box::new(i64_type)));
 
-        let class = analyze_transport_compatibility(&ctx, &source, &target).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &source, &target).expect("Rust type transport analysis");
         assert_eq!(class, TransportClass::Concorde);
     }
 
@@ -277,7 +277,7 @@ mod tests {
             IrPrim::I32,
         ))));
 
-        let class = analyze_transport_compatibility(&ctx, &source, &target).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &source, &target).expect("Rust type transport analysis");
         assert_eq!(class, TransportClass::Wheelbarrow);
     }
 
@@ -290,7 +290,7 @@ mod tests {
         let source = IrType::Container(ContainerType::Vec(Box::new(i64_type.clone())));
         let target = IrType::Container(ContainerType::Vec(Box::new(i64_type)));
 
-        let class = analyze_transport_compatibility(&ctx, &source, &target).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &source, &target).expect("Rust type transport analysis");
         assert_eq!(class, TransportClass::Concorde);
     }
 
@@ -304,7 +304,7 @@ mod tests {
         let target =
             IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(IrPrim::I32))));
 
-        let class = analyze_transport_compatibility(&ctx, &source, &target).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &source, &target).expect("Rust type transport analysis");
         assert_eq!(class, TransportClass::Wheelbarrow);
     }
 
@@ -322,7 +322,7 @@ mod tests {
             Box::new(IrType::Primitive(IrPrim::I32)),
         ));
 
-        let class = analyze_transport_compatibility(&ctx, &source, &target).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &source, &target).expect("Rust type transport analysis");
         assert_eq!(class, TransportClass::Wheelbarrow);
     }
 
@@ -340,7 +340,7 @@ mod tests {
             IrType::Primitive(IrPrim::String),
         ]));
 
-        let class = analyze_transport_compatibility(&ctx, &source, &target).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &source, &target).expect("Rust type transport analysis");
         assert_eq!(class, TransportClass::Wheelbarrow);
     }
 }

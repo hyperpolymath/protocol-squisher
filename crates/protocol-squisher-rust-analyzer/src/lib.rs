@@ -515,7 +515,7 @@ mod tests {
             #[derive(Serialize, Deserialize)]
             struct Point { x: f64, y: f64 }
         "#;
-        let schema = SchemaAnalyzer::analyze_str(&analyzer, source, "point").unwrap();
+        let schema = SchemaAnalyzer::analyze_str(&analyzer, source, "point").expect("analyze Rust via trait");
         assert!(schema.types.contains_key("Point"));
     }
 
@@ -530,7 +530,7 @@ mod tests {
         "#;
 
         let analyzer = RustAnalyzer::new();
-        let schema = analyzer.analyze_source(source).unwrap();
+        let schema = analyzer.analyze_source(source).expect("analyze Rust source");
 
         assert_eq!(schema.types.len(), 1);
         assert!(schema.types.contains_key("User"));
@@ -547,7 +547,7 @@ mod tests {
         "#;
 
         let analyzer = RustAnalyzer::new();
-        let schema = analyzer.analyze_source(source).unwrap();
+        let schema = analyzer.analyze_source(source).expect("analyze Rust source");
 
         let config = schema.types.get("Config");
         assert!(
@@ -574,7 +574,7 @@ mod tests {
         "#;
 
         let analyzer = RustAnalyzer::new();
-        let schema = analyzer.analyze_source(source).unwrap();
+        let schema = analyzer.analyze_source(source).expect("analyze Rust source");
 
         let status = schema.types.get("Status");
         assert!(
@@ -603,7 +603,7 @@ mod tests {
         "#;
 
         let analyzer = RustAnalyzer::new();
-        let schema = analyzer.analyze_source(source).unwrap();
+        let schema = analyzer.analyze_source(source).expect("analyze Rust source");
 
         assert_eq!(schema.types.len(), 1);
         assert!(schema.types.contains_key("IsSerde"));
@@ -621,7 +621,7 @@ mod tests {
         "#;
 
         let analyzer = RustAnalyzer::new();
-        let schema = analyzer.analyze_source(source).unwrap();
+        let schema = analyzer.analyze_source(source).expect("analyze Rust source");
 
         let user = schema.types.get("User");
         assert!(

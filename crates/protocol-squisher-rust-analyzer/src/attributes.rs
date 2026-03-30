@@ -215,7 +215,7 @@ mod tests {
             #tokens
             struct Dummy {}
         })
-        .unwrap();
+        .expect("parse serde attribute");
         item.attrs
     }
 

@@ -251,30 +251,30 @@ mod tests {
     use quote::quote;
 
     fn parse_type(tokens: proc_macro2::TokenStream) -> syn::Type {
-        syn::parse2(tokens).unwrap()
+        syn::parse2(tokens).expect("parse token stream")
     }
 
     #[test]
     fn test_primitive_types() {
         assert!(matches!(
-            convert_type(&parse_type(quote!(i32))).unwrap(),
+            convert_type(&parse_type(quote!(i32))).expect("convert Rust type to IR"),
             IrType::Primitive(PrimitiveType::I32)
         ));
 
         assert!(matches!(
-            convert_type(&parse_type(quote!(String))).unwrap(),
+            convert_type(&parse_type(quote!(String))).expect("convert Rust type to IR"),
             IrType::Primitive(PrimitiveType::String)
         ));
 
         assert!(matches!(
-            convert_type(&parse_type(quote!(bool))).unwrap(),
+            convert_type(&parse_type(quote!(bool))).expect("convert Rust type to IR"),
             IrType::Primitive(PrimitiveType::Bool)
         ));
     }
 
     #[test]
     fn test_option_type() {
-        let ty = convert_type(&parse_type(quote!(Option<i32>))).unwrap();
+        let ty = convert_type(&parse_type(quote!(Option<i32>))).expect("convert Rust type to IR");
         assert!(
             matches!(
                 &ty,
@@ -287,7 +287,7 @@ mod tests {
 
     #[test]
     fn test_vec_type() {
-        let ty = convert_type(&parse_type(quote!(Vec<String>))).unwrap();
+        let ty = convert_type(&parse_type(quote!(Vec<String>))).expect("convert Rust type to IR");
         assert!(
             matches!(
                 &ty,
@@ -300,7 +300,7 @@ mod tests {
 
     #[test]
     fn test_hashmap_type() {
-        let ty = convert_type(&parse_type(quote!(HashMap<String, i32>))).unwrap();
+        let ty = convert_type(&parse_type(quote!(HashMap<String, i32>))).expect("convert Rust type to IR");
         assert!(
             matches!(
                 &ty,
@@ -314,7 +314,7 @@ mod tests {
 
     #[test]
     fn test_nested_types() {
-        let ty = convert_type(&parse_type(quote!(Option<Vec<String>>))).unwrap();
+        let ty = convert_type(&parse_type(quote!(Option<Vec<String>>))).expect("convert Rust type to IR");
         assert!(
             matches!(
                 &ty,
@@ -331,19 +331,19 @@ mod tests {
 
     #[test]
     fn test_reference_type() {
-        let ty = convert_type(&parse_type(quote!(MyCustomType))).unwrap();
+        let ty = convert_type(&parse_type(quote!(MyCustomType))).expect("convert Rust type to IR");
         assert!(matches!(ty, IrType::Reference(ref name) if name == "MyCustomType"));
     }
 
     #[test]
     fn test_box_transparent() {
-        let ty = convert_type(&parse_type(quote!(Box<i32>))).unwrap();
+        let ty = convert_type(&parse_type(quote!(Box<i32>))).expect("convert Rust type to IR");
         assert!(matches!(ty, IrType::Primitive(PrimitiveType::I32)));
     }
 
     #[test]
     fn test_tuple_type() {
-        let ty = convert_type(&parse_type(quote!((i32, String)))).unwrap();
+        let ty = convert_type(&parse_type(quote!((i32, String)))).expect("convert Rust type to IR");
         assert!(
             matches!(&ty, IrType::Container(ContainerType::Tuple(types)) if types.len() == 2),
             "Expected tuple container with 2 elements"
@@ -352,7 +352,7 @@ mod tests {
 
     #[test]
     fn test_unit_type() {
-        let ty = convert_type(&parse_type(quote!(()))).unwrap();
+        let ty = convert_type(&parse_type(quote!(()))).expect("convert Rust type to IR");
         assert!(matches!(ty, IrType::Special(SpecialType::Unit)));
     }
 }

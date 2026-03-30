@@ -400,7 +400,7 @@ mod tests {
         let result = parser.parse_str(capnp);
         assert!(result.is_ok());
 
-        let parsed = result.unwrap();
+        let parsed = result.expect("parse capnproto schema");
         assert_eq!(parsed.structs.len(), 1);
         assert_eq!(parsed.structs[0].name, "Person");
         assert_eq!(parsed.structs[0].fields.len(), 2);
@@ -420,7 +420,7 @@ mod tests {
         let result = parser.parse_str(capnp);
         assert!(result.is_ok());
 
-        let parsed = result.unwrap();
+        let parsed = result.expect("parse capnproto schema");
         assert_eq!(parsed.enums.len(), 1);
         assert_eq!(parsed.enums[0].name, "Status");
         assert_eq!(parsed.enums[0].values.len(), 3);
@@ -442,11 +442,11 @@ mod tests {
         let result = parser.parse_str(capnp);
         assert!(result.is_ok());
 
-        let parsed = result.unwrap();
+        let parsed = result.expect("parse capnproto schema");
         assert_eq!(parsed.structs.len(), 1);
         assert!(parsed.structs[0].inline_union.is_some());
 
-        let union_variants = &parsed.structs[0].inline_union.as_ref().unwrap().variants;
+        let union_variants = &parsed.structs[0].inline_union.as_ref().expect("inline union must have variants").variants;
         assert_eq!(union_variants.len(), 2);
     }
 
@@ -463,7 +463,7 @@ mod tests {
         let result = parser.parse_str(capnp);
         assert!(result.is_ok());
 
-        let parsed = result.unwrap();
+        let parsed = result.expect("parse capnproto schema");
         assert_eq!(parsed.structs[0].fields.len(), 2);
         assert_eq!(parsed.structs[0].fields[1].field_type, "List(Text)");
     }
@@ -481,7 +481,7 @@ mod tests {
         let result = parser.parse_str(capnp);
         assert!(result.is_ok());
 
-        let parsed = result.unwrap();
+        let parsed = result.expect("parse capnproto schema");
         assert_eq!(
             parsed.structs[0].fields[0].default_value,
             Some("30".to_string())
@@ -515,7 +515,7 @@ mod tests {
         let result = parser.parse_str(capnp);
         assert!(result.is_ok());
 
-        let parsed = result.unwrap();
+        let parsed = result.expect("parse capnproto schema");
         assert_eq!(parsed.structs.len(), 2);
         assert_eq!(parsed.enums.len(), 1);
     }
@@ -534,7 +534,7 @@ mod tests {
         let result = parser.parse_str(capnp);
         assert!(result.is_ok());
 
-        let parsed = result.unwrap();
+        let parsed = result.expect("parse capnproto schema");
         assert_eq!(parsed.structs.len(), 1);
         assert_eq!(parsed.structs[0].fields.len(), 2);
     }
@@ -552,7 +552,7 @@ mod tests {
         let result = parser.parse_str(capnp);
         assert!(result.is_ok());
 
-        let parsed = result.unwrap();
+        let parsed = result.expect("parse capnproto schema");
         assert_eq!(parsed.structs[0].fields[1].field_type, "Void");
     }
 
@@ -569,7 +569,7 @@ mod tests {
         let result = parser.parse_str(capnp);
         assert!(result.is_ok());
 
-        let parsed = result.unwrap();
+        let parsed = result.expect("parse capnproto schema");
         assert_eq!(parsed.structs[0].fields[1].field_type, "Data");
     }
 }

@@ -101,7 +101,7 @@ mod tests {
             struct Bar {}
             enum Baz {}
         "#;
-        let file = syn::parse_file(source).unwrap();
+        let file = syn::parse_file(source).expect("parse Rust source file");
         let names = extract_struct_names(&file);
         assert_eq!(names, vec!["Foo", "Bar"]);
     }
@@ -113,7 +113,7 @@ mod tests {
             enum Bar {}
             enum Baz {}
         "#;
-        let file = syn::parse_file(source).unwrap();
+        let file = syn::parse_file(source).expect("parse Rust source file");
         let names = extract_enum_names(&file);
         assert_eq!(names, vec!["Bar", "Baz"]);
     }
@@ -130,7 +130,7 @@ mod tests {
             #[derive(Serialize)]
             enum AlsoSerde {}
         "#;
-        let file = syn::parse_file(source).unwrap();
+        let file = syn::parse_file(source).expect("parse Rust source file");
 
         let serialize = find_items_with_derive(&file, "Serialize");
         assert_eq!(serialize, vec!["IsSerde", "AlsoSerde"]);
