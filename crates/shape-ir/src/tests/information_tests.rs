@@ -156,10 +156,10 @@ fn optional_adds_one_bit() {
     let opt = Shape::optional(inner);
     let opt_info = information_content(&opt);
 
-    assert_eq!(opt_info.max_bits, Some(inner_info.max_bits.unwrap() + 1));
+    assert_eq!(opt_info.max_bits, Some(inner_info.max_bits.expect("inner max_bits should be Some") + 1));
     assert_eq!(
         opt_info.cardinality,
-        Some(inner_info.cardinality.unwrap() + 1)
+        Some(inner_info.cardinality.expect("inner cardinality should be Some") + 1)
     );
 }
 

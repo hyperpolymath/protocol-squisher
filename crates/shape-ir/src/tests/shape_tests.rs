@@ -229,7 +229,7 @@ fn serde_roundtrip() {
         ("scores", Shape::sequence(Shape::Atom(AtomKind::F64))),
     ]);
 
-    let json = serde_json::to_string(&shape).unwrap();
-    let parsed: Shape = serde_json::from_str(&json).unwrap();
+    let json = serde_json::to_string(&shape).expect("shape should serialize to JSON");
+    let parsed: Shape = serde_json::from_str(&json).expect("JSON should deserialize back to Shape");
     assert_eq!(shape, parsed);
 }

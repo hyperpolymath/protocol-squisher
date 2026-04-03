@@ -432,28 +432,28 @@ fn json_serialization_roundtrip_all_frame_types() {
     // Shape frame
     let shape = Shape::struct_from(vec![("id", Shape::Atom(AtomKind::I32))]);
     let f1 = PanllFrame::from_shape("test", &shape);
-    let j1 = serde_json::to_string(&f1).unwrap();
-    let _: PanllFrame = serde_json::from_str(&j1).unwrap();
+    let j1 = serde_json::to_string(&f1).expect("shape frame should serialize");
+    let _: PanllFrame = serde_json::from_str(&j1).expect("shape frame JSON should roundtrip");
 
     // Morphism frame
     let source = Shape::Atom(AtomKind::I32);
     let target = Shape::Atom(AtomKind::I64);
     let morphism = compare(&source, &target);
     let f2 = PanllFrame::from_morphism("a", "b", &morphism);
-    let j2 = serde_json::to_string(&f2).unwrap();
-    let _: PanllFrame = serde_json::from_str(&j2).unwrap();
+    let j2 = serde_json::to_string(&f2).expect("morphism frame should serialize");
+    let _: PanllFrame = serde_json::from_str(&j2).expect("morphism frame JSON should roundtrip");
 
     // Timeline frame
     let mut tl = SchemaTimeline::new("t");
     tl.add_version(SemanticVersion::new(1, 0, 0), Shape::Atom(AtomKind::I32));
     let f3 = PanllFrame::from_timeline(&tl);
-    let j3 = serde_json::to_string(&f3).unwrap();
-    let _: PanllFrame = serde_json::from_str(&j3).unwrap();
+    let j3 = serde_json::to_string(&f3).expect("timeline frame should serialize");
+    let _: PanllFrame = serde_json::from_str(&j3).expect("timeline frame JSON should roundtrip");
 
     // Category frame
     let mut cat = ShapeCategory::new();
     cat.add_object("x", Shape::Atom(AtomKind::Bool));
     let f4 = PanllFrame::from_category(&cat);
-    let j4 = serde_json::to_string(&f4).unwrap();
-    let _: PanllFrame = serde_json::from_str(&j4).unwrap();
+    let j4 = serde_json::to_string(&f4).expect("category frame should serialize");
+    let _: PanllFrame = serde_json::from_str(&j4).expect("category frame JSON should roundtrip");
 }

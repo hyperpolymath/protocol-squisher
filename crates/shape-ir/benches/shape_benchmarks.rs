@@ -218,7 +218,7 @@ fn bench_category(c: &mut Criterion) {
     });
 
     group.bench_function("compose_path_3_hops", |b| {
-        let path = cat.find_path("i8", "i64").unwrap();
+        let path = cat.find_path("i8", "i64").expect("benchmark path i8->i64 should exist");
         b.iter(|| cat.compose_path(black_box(&path)))
     });
 

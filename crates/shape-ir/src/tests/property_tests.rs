@@ -866,9 +866,9 @@ proptest! {
         for target in &reachable {
             // Every reachable target should have a direct arrow that is lossless
             // (since we only added direct arrows, not transitive ones)
-            let path = cat.find_path("a", target).unwrap();
+            let path = cat.find_path("a", target).expect("path from 'a' to reachable target should exist");
             for (src, tgt) in &path {
-                let arrow = cat.arrow(src, tgt).unwrap();
+                let arrow = cat.arrow(src, tgt).expect("arrow on path should exist");
                 prop_assert!(
                     arrow.is_lossless(),
                     "Arrow {}→{} on lossless path should be lossless, got {:?}",

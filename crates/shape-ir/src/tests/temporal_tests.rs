@@ -97,7 +97,7 @@ fn single_version_timeline() {
 
     assert_eq!(t.version_count(), 1);
     assert!(t.current().is_some());
-    assert_eq!(t.current().unwrap().version, SemanticVersion::new(1, 0, 0));
+    assert_eq!(t.current().expect("timeline should have current version").version, SemanticVersion::new(1, 0, 0));
     assert!(t.evolution_steps().is_empty()); // No predecessor → no step
 }
 
@@ -256,7 +256,7 @@ fn breaking_timeline() {
     t.add_version(SemanticVersion::new(2, 0, 0), v2);
 
     assert!(!t.is_fully_backward_compatible());
-    let breaking = t.first_breaking_change().unwrap();
+    let breaking = t.first_breaking_change().expect("breaking change should exist for incompatible timeline");
     assert_eq!(breaking.from_version, SemanticVersion::new(1, 0, 0));
 }
 
@@ -296,11 +296,11 @@ fn morphism_to_current() {
     t.add_version(SemanticVersion::new(1, 2, 0), v3);
 
     // v1 → current (v3): added fields + widened id
-    let m = t.morphism_to_current(&SemanticVersion::new(1, 0, 0)).unwrap();
+    let m = t.morphism_to_current(&SemanticVersion::new(1, 0, 0)).expect("morphism v1->current should exist");
     assert_eq!(m.transport_class, TransportClass::Business);
 
     // v3 → current (same): identity
-    let m_self = t.morphism_to_current(&SemanticVersion::new(1, 2, 0)).unwrap();
+    let m_self = t.morphism_to_current(&SemanticVersion::new(1, 2, 0)).expect("morphism v3->current should exist");
     assert_eq!(m_self.transport_class, TransportClass::Concorde);
 }
 
@@ -544,12 +544,12 @@ fn database_migration_scenario() {
     assert!(t.inconsistent_versions().is_empty());
 
     // First breaking change is v3→v4
-    let breaking = t.first_breaking_change().unwrap();
+    let breaking = t.first_breaking_change().expect("first breaking change should exist in multi-version timeline");
     assert_eq!(breaking.from_version, SemanticVersion::new(1, 2, 0));
     assert_eq!(breaking.to_version, SemanticVersion::new(2, 0, 0));
 
     // v1 → current requires handling the breaking change
-    let m = t.morphism_to_current(&SemanticVersion::new(1, 0, 0)).unwrap();
+    let m = t.morphism_to_current(&SemanticVersion::new(1, 0, 0)).expect("morphism v1->current should exist");
     assert!(
         m.transport_class == TransportClass::Economy
             || m.transport_class == TransportClass::Business,
