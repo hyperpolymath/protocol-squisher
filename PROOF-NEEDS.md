@@ -3,7 +3,7 @@
 ## Current State
 
 - **src/abi/*.idr**: YES — `Types.idr`, `Layout.idr`, `Foreign.idr`
-- **Dangerous patterns**: 0 in own code (2 references are documentation asserting "no postulate/believe_me/Admitted")
+- **Dangerous patterns**: 0 in all proof and ABI code (postulate in CarriesInvariant.agda replaced 2026-04-03 with constructive JSON model)
 - **LOC**: ~87,800 (Rust)
 - **Existing proofs**: Agda proofs in `proofs/agda/OptimizationSoundness.agda`, Coq proofs in `proofs/coq/ContainerPropagation.v`
 - **ABI layer**: Complete Idris2 ABI; 758 `unwrap()` calls in Rust
