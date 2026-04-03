@@ -60,8 +60,11 @@ htmlcov/
 *.tmp
 *.bak
 
+# Zig build artifacts (global — matches any depth)
+.zig-cache/
+zig-out/
+
 # Local tooling artifacts
-/ffi/zig/.zig-cache/
 /tools/
 
 # Generated runtime output (panic-attack, abduct, amuck)
