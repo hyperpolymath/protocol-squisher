@@ -290,10 +290,10 @@ mod tests {
         let mut store = InMemoryStore::new();
         let record = sample_record("r1", "User.id", "UserDTO.id", "2026-01-01T00:00:00Z");
 
-        let id = store.store_analysis(record.clone()).unwrap();
+        let id = store.store_analysis(record.clone()).expect("operation should succeed in test");
         assert_eq!(id, "r1");
 
-        let retrieved = store.get_analysis("r1").unwrap();
+        let retrieved = store.get_analysis("r1").expect("operation should succeed in test");
         assert_eq!(retrieved.source_type, "User.id");
     }
 
@@ -302,15 +302,15 @@ mod tests {
         let mut store = InMemoryStore::new();
         store
             .store_analysis(sample_record("r1", "A", "B", "2026-01-01"))
-            .unwrap();
+            .expect("operation should succeed in test");
         store
             .store_analysis(sample_record("r2", "A", "B", "2026-02-01"))
-            .unwrap();
+            .expect("operation should succeed in test");
         store
             .store_analysis(sample_record("r3", "A", "B", "2026-03-01"))
-            .unwrap();
+            .expect("operation should succeed in test");
 
-        let history = store.query_history("A", "B").unwrap();
+        let history = store.query_history("A", "B").expect("operation should succeed in test");
         assert_eq!(history.len(), 3);
         assert!(history[0].timestamp <= history[1].timestamp);
         assert!(history[1].timestamp <= history[2].timestamp);
@@ -324,10 +324,10 @@ mod tests {
         let mut r2 = sample_record("r2", "C", "D", "2026-01-02");
         r2.analyzer_version = "2.0.0".to_string();
 
-        store.store_analysis(r1).unwrap();
-        store.store_analysis(r2).unwrap();
+        store.store_analysis(r1).expect("operation should succeed in test");
+        store.store_analysis(r2).expect("operation should succeed in test");
 
-        let v1 = store.query_by_provenance("1.0.0").unwrap();
+        let v1 = store.query_by_provenance("1.0.0").expect("operation should succeed in test");
         assert_eq!(v1.len(), 1);
         assert_eq!(v1[0].id, "r1");
     }
@@ -347,7 +347,7 @@ mod tests {
             external_ref: None,
         };
 
-        store.log_suggestion(entry).unwrap();
+        store.log_suggestion(entry).expect("operation should succeed in test");
         assert_eq!(store.suggestions.len(), 1);
     }
 
@@ -364,7 +364,7 @@ mod tests {
             content_hash: None,
         };
 
-        store.record_schema_version(entry).unwrap();
+        store.record_schema_version(entry).expect("operation should succeed in test");
         assert_eq!(store.schema_versions.len(), 1);
     }
 
@@ -379,10 +379,10 @@ mod tests {
                     "Y",
                     &format!("2026-0{}-01", i + 1),
                 ))
-                .unwrap();
+                .expect("operation should succeed in test");
         }
 
-        let trend = store.compatibility_trend("X", "Y").unwrap();
+        let trend = store.compatibility_trend("X", "Y").expect("transport compatibility analysis should succeed");
         assert_eq!(trend.len(), 5);
         // Should be chronologically ordered.
         for window in trend.windows(2) {

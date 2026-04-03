@@ -254,7 +254,7 @@ mod tests {
         let schema = Schema::new(fields);
         let parser = ArrowParser;
         let parsed = parser.from_arrow_schema(&schema, "test");
-        ArrowConverter.convert(&parsed).unwrap()
+        ArrowConverter.convert(&parsed).expect("conversion should succeed")
     }
 
     #[test]

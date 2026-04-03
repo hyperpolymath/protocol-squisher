@@ -1211,13 +1211,13 @@ mod tests {
     #[test]
     fn value_min_passes() {
         let c = Constraint::Min(NumberValue::Integer(5));
-        assert!(evaluate_value(&c, &serde_json::json!(10)).unwrap());
+        assert!(evaluate_value(&c, &serde_json::json!(10)).expect("operation should succeed in test"));
     }
 
     #[test]
     fn value_min_fails() {
         let c = Constraint::Min(NumberValue::Integer(5));
-        assert!(!evaluate_value(&c, &serde_json::json!(3)).unwrap());
+        assert!(!evaluate_value(&c, &serde_json::json!(3)).expect("operation should succeed in test"));
     }
 
     #[test]
@@ -1226,36 +1226,36 @@ mod tests {
             min: NumberValue::Integer(0),
             max: NumberValue::Integer(100),
         };
-        assert!(evaluate_value(&c, &serde_json::json!(50)).unwrap());
-        assert!(!evaluate_value(&c, &serde_json::json!(101)).unwrap());
+        assert!(evaluate_value(&c, &serde_json::json!(50)).expect("operation should succeed in test"));
+        assert!(!evaluate_value(&c, &serde_json::json!(101)).expect("operation should succeed in test"));
     }
 
     #[test]
     fn value_min_length() {
         let c = Constraint::MinLength(3);
-        assert!(evaluate_value(&c, &serde_json::json!("hello")).unwrap());
-        assert!(!evaluate_value(&c, &serde_json::json!("hi")).unwrap());
+        assert!(evaluate_value(&c, &serde_json::json!("hello")).expect("operation should succeed in test"));
+        assert!(!evaluate_value(&c, &serde_json::json!("hi")).expect("operation should succeed in test"));
     }
 
     #[test]
     fn value_non_empty() {
         let c = Constraint::NonEmpty;
-        assert!(evaluate_value(&c, &serde_json::json!("x")).unwrap());
-        assert!(!evaluate_value(&c, &serde_json::json!("")).unwrap());
+        assert!(evaluate_value(&c, &serde_json::json!("x")).expect("operation should succeed in test"));
+        assert!(!evaluate_value(&c, &serde_json::json!("")).expect("operation should succeed in test"));
     }
 
     #[test]
     fn value_min_items() {
         let c = Constraint::MinItems(2);
-        assert!(evaluate_value(&c, &serde_json::json!([1, 2, 3])).unwrap());
-        assert!(!evaluate_value(&c, &serde_json::json!([1])).unwrap());
+        assert!(evaluate_value(&c, &serde_json::json!([1, 2, 3])).expect("operation should succeed in test"));
+        assert!(!evaluate_value(&c, &serde_json::json!([1])).expect("operation should succeed in test"));
     }
 
     #[test]
     fn value_unique_items() {
         let c = Constraint::UniqueItems;
-        assert!(evaluate_value(&c, &serde_json::json!([1, 2, 3])).unwrap());
-        assert!(!evaluate_value(&c, &serde_json::json!([1, 2, 1])).unwrap());
+        assert!(evaluate_value(&c, &serde_json::json!([1, 2, 3])).expect("operation should succeed in test"));
+        assert!(!evaluate_value(&c, &serde_json::json!([1, 2, 1])).expect("operation should succeed in test"));
     }
 
     #[test]
@@ -1265,8 +1265,8 @@ mod tests {
             serde_json::json!("green"),
             serde_json::json!("blue"),
         ]);
-        assert!(evaluate_value(&c, &serde_json::json!("red")).unwrap());
-        assert!(!evaluate_value(&c, &serde_json::json!("yellow")).unwrap());
+        assert!(evaluate_value(&c, &serde_json::json!("red")).expect("operation should succeed in test"));
+        assert!(!evaluate_value(&c, &serde_json::json!("yellow")).expect("operation should succeed in test"));
     }
 
     #[test]
@@ -1275,15 +1275,15 @@ mod tests {
             Constraint::Min(NumberValue::Integer(0)),
             Constraint::Max(NumberValue::Integer(100)),
         ]);
-        assert!(evaluate_value(&c, &serde_json::json!(50)).unwrap());
-        assert!(!evaluate_value(&c, &serde_json::json!(150)).unwrap());
+        assert!(evaluate_value(&c, &serde_json::json!(50)).expect("operation should succeed in test"));
+        assert!(!evaluate_value(&c, &serde_json::json!(150)).expect("operation should succeed in test"));
     }
 
     #[test]
     fn value_not_constraint() {
         let c = Constraint::Not(Box::new(Constraint::Negative));
-        assert!(evaluate_value(&c, &serde_json::json!(5)).unwrap());
-        assert!(!evaluate_value(&c, &serde_json::json!(-3)).unwrap());
+        assert!(evaluate_value(&c, &serde_json::json!(5)).expect("operation should succeed in test"));
+        assert!(!evaluate_value(&c, &serde_json::json!(-3)).expect("operation should succeed in test"));
     }
 
     #[test]
@@ -1296,10 +1296,10 @@ mod tests {
 
     #[test]
     fn value_positive_negative() {
-        assert!(evaluate_value(&Constraint::Positive, &serde_json::json!(1)).unwrap());
-        assert!(!evaluate_value(&Constraint::Positive, &serde_json::json!(-1)).unwrap());
-        assert!(evaluate_value(&Constraint::Negative, &serde_json::json!(-1)).unwrap());
-        assert!(evaluate_value(&Constraint::NonNegative, &serde_json::json!(0)).unwrap());
+        assert!(evaluate_value(&Constraint::Positive, &serde_json::json!(1)).expect("operation should succeed in test"));
+        assert!(!evaluate_value(&Constraint::Positive, &serde_json::json!(-1)).expect("operation should succeed in test"));
+        assert!(evaluate_value(&Constraint::Negative, &serde_json::json!(-1)).expect("operation should succeed in test"));
+        assert!(evaluate_value(&Constraint::NonNegative, &serde_json::json!(0)).expect("operation should succeed in test"));
     }
 
     #[test]

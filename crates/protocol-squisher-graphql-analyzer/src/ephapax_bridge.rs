@@ -176,7 +176,7 @@ mod tests {
             &IrType::Primitive(PrimitiveType::I32),
             &IrType::Primitive(PrimitiveType::I32),
         )
-        .unwrap();
+        .expect("operation should succeed in test");
         assert_eq!(result.class, TransportClass::Concorde);
         assert!(result.is_zero_copy());
         assert_eq!(result.fidelity, 100);
@@ -188,7 +188,7 @@ mod tests {
             &IrType::Primitive(PrimitiveType::I32),
             &IrType::Primitive(PrimitiveType::I64),
         )
-        .unwrap();
+        .expect("operation should succeed in test");
         assert_eq!(result.class, TransportClass::Business);
         assert!(result.is_safe());
     }
@@ -199,7 +199,7 @@ mod tests {
             &IrType::Primitive(PrimitiveType::I32),
             &IrType::Primitive(PrimitiveType::String),
         )
-        .unwrap();
+        .expect("operation should succeed in test");
         assert_eq!(result.class, TransportClass::Wheelbarrow);
         assert!(result.requires_json_fallback());
     }
@@ -214,7 +214,7 @@ mod tests {
                 PrimitiveType::I64,
             )))),
         )
-        .unwrap();
+        .expect("operation should succeed in test");
         assert_eq!(result.class, TransportClass::Business);
     }
 }

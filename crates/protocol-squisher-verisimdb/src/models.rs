@@ -117,8 +117,8 @@ mod tests {
             metadata: HashMap::new(),
         };
 
-        let json = serde_json::to_string(&record).unwrap();
-        let parsed: AnalysisRecord = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&record).expect("value should serialize to JSON");
+        let parsed: AnalysisRecord = serde_json::from_str(&json).expect("JSON should deserialize");
         assert_eq!(record, parsed);
     }
 
@@ -136,8 +136,8 @@ mod tests {
             external_ref: None,
         };
 
-        let json = serde_json::to_string(&entry).unwrap();
-        let parsed: SuggestionLogEntry = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&entry).expect("value should serialize to JSON");
+        let parsed: SuggestionLogEntry = serde_json::from_str(&json).expect("JSON should deserialize");
         assert_eq!(entry, parsed);
     }
 }

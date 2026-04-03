@@ -212,8 +212,8 @@ mod tests {
 
     fn convert(sql: &str) -> IrSchema {
         let parser = SqlParser;
-        let parsed = parser.parse_str(sql, "test").unwrap();
-        SqlConverter.convert(&parsed).unwrap()
+        let parsed = parser.parse_str(sql, "test").expect("parsing should succeed");
+        SqlConverter.convert(&parsed).expect("conversion should succeed")
     }
 
     #[test]
@@ -326,7 +326,7 @@ mod tests {
         let schema = convert("CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT NOT NULL);");
         match &schema.types["t"] {
             TypeDef::Struct(s) => {
-                assert_eq!(s.metadata.extra.get("primary_key").unwrap(), "id");
+                assert_eq!(s.metadata.extra.get("primary_key").expect("key should exist"), "id");
             }
             other => panic!("Expected Struct, got {other:?}"),
         }
@@ -343,7 +343,7 @@ mod tests {
         );
         match &schema.types["orders"] {
             TypeDef::Struct(s) => {
-                let fk = s.metadata.extra.get("foreign_keys").unwrap();
+                let fk = s.metadata.extra.get("foreign_keys").expect("key should exist");
                 assert!(fk.contains("users"));
             }
             other => panic!("Expected Struct, got {other:?}"),

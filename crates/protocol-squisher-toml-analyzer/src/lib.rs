@@ -108,17 +108,17 @@ mod tests {
             debug = true
             port = 8080
         "#;
-        let schema = analyzer().analyze_str(toml, "config").unwrap();
+        let schema = analyzer().analyze_str(toml, "config").expect("schema analysis should succeed");
         assert!(schema.types.contains_key("Config"));
         match &schema.types["Config"] {
             TypeDef::Struct(s) => {
                 assert_eq!(s.fields.len(), 4);
-                let name_field = s.fields.iter().find(|f| f.name == "name").unwrap();
+                let name_field = s.fields.iter().find(|f| f.name == "name").expect("field should be found");
                 assert!(matches!(
                     name_field.ty,
                     IrType::Primitive(PrimitiveType::String)
                 ));
-                let port_field = s.fields.iter().find(|f| f.name == "port").unwrap();
+                let port_field = s.fields.iter().find(|f| f.name == "port").expect("field should be found");
                 assert!(matches!(
                     port_field.ty,
                     IrType::Primitive(PrimitiveType::I64)
@@ -135,7 +135,7 @@ mod tests {
             host = "localhost"
             port = 8080
         "#;
-        let schema = analyzer().analyze_str(toml, "app").unwrap();
+        let schema = analyzer().analyze_str(toml, "app").expect("schema analysis should succeed");
         assert!(schema.types.contains_key("App"));
         assert!(schema.types.contains_key("App_Server"));
         match &schema.types["App_Server"] {
@@ -151,10 +151,10 @@ mod tests {
         let toml = r#"
             tags = ["web", "api", "rust"]
         "#;
-        let schema = analyzer().analyze_str(toml, "test").unwrap();
+        let schema = analyzer().analyze_str(toml, "test").expect("schema analysis should succeed");
         match &schema.types["Test"] {
             TypeDef::Struct(s) => {
-                let tags_field = s.fields.iter().find(|f| f.name == "tags").unwrap();
+                let tags_field = s.fields.iter().find(|f| f.name == "tags").expect("field should be found");
                 assert!(matches!(
                     tags_field.ty,
                     IrType::Container(protocol_squisher_ir::ContainerType::Vec(_))
@@ -175,10 +175,10 @@ mod tests {
             host = "beta"
             port = 9090
         "#;
-        let schema = analyzer().analyze_str(toml, "infra").unwrap();
+        let schema = analyzer().analyze_str(toml, "infra").expect("schema analysis should succeed");
         match &schema.types["Infra"] {
             TypeDef::Struct(s) => {
-                let servers_field = s.fields.iter().find(|f| f.name == "servers").unwrap();
+                let servers_field = s.fields.iter().find(|f| f.name == "servers").expect("field should be found");
                 assert!(matches!(
                     servers_field.ty,
                     IrType::Container(protocol_squisher_ir::ContainerType::Vec(_))
@@ -196,16 +196,16 @@ mod tests {
             threshold = 0.75
             max_retries = 3
         "#;
-        let schema = analyzer().analyze_str(toml, "settings").unwrap();
+        let schema = analyzer().analyze_str(toml, "settings").expect("schema analysis should succeed");
         match &schema.types["Settings"] {
             TypeDef::Struct(s) => {
                 assert_eq!(s.fields.len(), 4);
-                let bool_field = s.fields.iter().find(|f| f.name == "enabled").unwrap();
+                let bool_field = s.fields.iter().find(|f| f.name == "enabled").expect("field should be found");
                 assert!(matches!(
                     bool_field.ty,
                     IrType::Primitive(PrimitiveType::Bool)
                 ));
-                let float_field = s.fields.iter().find(|f| f.name == "threshold").unwrap();
+                let float_field = s.fields.iter().find(|f| f.name == "threshold").expect("field should be found");
                 assert!(matches!(
                     float_field.ty,
                     IrType::Primitive(PrimitiveType::F64)
@@ -220,7 +220,7 @@ mod tests {
         let toml = r#"
             point = { x = 1, y = 2 }
         "#;
-        let schema = analyzer().analyze_str(toml, "geo").unwrap();
+        let schema = analyzer().analyze_str(toml, "geo").expect("schema analysis should succeed");
         assert!(schema.types.contains_key("Geo_Point"));
     }
 
@@ -232,7 +232,7 @@ mod tests {
             port = 5432
             name = "mydb"
         "#;
-        let schema = analyzer().analyze_str(toml, "config").unwrap();
+        let schema = analyzer().analyze_str(toml, "config").expect("schema analysis should succeed");
         assert!(schema.types.contains_key("Config_Database"));
         match &schema.types["Config_Database"] {
             TypeDef::Struct(s) => {
@@ -247,7 +247,7 @@ mod tests {
         let toml = r#"
             tags = []
         "#;
-        let schema = analyzer().analyze_str(toml, "empty").unwrap();
+        let schema = analyzer().analyze_str(toml, "empty").expect("schema analysis should succeed");
         match &schema.types["Empty"] {
             TypeDef::Struct(s) => {
                 let field = &s.fields[0];
@@ -268,7 +268,7 @@ mod tests {
             name = "test"
             count = 42
         "#;
-        let schema = analyzer().analyze_str(toml, "roundtrip").unwrap();
+        let schema = analyzer().analyze_str(toml, "roundtrip").expect("schema analysis should succeed");
         let json = schema.to_json().expect("serialize");
         let restored = IrSchema::from_json(&json).expect("deserialize");
         assert_eq!(restored.types.len(), schema.types.len());
@@ -280,7 +280,7 @@ mod tests {
             &IrType::Primitive(PrimitiveType::I64),
             &IrType::Primitive(PrimitiveType::I64),
         )
-        .unwrap();
+        .expect("operation should succeed in test");
         assert!(result.is_zero_copy());
     }
 
@@ -295,7 +295,7 @@ mod tests {
         let toml_str = r#"
             msg = "hello"
         "#;
-        let ir = SchemaAnalyzer::analyze_str(&a, toml_str, "ping").unwrap();
+        let ir = SchemaAnalyzer::analyze_str(&a, toml_str, "ping").expect("schema analysis should succeed");
         assert!(ir.types.contains_key("Ping"));
     }
 }

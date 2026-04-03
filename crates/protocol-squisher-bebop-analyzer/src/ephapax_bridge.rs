@@ -213,7 +213,7 @@ mod tests {
         let ctx = IRContext::new();
         let i32_type = IrType::Primitive(IrPrim::I32);
 
-        let analysis = TransportAnalysis::new(&ctx, &i32_type, &i32_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &i32_type, &i32_type).expect("transport analysis should succeed");
 
         assert!(analysis.is_zero_copy());
         assert!(analysis.is_safe());
@@ -228,7 +228,7 @@ mod tests {
         let i32_type = IrType::Primitive(IrPrim::I32);
         let i64_type = IrType::Primitive(IrPrim::I64);
 
-        let analysis = TransportAnalysis::new(&ctx, &i32_type, &i64_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &i32_type, &i64_type).expect("transport analysis should succeed");
 
         assert!(!analysis.is_zero_copy());
         assert!(analysis.is_safe());
@@ -243,7 +243,7 @@ mod tests {
         let i32_type = IrType::Primitive(IrPrim::I32);
         let string_type = IrType::Primitive(IrPrim::String);
 
-        let analysis = TransportAnalysis::new(&ctx, &i32_type, &string_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &i32_type, &string_type).expect("transport analysis should succeed");
 
         assert!(!analysis.is_zero_copy());
         assert!(!analysis.is_safe());
@@ -258,7 +258,7 @@ mod tests {
         let int32_type = IrType::Primitive(IrPrim::I32);
         let i32_type = IrType::Primitive(IrPrim::I32);
 
-        let analysis = TransportAnalysis::new(&ctx, &int32_type, &i32_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &int32_type, &i32_type).expect("transport analysis should succeed");
         assert!(analysis.is_zero_copy());
     }
 
@@ -268,7 +268,7 @@ mod tests {
         let float64_type = IrType::Primitive(IrPrim::F64);
         let f64_type = IrType::Primitive(IrPrim::F64);
 
-        let analysis = TransportAnalysis::new(&ctx, &float64_type, &f64_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &float64_type, &f64_type).expect("transport analysis should succeed");
         assert!(analysis.is_zero_copy());
     }
 
@@ -277,7 +277,7 @@ mod tests {
         let ctx = IRContext::new();
         let string_type = IrType::Primitive(IrPrim::String);
 
-        let analysis = TransportAnalysis::new(&ctx, &string_type, &string_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &string_type, &string_type).expect("transport analysis should succeed");
         assert!(analysis.is_zero_copy());
     }
 
@@ -291,7 +291,7 @@ mod tests {
         let vec_type =
             IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(IrPrim::I32))));
 
-        let analysis = TransportAnalysis::new(&ctx, &array_type, &vec_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &array_type, &vec_type).expect("transport analysis should succeed");
         assert!(analysis.is_zero_copy());
     }
 
@@ -305,7 +305,7 @@ mod tests {
             Box::new(IrType::Primitive(IrPrim::I32)),
         ));
 
-        let analysis = TransportAnalysis::new(&ctx, &map_type, &map_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &map_type, &map_type).expect("transport analysis should succeed");
         assert!(analysis.is_zero_copy());
     }
 
@@ -318,7 +318,7 @@ mod tests {
             IrPrim::I32,
         ))));
 
-        let analysis = TransportAnalysis::new(&ctx, &optional_type, &optional_type).unwrap();
+        let analysis = TransportAnalysis::new(&ctx, &optional_type, &optional_type).expect("transport analysis should succeed");
         assert!(analysis.is_zero_copy());
     }
 
@@ -349,7 +349,7 @@ mod tests {
         let source = IrType::Container(ContainerType::Option(Box::new(i64_type.clone())));
         let target = IrType::Container(ContainerType::Option(Box::new(i64_type)));
 
-        let class = analyze_transport_compatibility(&ctx, &source, &target).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &source, &target).expect("transport compatibility analysis should succeed");
         assert_eq!(class, TransportClass::Concorde);
     }
 
@@ -363,7 +363,7 @@ mod tests {
         let target =
             IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(IrPrim::I32))));
 
-        let class = analyze_transport_compatibility(&ctx, &source, &target).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &source, &target).expect("transport compatibility analysis should succeed");
         assert_eq!(class, TransportClass::Wheelbarrow);
     }
 
@@ -381,7 +381,7 @@ mod tests {
             Box::new(IrType::Primitive(IrPrim::I32)),
         ));
 
-        let class = analyze_transport_compatibility(&ctx, &source, &target).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &source, &target).expect("transport compatibility analysis should succeed");
         assert_eq!(class, TransportClass::Wheelbarrow);
     }
 }

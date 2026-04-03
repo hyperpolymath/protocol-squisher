@@ -258,10 +258,10 @@ mod tests {
                 Request::builder()
                     .uri("/health")
                     .body(Body::empty())
-                    .unwrap(),
+                    .expect("operation should succeed in test"),
             )
             .await
-            .unwrap();
+            .expect("operation should succeed in test");
         assert_eq!(response.status(), StatusCode::OK);
     }
 
@@ -273,16 +273,16 @@ mod tests {
                 Request::builder()
                     .uri("/formats")
                     .body(Body::empty())
-                    .unwrap(),
+                    .expect("operation should succeed in test"),
             )
             .await
-            .unwrap();
+            .expect("operation should succeed in test");
         assert_eq!(response.status(), StatusCode::OK);
 
         let body = axum::body::to_bytes(response.into_body(), usize::MAX)
             .await
-            .unwrap();
-        let formats: Vec<FormatInfo> = serde_json::from_slice(&body).unwrap();
+            .expect("operation should succeed in test");
+        let formats: Vec<FormatInfo> = serde_json::from_slice(&body).expect("operation should succeed in test");
         assert_eq!(formats.len(), 13);
     }
 
@@ -300,17 +300,17 @@ mod tests {
                     .method("POST")
                     .uri("/analyze")
                     .header("content-type", "application/json")
-                    .body(Body::from(serde_json::to_vec(&req_body).unwrap()))
-                    .unwrap(),
+                    .body(Body::from(serde_json::to_vec(&req_body).expect("operation should succeed in test")))
+                    .expect("operation should succeed in test"),
             )
             .await
-            .unwrap();
+            .expect("operation should succeed in test");
         assert_eq!(response.status(), StatusCode::OK);
 
         let body = axum::body::to_bytes(response.into_body(), usize::MAX)
             .await
-            .unwrap();
-        let resp: AnalyzeResponse = serde_json::from_slice(&body).unwrap();
+            .expect("operation should succeed in test");
+        let resp: AnalyzeResponse = serde_json::from_slice(&body).expect("operation should succeed in test");
         assert!(resp.ir.is_some());
         assert!(resp.error.is_none());
     }
@@ -330,11 +330,11 @@ mod tests {
                     .method("POST")
                     .uri("/compare")
                     .header("content-type", "application/json")
-                    .body(Body::from(serde_json::to_vec(&req_body).unwrap()))
-                    .unwrap(),
+                    .body(Body::from(serde_json::to_vec(&req_body).expect("operation should succeed in test")))
+                    .expect("operation should succeed in test"),
             )
             .await
-            .unwrap();
+            .expect("operation should succeed in test");
         assert_eq!(response.status(), StatusCode::OK);
     }
 
@@ -353,11 +353,11 @@ mod tests {
                     .method("POST")
                     .uri("/constraints")
                     .header("content-type", "application/json")
-                    .body(Body::from(serde_json::to_vec(&req_body).unwrap()))
-                    .unwrap(),
+                    .body(Body::from(serde_json::to_vec(&req_body).expect("operation should succeed in test")))
+                    .expect("operation should succeed in test"),
             )
             .await
-            .unwrap();
+            .expect("operation should succeed in test");
         assert_eq!(response.status(), StatusCode::OK);
     }
 }

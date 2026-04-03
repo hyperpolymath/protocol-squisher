@@ -122,7 +122,7 @@ mod tests {
                 age: Int
             }
         "#;
-        let schema = analyzer().analyze_str(sdl, "test").unwrap();
+        let schema = analyzer().analyze_str(sdl, "test").expect("schema analysis should succeed");
         assert!(schema.types.contains_key("User"));
         match &schema.types["User"] {
             TypeDef::Struct(s) => {
@@ -144,7 +144,7 @@ mod tests {
                 PENDING
             }
         "#;
-        let schema = analyzer().analyze_str(sdl, "test").unwrap();
+        let schema = analyzer().analyze_str(sdl, "test").expect("schema analysis should succeed");
         assert!(schema.types.contains_key("Status"));
         match &schema.types["Status"] {
             TypeDef::Enum(e) => {
@@ -166,7 +166,7 @@ mod tests {
             }
             union SearchResult = User | Post
         "#;
-        let schema = analyzer().analyze_str(sdl, "test").unwrap();
+        let schema = analyzer().analyze_str(sdl, "test").expect("schema analysis should succeed");
         assert!(schema.types.contains_key("SearchResult"));
         match &schema.types["SearchResult"] {
             TypeDef::Union(u) => {
@@ -184,7 +184,7 @@ mod tests {
                 email: String!
             }
         "#;
-        let schema = analyzer().analyze_str(sdl, "test").unwrap();
+        let schema = analyzer().analyze_str(sdl, "test").expect("schema analysis should succeed");
         assert!(schema.types.contains_key("CreateUserInput"));
         match &schema.types["CreateUserInput"] {
             TypeDef::Struct(s) => {
@@ -208,7 +208,7 @@ mod tests {
                 comments: [String]
             }
         "#;
-        let schema = analyzer().analyze_str(sdl, "test").unwrap();
+        let schema = analyzer().analyze_str(sdl, "test").expect("schema analysis should succeed");
         match &schema.types["Article"] {
             TypeDef::Struct(s) => {
                 assert!(!s.fields[0].optional); // tags: [String!]!
@@ -225,7 +225,7 @@ mod tests {
                 id: ID!
             }
         "#;
-        let schema = analyzer().analyze_str(sdl, "test").unwrap();
+        let schema = analyzer().analyze_str(sdl, "test").expect("schema analysis should succeed");
         assert!(schema.types.contains_key("Node"));
         match &schema.types["Node"] {
             TypeDef::Struct(s) => {
@@ -245,7 +245,7 @@ mod tests {
         let sdl = r#"
             scalar DateTime
         "#;
-        let schema = analyzer().analyze_str(sdl, "test").unwrap();
+        let schema = analyzer().analyze_str(sdl, "test").expect("schema analysis should succeed");
         assert!(schema.types.contains_key("DateTime"));
         match &schema.types["DateTime"] {
             TypeDef::Alias(alias_def) => {
@@ -275,7 +275,7 @@ mod tests {
                 author: User!
             }
         "#;
-        let schema = analyzer().analyze_str(sdl, "test").unwrap();
+        let schema = analyzer().analyze_str(sdl, "test").expect("schema analysis should succeed");
         assert_eq!(schema.types.len(), 3); // Role, User, Post
         assert!(schema.roots.contains(&"User".to_string()));
         assert!(schema.roots.contains(&"Post".to_string()));
@@ -290,7 +290,7 @@ mod tests {
                 name: String!
             }
         "#;
-        let schema = analyzer().analyze_str(sdl, "test").unwrap();
+        let schema = analyzer().analyze_str(sdl, "test").expect("schema analysis should succeed");
         match &schema.types["User"] {
             TypeDef::Struct(s) => assert_eq!(s.fields.len(), 2),
             other => panic!("Expected Struct, got {other:?}"),
@@ -310,10 +310,10 @@ mod tests {
                 address: Address
             }
         "#;
-        let schema = analyzer().analyze_str(sdl, "test").unwrap();
+        let schema = analyzer().analyze_str(sdl, "test").expect("schema analysis should succeed");
         match &schema.types["User"] {
             TypeDef::Struct(s) => {
-                let addr_field = s.fields.iter().find(|f| f.name == "address").unwrap();
+                let addr_field = s.fields.iter().find(|f| f.name == "address").expect("field should be found");
                 assert!(addr_field.optional);
                 assert!(matches!(
                     addr_field.ty,
@@ -330,7 +330,7 @@ mod tests {
             &protocol_squisher_ir::IrType::Primitive(protocol_squisher_ir::PrimitiveType::I32),
             &protocol_squisher_ir::IrType::Primitive(protocol_squisher_ir::PrimitiveType::I32),
         )
-        .unwrap();
+        .expect("operation should succeed in test");
         assert!(result.is_zero_copy());
     }
 
@@ -342,7 +342,7 @@ mod tests {
                 name: String!
             }
         "#;
-        let schema = analyzer().analyze_str(sdl, "test").unwrap();
+        let schema = analyzer().analyze_str(sdl, "test").expect("schema analysis should succeed");
         let json = schema.to_json().expect("serialize");
         let restored = IrSchema::from_json(&json).expect("deserialize");
         assert_eq!(restored.types.len(), schema.types.len());
@@ -361,7 +361,7 @@ mod tests {
                 msg: String!
             }
         "#;
-        let ir = SchemaAnalyzer::analyze_str(&a, sdl, "ping").unwrap();
+        let ir = SchemaAnalyzer::analyze_str(&a, sdl, "ping").expect("schema analysis should succeed");
         assert!(ir.types.contains_key("Ping"));
     }
 }

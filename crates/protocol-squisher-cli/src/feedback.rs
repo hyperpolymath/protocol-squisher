@@ -417,8 +417,8 @@ mod tests {
             expected_improvement: "Better transport".to_string(),
         };
 
-        let json = serde_json::to_string(&suggestion).unwrap();
-        let parsed: UpstreamSuggestion = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&suggestion).expect("value should serialize to JSON");
+        let parsed: UpstreamSuggestion = serde_json::from_str(&json).expect("JSON should deserialize");
         assert_eq!(suggestion, parsed);
     }
 
@@ -461,7 +461,7 @@ mod tests {
 
         let result = submit_batch(&suggestions, &config);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 1);
+        assert_eq!(result.expect("operation should succeed in test"), 1);
     }
 
     #[test]

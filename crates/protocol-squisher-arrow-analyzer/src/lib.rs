@@ -128,7 +128,7 @@ mod tests {
     }
 
     fn schema_json(fields: Vec<Field>) -> String {
-        serde_json::to_string(&Schema::new(fields)).unwrap()
+        serde_json::to_string(&Schema::new(fields)).expect("value should serialize to JSON")
     }
 
     #[test]
@@ -139,7 +139,7 @@ mod tests {
             Field::new("email", DataType::Utf8, true),
             Field::new("active", DataType::Boolean, false),
         ]);
-        let schema = analyzer().analyze_str(&json, "users").unwrap();
+        let schema = analyzer().analyze_str(&json, "users").expect("schema analysis should succeed");
         assert!(schema.types.contains_key("users"));
         match &schema.types["users"] {
             TypeDef::Struct(s) => {
@@ -161,7 +161,7 @@ mod tests {
             Field::new("value", DataType::Float64, false),
             Field::new("tags", DataType::List(Box::new(Field::new("item", DataType::Utf8, false)).into()), true),
         ]);
-        let schema = analyzer().analyze_str(&json, "events").unwrap();
+        let schema = analyzer().analyze_str(&json, "events").expect("schema analysis should succeed");
         assert_eq!(schema.source_format, "arrow-ipc");
         match &schema.types["events"] {
             TypeDef::Struct(s) => {
@@ -182,7 +182,7 @@ mod tests {
         assert_eq!(a.supported_extensions(), &["arrow.json", "arrow-schema.json"]);
 
         let json = schema_json(vec![Field::new("x", DataType::Int32, false)]);
-        let ir = SchemaAnalyzer::analyze_str(&a, &json, "ping").unwrap();
+        let ir = SchemaAnalyzer::analyze_str(&a, &json, "ping").expect("schema analysis should succeed");
         assert!(ir.types.contains_key("ping"));
     }
 
@@ -192,7 +192,7 @@ mod tests {
             Field::new("id", DataType::Int32, false),
             Field::new("name", DataType::Utf8, false),
         ]);
-        let schema = analyzer().analyze_str(&json, "roundtrip").unwrap();
+        let schema = analyzer().analyze_str(&json, "roundtrip").expect("schema analysis should succeed");
         let json_out = schema.to_json().expect("serialize");
         let restored = IrSchema::from_json(&json_out).expect("deserialize");
         assert_eq!(restored.types.len(), schema.types.len());
@@ -204,7 +204,7 @@ mod tests {
             &IrType::Primitive(PrimitiveType::I32),
             &IrType::Primitive(PrimitiveType::I32),
         )
-        .unwrap();
+        .expect("operation should succeed in test");
         assert!(result.is_zero_copy());
     }
 
@@ -214,7 +214,7 @@ mod tests {
             Field::new("a", DataType::Float32, false),
             Field::new("b", DataType::Float64, false),
         ]);
-        let ir = analyzer().analyze_schema(&arrow, "direct").unwrap();
+        let ir = analyzer().analyze_schema(&arrow, "direct").expect("operation should succeed in test");
         assert!(ir.types.contains_key("direct"));
         match &ir.types["direct"] {
             TypeDef::Struct(s) => {
@@ -251,7 +251,7 @@ mod tests {
                 false,
             ),
         ]);
-        let schema = analyzer().analyze_str(&json, "complex").unwrap();
+        let schema = analyzer().analyze_str(&json, "complex").expect("schema analysis should succeed");
         match &schema.types["complex"] {
             TypeDef::Struct(s) => {
                 assert!(matches!(
@@ -276,7 +276,7 @@ mod tests {
             Field::new("price", DataType::Float32, false),
             Field::new("description", DataType::Utf8, true),
         ]);
-        let schema = analyzer().analyze_str(&json, "products").unwrap();
+        let schema = analyzer().analyze_str(&json, "products").expect("schema analysis should succeed");
         let shapes = shape_ir::extract::extract_schema(&schema);
         assert!(shapes.shapes.contains_key("products"));
 
@@ -295,7 +295,7 @@ mod tests {
             Field::new("name", DataType::Utf8, false),
             Field::new("email", DataType::Utf8, true),
         ]);
-        let arrow_schema = analyzer().analyze_str(&json, "users").unwrap();
+        let arrow_schema = analyzer().analyze_str(&json, "users").expect("schema analysis should succeed");
         let arrow_shapes = shape_ir::extract::extract_schema(&arrow_schema);
         let arrow_shape = &arrow_shapes.shapes["users"];
 
@@ -324,7 +324,7 @@ mod tests {
         let json = schema_json(vec![
             Field::new("value", DataType::Int32, false),
         ]);
-        let arrow_schema = analyzer().analyze_str(&json, "narrow").unwrap();
+        let arrow_schema = analyzer().analyze_str(&json, "narrow").expect("schema analysis should succeed");
         let arrow_shapes = shape_ir::extract::extract_schema(&arrow_schema);
         let arrow_shape = &arrow_shapes.shapes["narrow"];
 

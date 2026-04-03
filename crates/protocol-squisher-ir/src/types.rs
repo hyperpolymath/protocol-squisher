@@ -434,8 +434,8 @@ mod tests {
         let ty = IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(
             PrimitiveType::I32,
         ))));
-        let json = serde_json::to_string(&ty).unwrap();
-        let parsed: IrType = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&ty).expect("value should serialize to JSON");
+        let parsed: IrType = serde_json::from_str(&json).expect("JSON should deserialize");
         assert_eq!(ty, parsed);
     }
 }

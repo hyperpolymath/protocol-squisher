@@ -594,7 +594,7 @@ mod tests {
 
         let result = gen.generate_rust_to_python(&rust_schema, &python_schema);
 
-        let stub = result.python_stub.unwrap();
+        let stub = result.python_stub.expect("python stub should be generated");
         assert!(stub.contains("class User:"));
         assert!(stub.contains("id: int"));
         assert!(stub.contains("score: float"));

@@ -193,7 +193,7 @@ mod tests {
             1, // 1ms base delay for fast tests
         );
 
-        assert_eq!(result.unwrap(), 42);
+        assert_eq!(result.expect("operation should succeed in test"), 42);
         assert_eq!(attempt, 3);
     }
 }

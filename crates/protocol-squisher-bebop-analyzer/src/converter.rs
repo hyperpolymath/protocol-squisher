@@ -238,27 +238,27 @@ mod tests {
         let converter = BebopConverter::new();
 
         assert!(matches!(
-            converter.bebop_type_to_ir("string").unwrap(),
+            converter.bebop_type_to_ir("string").expect("conversion should succeed"),
             IrType::Primitive(PrimitiveType::String)
         ));
         assert!(matches!(
-            converter.bebop_type_to_ir("int32").unwrap(),
+            converter.bebop_type_to_ir("int32").expect("conversion should succeed"),
             IrType::Primitive(PrimitiveType::I32)
         ));
         assert!(matches!(
-            converter.bebop_type_to_ir("bool").unwrap(),
+            converter.bebop_type_to_ir("bool").expect("conversion should succeed"),
             IrType::Primitive(PrimitiveType::Bool)
         ));
         assert!(matches!(
-            converter.bebop_type_to_ir("guid").unwrap(),
+            converter.bebop_type_to_ir("guid").expect("conversion should succeed"),
             IrType::Primitive(PrimitiveType::Uuid)
         ));
         assert!(matches!(
-            converter.bebop_type_to_ir("date").unwrap(),
+            converter.bebop_type_to_ir("date").expect("conversion should succeed"),
             IrType::Primitive(PrimitiveType::DateTime)
         ));
         assert!(matches!(
-            converter.bebop_type_to_ir("MyMessage").unwrap(),
+            converter.bebop_type_to_ir("MyMessage").expect("conversion should succeed"),
             IrType::Reference(_)
         ));
     }
@@ -295,7 +295,7 @@ mod tests {
         let result = converter.convert_struct(&bebop_struct);
         assert!(result.is_ok());
 
-        let struct_def = result.unwrap();
+        let struct_def = result.expect("operation should succeed in test");
         assert_eq!(struct_def.name, "Person");
         assert_eq!(struct_def.fields.len(), 2);
     }
@@ -325,7 +325,7 @@ mod tests {
         let result = converter.convert_enum(&bebop_enum);
         assert!(result.is_ok());
 
-        let enum_def = result.unwrap();
+        let enum_def = result.expect("operation should succeed in test");
         assert_eq!(enum_def.name, "Status");
         assert_eq!(enum_def.variants.len(), 3);
     }
@@ -347,7 +347,7 @@ mod tests {
         let result = converter.convert_field(&field);
         assert!(result.is_ok());
 
-        let field_def = result.unwrap();
+        let field_def = result.expect("operation should succeed in test");
         assert!(matches!(
             field_def.ty,
             IrType::Container(ContainerType::Vec(_))
@@ -371,7 +371,7 @@ mod tests {
         let result = converter.convert_field(&field);
         assert!(result.is_ok());
 
-        let field_def = result.unwrap();
+        let field_def = result.expect("operation should succeed in test");
         assert!(matches!(
             field_def.ty,
             IrType::Container(ContainerType::Map(_, _))
@@ -395,7 +395,7 @@ mod tests {
         let result = converter.convert_field(&field);
         assert!(result.is_ok());
 
-        let field_def = result.unwrap();
+        let field_def = result.expect("operation should succeed in test");
         assert!(field_def.optional);
         assert!(matches!(
             field_def.ty,

@@ -530,7 +530,7 @@ mod tests {
             email TEXT
         );";
         let parser = SqlParser;
-        let schema = parser.parse_str(sql, "test").unwrap();
+        let schema = parser.parse_str(sql, "test").expect("parsing should succeed");
         assert_eq!(schema.tables.len(), 1);
         assert_eq!(schema.tables[0].name, "users");
         assert_eq!(schema.tables[0].columns.len(), 3);
@@ -545,7 +545,7 @@ mod tests {
             active BOOLEAN NOT NULL DEFAULT TRUE
         );";
         let parser = SqlParser;
-        let schema = parser.parse_str(sql, "test").unwrap();
+        let schema = parser.parse_str(sql, "test").expect("parsing should succeed");
         let cols = &schema.tables[0].columns;
         assert!(cols[0].not_null);
         assert!(!cols[1].not_null);
@@ -562,7 +562,7 @@ mod tests {
             PRIMARY KEY (order_id, product_id)
         );";
         let parser = SqlParser;
-        let schema = parser.parse_str(sql, "test").unwrap();
+        let schema = parser.parse_str(sql, "test").expect("parsing should succeed");
         assert_eq!(schema.tables[0].primary_key.len(), 2);
     }
 
@@ -574,7 +574,7 @@ mod tests {
             FOREIGN KEY (user_id) REFERENCES users(id)
         );";
         let parser = SqlParser;
-        let schema = parser.parse_str(sql, "test").unwrap();
+        let schema = parser.parse_str(sql, "test").expect("parsing should succeed");
         assert_eq!(schema.tables[0].foreign_keys.len(), 1);
         assert_eq!(schema.tables[0].foreign_keys[0].ref_table, "users");
     }
@@ -586,7 +586,7 @@ mod tests {
             CREATE TABLE posts (id INTEGER PRIMARY KEY, user_id INTEGER, body TEXT);
         ";
         let parser = SqlParser;
-        let schema = parser.parse_str(sql, "test").unwrap();
+        let schema = parser.parse_str(sql, "test").expect("parsing should succeed");
         assert_eq!(schema.tables.len(), 2);
     }
 
@@ -600,7 +600,7 @@ mod tests {
             );
         ";
         let parser = SqlParser;
-        let schema = parser.parse_str(sql, "test").unwrap();
+        let schema = parser.parse_str(sql, "test").expect("parsing should succeed");
         assert_eq!(schema.tables[0].columns.len(), 2);
     }
 
@@ -608,7 +608,7 @@ mod tests {
     fn detect_postgres_dialect() {
         let sql = "CREATE TABLE users (id SERIAL PRIMARY KEY, name TEXT);";
         let parser = SqlParser;
-        let schema = parser.parse_str(sql, "test").unwrap();
+        let schema = parser.parse_str(sql, "test").expect("parsing should succeed");
         assert_eq!(schema.dialect, SqlDialect::PostgreSql);
     }
 
@@ -616,7 +616,7 @@ mod tests {
     fn detect_mysql_dialect() {
         let sql = "CREATE TABLE users (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255));";
         let parser = SqlParser;
-        let schema = parser.parse_str(sql, "test").unwrap();
+        let schema = parser.parse_str(sql, "test").expect("parsing should succeed");
         assert_eq!(schema.dialect, SqlDialect::MySql);
     }
 
@@ -624,7 +624,7 @@ mod tests {
     fn handle_if_not_exists() {
         let sql = "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY);";
         let parser = SqlParser;
-        let schema = parser.parse_str(sql, "test").unwrap();
+        let schema = parser.parse_str(sql, "test").expect("parsing should succeed");
         assert_eq!(schema.tables[0].name, "users");
     }
 
@@ -632,7 +632,7 @@ mod tests {
     fn handle_quoted_names() {
         let sql = r#"CREATE TABLE "public"."user_accounts" ("id" INTEGER PRIMARY KEY, "full name" TEXT);"#;
         let parser = SqlParser;
-        let schema = parser.parse_str(sql, "test").unwrap();
+        let schema = parser.parse_str(sql, "test").expect("parsing should succeed");
         assert_eq!(schema.tables[0].name, "user_accounts");
         assert_eq!(schema.tables[0].columns[1].name, "full name");
     }

@@ -295,8 +295,8 @@ mod tests {
 
     fn convert(json: &str) -> IrSchema {
         let parser = OpenApiParser;
-        let parsed = parser.parse_str(json, "test").unwrap();
-        OpenApiConverter.convert(&parsed).unwrap()
+        let parsed = parser.parse_str(json, "test").expect("parsing should succeed");
+        OpenApiConverter.convert(&parsed).expect("conversion should succeed")
     }
 
     #[test]

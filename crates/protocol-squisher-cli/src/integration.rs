@@ -415,7 +415,7 @@ mod tests {
     fn build_squishability_reports_populated() {
         let mut ctx = IntegrationContext::offline();
         ctx.store_analysis_record("User.id", "UserDTO.id", "Business", 98.0, 5.0, "protobuf")
-            .unwrap();
+            .expect("operation should succeed in test");
         ctx.store_analysis_record(
             "Order.total",
             "OrderDTO.total",
@@ -424,7 +424,7 @@ mod tests {
             0.0,
             "avro",
         )
-        .unwrap();
+        .expect("operation should succeed in test");
 
         let reports = ctx.build_squishability_reports();
         assert_eq!(reports.len(), 2);

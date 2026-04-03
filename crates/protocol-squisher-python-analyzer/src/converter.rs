@@ -280,7 +280,7 @@ mod tests {
         let py_type = PythonType::Primitive {
             prim_type: "string".to_string(),
         };
-        let ir_type = convert_python_type(&py_type).unwrap();
+        let ir_type = convert_python_type(&py_type).expect("conversion should succeed");
         assert!(matches!(ir_type, IrType::Primitive(PrimitiveType::String)));
     }
 
@@ -291,7 +291,7 @@ mod tests {
                 prim_type: "int".to_string(),
             }),
         };
-        let ir_type = convert_python_type(&py_type).unwrap();
+        let ir_type = convert_python_type(&py_type).expect("conversion should succeed");
         let IrType::Container(ContainerType::Option(inner)) = ir_type else {
             unreachable!("optional python type should map to Option");
         };
@@ -305,7 +305,7 @@ mod tests {
                 prim_type: "string".to_string(),
             }),
         };
-        let ir_type = convert_python_type(&py_type).unwrap();
+        let ir_type = convert_python_type(&py_type).expect("conversion should succeed");
         let IrType::Container(ContainerType::Vec(inner)) = ir_type else {
             unreachable!("list python type should map to Vec");
         };
@@ -322,7 +322,7 @@ mod tests {
                 prim_type: "int".to_string(),
             }),
         };
-        let ir_type = convert_python_type(&py_type).unwrap();
+        let ir_type = convert_python_type(&py_type).expect("conversion should succeed");
         let IrType::Container(ContainerType::Map(key, value)) = ir_type else {
             unreachable!("dict python type should map to Map");
         };

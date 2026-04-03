@@ -143,7 +143,8 @@ fn remove_comments(content: &str) -> String {
 
 /// Parse enum definitions.
 fn parse_enums(content: &str) -> Vec<GraphqlEnum> {
-    let re = Regex::new(r"(?s)enum\s+(\w+)\s*(?:(@\w+(?:\([^)]*\))?)\s*)?\{([^}]+)\}").unwrap();
+    let re = Regex::new(r"(?s)enum\s+(\w+)\s*(?:(@\w+(?:\([^)]*\))?)\s*)?\{([^}]+)\}")
+        .expect("valid static enum regex");
     re.captures_iter(content)
         .map(|cap| {
             let name = cap[1].to_string();
@@ -183,7 +184,8 @@ fn parse_enums(content: &str) -> Vec<GraphqlEnum> {
 
 /// Parse union definitions.
 fn parse_unions(content: &str) -> Vec<GraphqlUnion> {
-    let re = Regex::new(r"union\s+(\w+)\s*(?:(@\w+(?:\([^)]*\))?)\s*)?=\s*([^\n]+)").unwrap();
+    let re = Regex::new(r"union\s+(\w+)\s*(?:(@\w+(?:\([^)]*\))?)\s*)?=\s*([^\n]+)")
+        .expect("valid static union regex");
     re.captures_iter(content)
         .map(|cap| {
             let name = cap[1].to_string();
@@ -204,7 +206,8 @@ fn parse_unions(content: &str) -> Vec<GraphqlUnion> {
 
 /// Parse scalar definitions.
 fn parse_scalars(content: &str) -> Vec<GraphqlScalar> {
-    let re = Regex::new(r"scalar\s+(\w+)\s*(?:(@\w+(?:\([^)]*\))?))?").unwrap();
+    let re = Regex::new(r"scalar\s+(\w+)\s*(?:(@\w+(?:\([^)]*\))?))?")
+        .expect("valid static scalar regex");
     re.captures_iter(content)
         .map(|cap| {
             let name = cap[1].to_string();
@@ -217,7 +220,8 @@ fn parse_scalars(content: &str) -> Vec<GraphqlScalar> {
 /// Parse interface definitions.
 fn parse_interfaces(content: &str) -> Vec<GraphqlInterface> {
     let re =
-        Regex::new(r"(?s)interface\s+(\w+)\s*(?:(@\w+(?:\([^)]*\))?)\s*)?\{([^}]+)\}").unwrap();
+        Regex::new(r"(?s)interface\s+(\w+)\s*(?:(@\w+(?:\([^)]*\))?)\s*)?\{([^}]+)\}")
+            .expect("valid static interface regex");
     re.captures_iter(content)
         .map(|cap| {
             let name = cap[1].to_string();
@@ -237,7 +241,7 @@ fn parse_objects(content: &str) -> Vec<GraphqlObject> {
     let re = Regex::new(
         r"(?s)type\s+(\w+)\s*(?:implements\s+([\w\s&]+))?\s*(?:(@\w+(?:\([^)]*\))?)\s*)?\{([^}]+)\}",
     )
-    .unwrap();
+    .expect("valid static object type regex");
     re.captures_iter(content)
         .map(|cap| {
             let name = cap[1].to_string();
@@ -265,7 +269,8 @@ fn parse_objects(content: &str) -> Vec<GraphqlObject> {
 
 /// Parse input type definitions.
 fn parse_inputs(content: &str) -> Vec<GraphqlInput> {
-    let re = Regex::new(r"(?s)input\s+(\w+)\s*(?:(@\w+(?:\([^)]*\))?)\s*)?\{([^}]+)\}").unwrap();
+    let re = Regex::new(r"(?s)input\s+(\w+)\s*(?:(@\w+(?:\([^)]*\))?)\s*)?\{([^}]+)\}")
+        .expect("valid static input regex");
     re.captures_iter(content)
         .map(|cap| {
             let name = cap[1].to_string();
@@ -327,7 +332,7 @@ fn parse_type(s: &str) -> GraphqlType {
 
 /// Extract directive names from a string fragment.
 fn extract_directives(s: &str) -> Vec<String> {
-    let re = Regex::new(r"@\w+").unwrap();
+    let re = Regex::new(r"@\w+").expect("valid static directive regex");
     re.find_iter(s).map(|m| m.as_str().to_string()).collect()
 }
 

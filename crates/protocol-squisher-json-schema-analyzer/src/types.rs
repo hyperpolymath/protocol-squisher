@@ -257,7 +257,7 @@ mod tests {
             "required": ["name"]
         }"#;
 
-        let schema: JsonSchema = serde_json::from_str(json).unwrap();
+        let schema: JsonSchema = serde_json::from_str(json).expect("JSON should deserialize");
         assert_eq!(
             schema.schema_type,
             Some(SchemaType::Single(SingleType::Object))
@@ -272,7 +272,7 @@ mod tests {
             "type": ["string", "null"]
         }"#;
 
-        let schema: JsonSchema = serde_json::from_str(json).unwrap();
+        let schema: JsonSchema = serde_json::from_str(json).expect("JSON should deserialize");
         let Some(SchemaType::Multiple(types)) = schema.schema_type else {
             unreachable!("schema type should be a multi-type union");
         };
@@ -290,7 +290,7 @@ mod tests {
             "multipleOf": 5
         }"#;
 
-        let schema: JsonSchema = serde_json::from_str(json).unwrap();
+        let schema: JsonSchema = serde_json::from_str(json).expect("JSON should deserialize");
         assert_eq!(schema.minimum, Some(0.0));
         assert_eq!(schema.maximum, Some(100.0));
         assert_eq!(schema.multiple_of, Some(5.0));
@@ -306,7 +306,7 @@ mod tests {
             "format": "email"
         }"#;
 
-        let schema: JsonSchema = serde_json::from_str(json).unwrap();
+        let schema: JsonSchema = serde_json::from_str(json).expect("JSON should deserialize");
         assert_eq!(schema.min_length, Some(1));
         assert_eq!(schema.max_length, Some(255));
         assert_eq!(schema.pattern, Some("^[a-z]+$".to_string()));
@@ -330,9 +330,9 @@ mod tests {
             }
         }"##;
 
-        let schema: JsonSchema = serde_json::from_str(json).unwrap();
+        let schema: JsonSchema = serde_json::from_str(json).expect("JSON should deserialize");
         assert!(schema.defs.contains_key("Address"));
-        let home = schema.properties.get("home").unwrap();
+        let home = schema.properties.get("home").expect("key should exist");
         assert_eq!(home.ref_uri, Some("#/$defs/Address".to_string()));
     }
 
@@ -343,8 +343,8 @@ mod tests {
             "enum": ["red", "green", "blue"]
         }"#;
 
-        let schema: JsonSchema = serde_json::from_str(json).unwrap();
-        let values = schema.enum_values.unwrap();
+        let schema: JsonSchema = serde_json::from_str(json).expect("JSON should deserialize");
+        let values = schema.enum_values.expect("enum_values should be present");
         assert_eq!(values.len(), 3);
     }
 
@@ -357,8 +357,8 @@ mod tests {
             ]
         }"#;
 
-        let schema: JsonSchema = serde_json::from_str(json).unwrap();
-        let one_of = schema.one_of.unwrap();
+        let schema: JsonSchema = serde_json::from_str(json).expect("JSON should deserialize");
+        let one_of = schema.one_of.expect("one_of should be present");
         assert_eq!(one_of.len(), 2);
     }
 }

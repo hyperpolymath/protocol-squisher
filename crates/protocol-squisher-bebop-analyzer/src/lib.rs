@@ -155,7 +155,7 @@ mod tests {
                 string msg;
             }
         "#;
-        let ir = SchemaAnalyzer::analyze_str(&analyzer, bebop, "ping").unwrap();
+        let ir = SchemaAnalyzer::analyze_str(&analyzer, bebop, "ping").expect("schema analysis should succeed");
         assert!(ir.types.contains_key("Ping"));
     }
 
@@ -172,7 +172,7 @@ mod tests {
         let result = analyzer.analyze_str(bebop, "person");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
+        let ir = result.expect("operation should succeed in test");
         assert!(ir.types.contains_key("Person"));
     }
 
@@ -195,7 +195,7 @@ mod tests {
         let result = analyzer.analyze_str(bebop, "task");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
+        let ir = result.expect("operation should succeed in test");
         assert!(ir.types.contains_key("Status"));
         assert!(ir.types.contains_key("Task"));
     }
@@ -280,8 +280,8 @@ mod tests {
         let result = analyzer.analyze_str(bebop, "alltypes");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
-        let all_types = ir.types.get("AllTypes").unwrap();
+        let ir = result.expect("operation should succeed in test");
+        let all_types = ir.types.get("AllTypes").expect("key should exist");
 
         assert!(
             matches!(all_types, protocol_squisher_ir::TypeDef::Struct(_)),
@@ -318,7 +318,7 @@ mod tests {
         let result = analyzer.analyze_str(bebop, "schema");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
+        let ir = result.expect("operation should succeed in test");
         assert_eq!(ir.types.len(), 3);
         assert!(ir.types.contains_key("User"));
         assert!(ir.types.contains_key("Post"));

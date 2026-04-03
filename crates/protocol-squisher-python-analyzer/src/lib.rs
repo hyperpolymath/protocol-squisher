@@ -273,7 +273,7 @@ mod tests {
         }"#;
 
         let analyzer = PythonAnalyzer::new();
-        let schema = analyzer.analyze_json(json).unwrap();
+        let schema = analyzer.analyze_json(json).expect("schema analysis should succeed");
 
         assert_eq!(schema.name, "myapp.models");
         assert_eq!(schema.source_format, "pydantic");
@@ -345,7 +345,7 @@ mod tests {
         }"#;
 
         let analyzer = PythonAnalyzer::new();
-        let schema = analyzer.analyze_json(json).unwrap();
+        let schema = analyzer.analyze_json(json).expect("schema analysis should succeed");
 
         assert_eq!(schema.types.len(), 2);
         assert!(schema.types.contains_key("Address"));
@@ -398,7 +398,7 @@ mod tests {
         }"#;
 
         let analyzer = PythonAnalyzer::new();
-        let schema = analyzer.analyze_json(json).unwrap();
+        let schema = analyzer.analyze_json(json).expect("schema analysis should succeed");
 
         assert_eq!(schema.types.len(), 2);
 
@@ -445,7 +445,7 @@ mod tests {
         }"#;
 
         let analyzer = PythonAnalyzer::new();
-        let schema = analyzer.analyze_json(json).unwrap();
+        let schema = analyzer.analyze_json(json).expect("schema analysis should succeed");
 
         let Some(TypeDef::Struct(product)) = schema.types.get("Product") else {
             unreachable!("Product should convert to struct");

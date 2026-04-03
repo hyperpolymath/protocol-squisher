@@ -523,7 +523,8 @@ pub fn run(command: ShapeCommand) -> Result<()> {
                 let extracted = extract_schema(&ir_schema);
 
                 if extracted.shapes.len() == 1 {
-                    let (name, shape) = extracted.shapes.into_iter().next().unwrap();
+                    let (name, shape) = extracted.shapes.into_iter().next()
+                        .expect("shapes vec confirmed to have exactly 1 element");
                     PanllFrame::from_shape(&name, &shape)
                 } else {
                     // Multiple types — build category

@@ -178,8 +178,8 @@ mod tests {
     #[test]
     fn test_json_roundtrip() {
         let schema = IrSchema::new("roundtrip-test", "json");
-        let json = schema.to_json().unwrap();
-        let parsed = IrSchema::from_json(&json).unwrap();
+        let json = schema.to_json().expect("operation should succeed in test");
+        let parsed = IrSchema::from_json(&json).expect("operation should succeed in test");
         assert_eq!(schema, parsed);
     }
 }

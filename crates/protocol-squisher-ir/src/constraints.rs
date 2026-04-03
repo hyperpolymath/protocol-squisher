@@ -262,8 +262,8 @@ mod tests {
             min: NumberValue::Integer(0),
             max: NumberValue::Integer(100),
         };
-        let json = serde_json::to_string(&c).unwrap();
-        let parsed: Constraint = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&c).expect("value should serialize to JSON");
+        let parsed: Constraint = serde_json::from_str(&json).expect("JSON should deserialize");
         assert_eq!(c, parsed);
     }
 

@@ -335,15 +335,15 @@ mod tests {
     #[test]
     fn test_format_from_str() {
         assert_eq!(
-            ProtocolFormat::from_str("rust").unwrap(),
+            ProtocolFormat::from_str("rust").expect("string parsing should succeed"),
             ProtocolFormat::Rust
         );
         assert_eq!(
-            ProtocolFormat::from_str("bebop").unwrap(),
+            ProtocolFormat::from_str("bebop").expect("string parsing should succeed"),
             ProtocolFormat::Bebop
         );
         assert_eq!(
-            ProtocolFormat::from_str("protobuf").unwrap(),
+            ProtocolFormat::from_str("protobuf").expect("string parsing should succeed"),
             ProtocolFormat::Protobuf
         );
     }
@@ -351,11 +351,11 @@ mod tests {
     #[test]
     fn test_format_from_path() {
         assert_eq!(
-            ProtocolFormat::from_path(Path::new("schema.proto")).unwrap(),
+            ProtocolFormat::from_path(Path::new("schema.proto")).expect("operation should succeed in test"),
             ProtocolFormat::Protobuf
         );
         assert_eq!(
-            ProtocolFormat::from_path(Path::new("schema.bop")).unwrap(),
+            ProtocolFormat::from_path(Path::new("schema.bop")).expect("operation should succeed in test"),
             ProtocolFormat::Bebop
         );
     }

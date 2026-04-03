@@ -360,7 +360,7 @@ mod tests {
 
     fn parse(json: &str) -> ParsedOpenApi {
         let parser = OpenApiParser;
-        parser.parse_str(json, "test").unwrap()
+        parser.parse_str(json, "test").expect("parsing should succeed")
     }
 
     #[test]
@@ -504,7 +504,7 @@ components:
           type: string
 "#;
         let parser = OpenApiParser;
-        let parsed = parser.parse_str(yaml, "yaml_test").unwrap();
+        let parsed = parser.parse_str(yaml, "yaml_test").expect("parsing should succeed");
         assert!(parsed.schemas.contains_key("Item"));
     }
 

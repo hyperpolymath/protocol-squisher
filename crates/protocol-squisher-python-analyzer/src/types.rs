@@ -199,14 +199,14 @@ mod tests {
     #[test]
     fn test_parse_primitive() {
         let json = r#"{"kind": "primitive", "type": "string"}"#;
-        let ty: PythonType = serde_json::from_str(json).unwrap();
+        let ty: PythonType = serde_json::from_str(json).expect("JSON should deserialize");
         assert!(matches!(ty, PythonType::Primitive { prim_type } if prim_type == "string"));
     }
 
     #[test]
     fn test_parse_optional() {
         let json = r#"{"kind": "optional", "inner": {"kind": "primitive", "type": "int"}}"#;
-        let ty: PythonType = serde_json::from_str(json).unwrap();
+        let ty: PythonType = serde_json::from_str(json).expect("JSON should deserialize");
         let PythonType::Optional { inner } = ty else {
             unreachable!("type should deserialize as Optional");
         };
@@ -234,7 +234,7 @@ mod tests {
             ],
             "config": {}
         }"#;
-        let ty: PydanticType = serde_json::from_str(json).unwrap();
+        let ty: PydanticType = serde_json::from_str(json).expect("JSON should deserialize");
         let PydanticType::Model(model) = ty else {
             unreachable!("type should deserialize as Pydantic model");
         };
@@ -257,7 +257,7 @@ mod tests {
                 }
             ]
         }"#;
-        let result: IntrospectionResult = serde_json::from_str(json).unwrap();
+        let result: IntrospectionResult = serde_json::from_str(json).expect("JSON should deserialize");
         assert_eq!(result.module, "myapp.models");
         assert_eq!(result.pydantic_version, 2);
         assert_eq!(result.types.len(), 1);

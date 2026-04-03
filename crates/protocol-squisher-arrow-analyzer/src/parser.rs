@@ -201,9 +201,9 @@ mod tests {
             Field::new("id", DataType::Int32, false),
             Field::new("value", DataType::Float64, true),
         ]);
-        let json_str = serde_json::to_string(&schema).unwrap();
+        let json_str = serde_json::to_string(&schema).expect("value should serialize to JSON");
         let parser = ArrowParser;
-        let parsed = parser.parse_str(&json_str, "roundtrip").unwrap();
+        let parsed = parser.parse_str(&json_str, "roundtrip").expect("parsing should succeed");
         assert_eq!(parsed.fields.len(), 2);
         assert_eq!(parsed.fields[0].name, "id");
     }

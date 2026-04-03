@@ -81,7 +81,7 @@ mod tests {
 
         boost_suggestion_from_proof(&mut weights, ProofStatus::Success, "WidenType");
 
-        let weight = weights.get("WidenType").copied().unwrap();
+        let weight = weights.get("WidenType").copied().expect("key should exist");
         assert!(
             weight > 1.0,
             "Proven widening should boost weight; got {weight}"
@@ -96,7 +96,7 @@ mod tests {
 
         boost_suggestion_from_proof(&mut weights, ProofStatus::Failed, "WidenType");
 
-        let weight = weights.get("WidenType").copied().unwrap();
+        let weight = weights.get("WidenType").copied().expect("key should exist");
         assert!(
             (weight - 1.0).abs() < f64::EPSILON,
             "Failed proof should not change weight; got {weight}"

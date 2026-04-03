@@ -179,7 +179,7 @@ mod tests {
                 "name": { "type": "string" }
             }
         }"#;
-        let ir = SchemaAnalyzer::analyze_str(&analyzer, schema, "Ping").unwrap();
+        let ir = SchemaAnalyzer::analyze_str(&analyzer, schema, "Ping").expect("schema analysis should succeed");
         assert!(ir.types.contains_key("Ping"));
     }
 
@@ -220,7 +220,7 @@ mod tests {
         let result = analyzer.analyze_str(schema, "Person");
         assert!(result.is_ok());
 
-        let ir = result.unwrap();
+        let ir = result.expect("operation should succeed in test");
         assert_eq!(ir.name, "Person");
         assert!(ir.types.contains_key("Person"));
     }

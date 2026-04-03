@@ -519,7 +519,7 @@ mod tests {
         let config = ModuleGenConfig::new("test");
         let result = generate_module(&schema, &config);
 
-        let stub = result.python_stub.unwrap();
+        let stub = result.python_stub.expect("python stub should be generated");
         assert!(stub.contains("class Config:"));
         assert!(stub.contains("port: int"));
         assert!(stub.contains("def __init__"));

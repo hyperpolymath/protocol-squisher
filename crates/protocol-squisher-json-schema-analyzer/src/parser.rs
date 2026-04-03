@@ -89,7 +89,7 @@ mod tests {
             "$schema": "https://json-schema.org/draft/2020-12/schema",
             "type": "object"
         }"#;
-        let schema = parser.parse_str(json).unwrap();
+        let schema = parser.parse_str(json).expect("parsing should succeed");
         assert_eq!(parser.detect_version(&schema), SchemaVersion::Draft202012);
     }
 
@@ -100,7 +100,7 @@ mod tests {
             "$schema": "https://json-schema.org/draft-07/schema#",
             "type": "object"
         }"#;
-        let schema = parser.parse_str(json).unwrap();
+        let schema = parser.parse_str(json).expect("parsing should succeed");
         assert_eq!(parser.detect_version(&schema), SchemaVersion::Draft07);
     }
 

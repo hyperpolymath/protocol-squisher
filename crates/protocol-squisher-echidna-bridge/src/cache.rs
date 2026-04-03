@@ -135,7 +135,7 @@ mod tests {
         let retrieved = cache.get("goal_a");
 
         assert!(retrieved.is_some());
-        assert_eq!(retrieved.unwrap().proof_id, "pf-test");
+        assert_eq!(retrieved.expect("operation should succeed in test").proof_id, "pf-test");
     }
 
     #[test]

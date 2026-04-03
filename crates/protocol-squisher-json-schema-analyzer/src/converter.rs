@@ -514,7 +514,7 @@ mod tests {
     use super::*;
 
     fn parse_and_convert(json: &str, name: &str) -> Result<IrSchema, AnalyzerError> {
-        let schema: JsonSchema = serde_json::from_str(json).unwrap();
+        let schema: JsonSchema = serde_json::from_str(json).expect("JSON should deserialize");
         let converter = SchemaConverter::new();
         converter.convert(&schema, name)
     }
@@ -530,7 +530,7 @@ mod tests {
             "required": ["name"]
         }"#;
 
-        let ir = parse_and_convert(json, "Person").unwrap();
+        let ir = parse_and_convert(json, "Person").expect("conversion should succeed");
         assert!(ir.types.contains_key("Person"));
 
         let TypeDef::Struct(s) = &ir.types["Person"] else {
@@ -538,10 +538,10 @@ mod tests {
         };
         assert_eq!(s.fields.len(), 2);
 
-        let name_field = s.fields.iter().find(|f| f.name == "name").unwrap();
+        let name_field = s.fields.iter().find(|f| f.name == "name").expect("field should be found");
         assert!(!name_field.optional);
 
-        let age_field = s.fields.iter().find(|f| f.name == "age").unwrap();
+        let age_field = s.fields.iter().find(|f| f.name == "age").expect("field should be found");
         assert!(age_field.optional);
     }
 
@@ -557,7 +557,7 @@ mod tests {
             }
         }"#;
 
-        let ir = parse_and_convert(json, "Task").unwrap();
+        let ir = parse_and_convert(json, "Task").expect("conversion should succeed");
         assert!(ir.types.contains_key("StatusEnum"));
 
         let TypeDef::Enum(e) = &ir.types["StatusEnum"] else {
@@ -584,10 +584,10 @@ mod tests {
             }
         }"#;
 
-        let ir = parse_and_convert(json, "Constrained").unwrap();
+        let ir = parse_and_convert(json, "Constrained").expect("conversion should succeed");
 
         if let TypeDef::Struct(s) = &ir.types["Constrained"] {
-            let count = s.fields.iter().find(|f| f.name == "count").unwrap();
+            let count = s.fields.iter().find(|f| f.name == "count").expect("field should be found");
             assert!(count
                 .constraints
                 .iter()
@@ -597,7 +597,7 @@ mod tests {
                 .iter()
                 .any(|c| matches!(c, Constraint::Max(NumberValue::Float(v)) if *v == 100.0)));
 
-            let name = s.fields.iter().find(|f| f.name == "name").unwrap();
+            let name = s.fields.iter().find(|f| f.name == "name").expect("field should be found");
             assert!(name
                 .constraints
                 .iter()
@@ -626,11 +626,11 @@ mod tests {
             }
         }"##;
 
-        let ir = parse_and_convert(json, "Customer").unwrap();
+        let ir = parse_and_convert(json, "Customer").expect("conversion should succeed");
         assert!(ir.types.contains_key("Address"));
 
         if let TypeDef::Struct(s) = &ir.types["Customer"] {
-            let home = s.fields.iter().find(|f| f.name == "home").unwrap();
+            let home = s.fields.iter().find(|f| f.name == "home").expect("field should be found");
             // The type should be an Option since it's not required
             if let IrType::Container(ContainerType::Option(inner)) = &home.ty {
                 assert!(matches!(inner.as_ref(), IrType::Reference(name) if name == "Address"));
@@ -650,10 +650,10 @@ mod tests {
             }
         }"#;
 
-        let ir = parse_and_convert(json, "Tagged").unwrap();
+        let ir = parse_and_convert(json, "Tagged").expect("conversion should succeed");
 
         if let TypeDef::Struct(s) = &ir.types["Tagged"] {
-            let tags = s.fields.iter().find(|f| f.name == "tags").unwrap();
+            let tags = s.fields.iter().find(|f| f.name == "tags").expect("field should be found");
             // Optional Vec<String>
             if let IrType::Container(ContainerType::Option(inner)) = &tags.ty {
                 assert!(matches!(
@@ -675,10 +675,10 @@ mod tests {
             }
         }"#;
 
-        let ir = parse_and_convert(json, "User").unwrap();
+        let ir = parse_and_convert(json, "User").expect("conversion should succeed");
 
         if let TypeDef::Struct(s) = &ir.types["User"] {
-            let nickname = s.fields.iter().find(|f| f.name == "nickname").unwrap();
+            let nickname = s.fields.iter().find(|f| f.name == "nickname").expect("field should be found");
             // Should be Option<Option<String>> due to being both nullable type and not required
             assert!(matches!(
                 &nickname.ty,

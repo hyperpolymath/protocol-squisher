@@ -187,7 +187,7 @@ mod tests {
 
         let mut serialized: Vec<String> = all_provers
             .iter()
-            .map(|p| serde_json::to_string(p).unwrap())
+            .map(|p| serde_json::to_string(p).expect("value should serialize to JSON"))
             .collect();
         serialized.sort();
         serialized.dedup();
@@ -207,8 +207,8 @@ mod tests {
             timeout_seconds: Some(30),
         };
 
-        let json = serde_json::to_string(&request).unwrap();
-        let parsed: ProofRequest = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&request).expect("value should serialize to JSON");
+        let parsed: ProofRequest = serde_json::from_str(&json).expect("JSON should deserialize");
         assert_eq!(request, parsed);
     }
 
@@ -224,7 +224,7 @@ mod tests {
             "duration_ms": 10
         }"#;
 
-        let response: ProofResponse = serde_json::from_str(json).unwrap();
+        let response: ProofResponse = serde_json::from_str(json).expect("JSON should deserialize");
         assert_eq!(response.proof_id, "pf-001");
         assert_eq!(response.status, ProofStatus::Success);
         assert_eq!(response.prover, ProverKind::Z3);

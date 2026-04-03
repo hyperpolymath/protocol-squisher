@@ -121,7 +121,7 @@ mod tests {
         assert!(check.verified);
         assert_eq!(check.property, "tls_version");
         assert_eq!(check.method, VerificationMethod::StaticAnalysis);
-        assert!(check.detail.unwrap().contains("1.3"));
+        assert!(check.detail.expect("operation should succeed in test").contains("1.3"));
     }
 
     #[test]
@@ -148,7 +148,7 @@ mod tests {
         assert_eq!(check.property, "tls_version");
         assert!(!check.verified); // Stub returns unverified
         assert_eq!(check.method, VerificationMethod::HandshakeProbe);
-        assert!(check.detail.unwrap().contains("not yet implemented"));
+        assert!(check.detail.expect("operation should succeed in test").contains("not yet implemented"));
     }
 
     #[test]
@@ -182,6 +182,6 @@ mod tests {
         };
         let check = check_cert_expiry(&cert, "2026-06-15T12:00:00Z");
         assert!(!check.verified);
-        assert!(check.detail.unwrap().contains("expired"));
+        assert!(check.detail.expect("operation should succeed in test").contains("expired"));
     }
 }

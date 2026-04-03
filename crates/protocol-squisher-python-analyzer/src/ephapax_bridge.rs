@@ -224,7 +224,7 @@ mod tests {
         let py_int = IrType::Primitive(IrPrim::I64); // Python int maps to i64
         let rust_i64 = IrType::Primitive(IrPrim::I64);
 
-        let analysis = PyRustTransportAnalysis::new(&ctx, &py_int, &rust_i64).unwrap();
+        let analysis = PyRustTransportAnalysis::new(&ctx, &py_int, &rust_i64).expect("transport analysis should succeed");
 
         assert!(analysis.is_zero_copy());
         assert!(analysis.is_safe());
@@ -240,7 +240,7 @@ mod tests {
         let py_int = IrType::Primitive(IrPrim::I64); // Python int maps to i64
         let rust_i32 = IrType::Primitive(IrPrim::I32);
 
-        let analysis = PyRustTransportAnalysis::new(&ctx, &py_int, &rust_i32).unwrap();
+        let analysis = PyRustTransportAnalysis::new(&ctx, &py_int, &rust_i32).expect("transport analysis should succeed");
 
         // This is actually incompatible (i64 → i32 is narrowing, not widening)
         // ephapax correctly identifies this as requiring fallback
@@ -256,7 +256,7 @@ mod tests {
         let py_str = IrType::Primitive(IrPrim::String);
         let rust_string = IrType::Primitive(IrPrim::String);
 
-        let analysis = PyRustTransportAnalysis::new(&ctx, &py_str, &rust_string).unwrap();
+        let analysis = PyRustTransportAnalysis::new(&ctx, &py_str, &rust_string).expect("transport analysis should succeed");
 
         assert!(analysis.is_zero_copy());
         assert!(analysis.is_safe());
@@ -271,7 +271,7 @@ mod tests {
         let py_float = IrType::Primitive(IrPrim::F64);
         let rust_f64 = IrType::Primitive(IrPrim::F64);
 
-        let analysis = PyRustTransportAnalysis::new(&ctx, &py_float, &rust_f64).unwrap();
+        let analysis = PyRustTransportAnalysis::new(&ctx, &py_float, &rust_f64).expect("transport analysis should succeed");
 
         assert!(analysis.is_zero_copy());
         assert!(!analysis.needs_pyo3_conversion());
@@ -284,7 +284,7 @@ mod tests {
         let py_float = IrType::Primitive(IrPrim::F64);
         let rust_f32 = IrType::Primitive(IrPrim::F32);
 
-        let analysis = PyRustTransportAnalysis::new(&ctx, &py_float, &rust_f32).unwrap();
+        let analysis = PyRustTransportAnalysis::new(&ctx, &py_float, &rust_f32).expect("transport analysis should succeed");
 
         // f64 → f32 is narrowing (precision loss)
         assert!(!analysis.is_safe());
@@ -300,7 +300,7 @@ mod tests {
         let py_optional = IrType::Container(ContainerType::Option(Box::new(i64_type.clone())));
         let rust_option = IrType::Container(ContainerType::Option(Box::new(i64_type)));
 
-        let class = analyze_transport_compatibility(&ctx, &py_optional, &rust_option).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &py_optional, &rust_option).expect("transport compatibility analysis should succeed");
         assert_eq!(class, TransportClass::Concorde);
     }
 
@@ -316,7 +316,7 @@ mod tests {
             IrPrim::I32,
         ))));
 
-        let class = analyze_transport_compatibility(&ctx, &py_optional, &rust_option).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &py_optional, &rust_option).expect("transport compatibility analysis should succeed");
         assert_eq!(class, TransportClass::Wheelbarrow);
     }
 
@@ -329,7 +329,7 @@ mod tests {
         let py_list = IrType::Container(ContainerType::Vec(Box::new(i64_type.clone())));
         let rust_vec = IrType::Container(ContainerType::Vec(Box::new(i64_type)));
 
-        let class = analyze_transport_compatibility(&ctx, &py_list, &rust_vec).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &py_list, &rust_vec).expect("transport compatibility analysis should succeed");
         assert_eq!(class, TransportClass::Concorde);
     }
 
@@ -343,7 +343,7 @@ mod tests {
         let rust_vec =
             IrType::Container(ContainerType::Vec(Box::new(IrType::Primitive(IrPrim::I32))));
 
-        let class = analyze_transport_compatibility(&ctx, &py_list, &rust_vec).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &py_list, &rust_vec).expect("transport compatibility analysis should succeed");
         assert_eq!(class, TransportClass::Wheelbarrow);
     }
 
@@ -361,7 +361,7 @@ mod tests {
             Box::new(IrType::Primitive(IrPrim::I32)),
         ));
 
-        let class = analyze_transport_compatibility(&ctx, &py_dict, &rust_map).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &py_dict, &rust_map).expect("transport compatibility analysis should succeed");
         assert_eq!(class, TransportClass::Wheelbarrow);
     }
 
@@ -379,7 +379,7 @@ mod tests {
             IrType::Primitive(IrPrim::String),
         ]));
 
-        let class = analyze_transport_compatibility(&ctx, &py_tuple, &rust_tuple).unwrap();
+        let class = analyze_transport_compatibility(&ctx, &py_tuple, &rust_tuple).expect("transport compatibility analysis should succeed");
         assert_eq!(class, TransportClass::Wheelbarrow);
     }
 }

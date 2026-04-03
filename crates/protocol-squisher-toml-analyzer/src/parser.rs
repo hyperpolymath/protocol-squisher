@@ -122,7 +122,7 @@ mod tests {
             debug = true
             count = 42
         "#;
-        let parsed = parser.parse_str(toml, "test").unwrap();
+        let parsed = parser.parse_str(toml, "test").expect("parsing should succeed");
         assert_eq!(parsed.entries.len(), 4);
     }
 
@@ -134,7 +134,7 @@ mod tests {
             host = "localhost"
             port = 8080
         "#;
-        let parsed = parser.parse_str(toml, "test").unwrap();
+        let parsed = parser.parse_str(toml, "test").expect("parsing should succeed");
         assert_eq!(parsed.entries.len(), 1);
         match &parsed.entries[0].value {
             TomlValue::Table(entries) => assert_eq!(entries.len(), 2),
@@ -148,7 +148,7 @@ mod tests {
         let toml = r#"
             tags = ["web", "api", "rust"]
         "#;
-        let parsed = parser.parse_str(toml, "test").unwrap();
+        let parsed = parser.parse_str(toml, "test").expect("parsing should succeed");
         match &parsed.entries[0].value {
             TomlValue::Array(arr) => assert_eq!(arr.len(), 3),
             other => panic!("Expected Array, got {other:?}"),

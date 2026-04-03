@@ -149,7 +149,7 @@ mod tests {
 
     #[test]
     fn petstore_basic() {
-        let schema = analyzer().analyze_str(&petstore_json(), "petstore").unwrap();
+        let schema = analyzer().analyze_str(&petstore_json(), "petstore").expect("schema analysis should succeed");
         assert_eq!(schema.types.len(), 3);
         assert!(schema.types.contains_key("Pet"));
         assert!(schema.types.contains_key("Pets"));
@@ -158,7 +158,7 @@ mod tests {
 
     #[test]
     fn petstore_pet_fields() {
-        let schema = analyzer().analyze_str(&petstore_json(), "petstore").unwrap();
+        let schema = analyzer().analyze_str(&petstore_json(), "petstore").expect("schema analysis should succeed");
         match &schema.types["Pet"] {
             TypeDef::Struct(s) => {
                 assert_eq!(s.fields.len(), 3);
@@ -183,7 +183,7 @@ mod tests {
 
     #[test]
     fn petstore_list_alias() {
-        let schema = analyzer().analyze_str(&petstore_json(), "petstore").unwrap();
+        let schema = analyzer().analyze_str(&petstore_json(), "petstore").expect("schema analysis should succeed");
         match &schema.types["Pets"] {
             TypeDef::Alias(a) => {
                 assert!(matches!(
@@ -213,7 +213,7 @@ mod tests {
                 }
             }}
         }"#;
-        let schema = analyzer().analyze_str(spec, "events").unwrap();
+        let schema = analyzer().analyze_str(spec, "events").expect("schema analysis should succeed");
         match &schema.types["Event"] {
             TypeDef::Struct(s) => {
                 assert!(matches!(
@@ -242,7 +242,7 @@ mod tests {
                 }
             }}
         }"#;
-        let schema = analyzer().analyze_str(spec, "colors").unwrap();
+        let schema = analyzer().analyze_str(spec, "colors").expect("schema analysis should succeed");
         match &schema.types["Color"] {
             TypeDef::Enum(e) => {
                 assert_eq!(e.variants.len(), 3);
@@ -267,7 +267,7 @@ mod tests {
             }}
         })
         .to_string();
-        let schema = analyzer().analyze_str(&spec, "shapes").unwrap();
+        let schema = analyzer().analyze_str(&spec, "shapes").expect("schema analysis should succeed");
         match &schema.types["Shape"] {
             TypeDef::Union(u) => {
                 assert_eq!(u.variants.len(), 2);
@@ -294,13 +294,13 @@ mod tests {
                 }
             }}
         }"#;
-        let ir = SchemaAnalyzer::analyze_str(&a, spec, "ping").unwrap();
+        let ir = SchemaAnalyzer::analyze_str(&a, spec, "ping").expect("schema analysis should succeed");
         assert!(ir.types.contains_key("Ping"));
     }
 
     #[test]
     fn schema_json_roundtrip() {
-        let schema = analyzer().analyze_str(&petstore_json(), "roundtrip").unwrap();
+        let schema = analyzer().analyze_str(&petstore_json(), "roundtrip").expect("schema analysis should succeed");
         let json = schema.to_json().expect("serialize");
         let restored = IrSchema::from_json(&json).expect("deserialize");
         assert_eq!(restored.types.len(), schema.types.len());
@@ -312,7 +312,7 @@ mod tests {
             &IrType::Primitive(PrimitiveType::I32),
             &IrType::Primitive(PrimitiveType::I32),
         )
-        .unwrap();
+        .expect("operation should succeed in test");
         assert!(result.is_zero_copy());
     }
 
@@ -336,7 +336,7 @@ mod tests {
                 }
             }}
         }"#;
-        let schema = analyzer().analyze_str(spec, "shop").unwrap();
+        let schema = analyzer().analyze_str(spec, "shop").expect("schema analysis should succeed");
         let shapes = shape_ir::extract::extract_schema(&schema);
         assert!(shapes.shapes.contains_key("Product"));
 
@@ -366,7 +366,7 @@ mod tests {
             }}
         }"#;
 
-        let openapi_schema = analyzer().analyze_str(openapi_spec, "api").unwrap();
+        let openapi_schema = analyzer().analyze_str(openapi_spec, "api").expect("schema analysis should succeed");
         let openapi_shapes = shape_ir::extract::extract_schema(&openapi_schema);
         let openapi_shape = &openapi_shapes.shapes["User"];
 
@@ -409,7 +409,7 @@ components:
         count:
           type: integer
 "#;
-        let schema = analyzer().analyze_str(yaml, "yaml_test").unwrap();
+        let schema = analyzer().analyze_str(yaml, "yaml_test").expect("schema analysis should succeed");
         assert!(schema.types.contains_key("Item"));
         match &schema.types["Item"] {
             TypeDef::Struct(s) => {

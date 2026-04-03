@@ -123,7 +123,7 @@ mod tests {
             email TEXT,
             active BOOLEAN NOT NULL DEFAULT TRUE
         );";
-        let schema = analyzer().analyze_str(sql, "test").unwrap();
+        let schema = analyzer().analyze_str(sql, "test").expect("schema analysis should succeed");
         assert!(schema.types.contains_key("users"));
         match &schema.types["users"] {
             TypeDef::Struct(s) => {
@@ -145,7 +145,7 @@ mod tests {
             created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
             tags TEXT[] NOT NULL
         );";
-        let schema = analyzer().analyze_str(sql, "events_db").unwrap();
+        let schema = analyzer().analyze_str(sql, "events_db").expect("schema analysis should succeed");
         assert_eq!(schema.source_format, "sql-postgresql");
         match &schema.types["events"] {
             TypeDef::Struct(s) => {
@@ -178,7 +178,7 @@ mod tests {
                 FOREIGN KEY (user_id) REFERENCES users(id)
             );
         ";
-        let schema = analyzer().analyze_str(sql, "blog").unwrap();
+        let schema = analyzer().analyze_str(sql, "blog").expect("schema analysis should succeed");
         assert_eq!(schema.types.len(), 2);
         assert!(schema.types.contains_key("users"));
         assert!(schema.types.contains_key("posts"));
@@ -198,14 +198,14 @@ mod tests {
         assert_eq!(a.supported_extensions(), &["sql", "ddl"]);
 
         let sql = "CREATE TABLE ping (msg TEXT NOT NULL);";
-        let ir = SchemaAnalyzer::analyze_str(&a, sql, "ping").unwrap();
+        let ir = SchemaAnalyzer::analyze_str(&a, sql, "ping").expect("schema analysis should succeed");
         assert!(ir.types.contains_key("ping"));
     }
 
     #[test]
     fn schema_json_roundtrip() {
         let sql = "CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT NOT NULL);";
-        let schema = analyzer().analyze_str(sql, "roundtrip").unwrap();
+        let schema = analyzer().analyze_str(sql, "roundtrip").expect("schema analysis should succeed");
         let json = schema.to_json().expect("serialize");
         let restored = IrSchema::from_json(&json).expect("deserialize");
         assert_eq!(restored.types.len(), schema.types.len());
@@ -217,7 +217,7 @@ mod tests {
             &IrType::Primitive(PrimitiveType::I32),
             &IrType::Primitive(PrimitiveType::I32),
         )
-        .unwrap();
+        .expect("operation should succeed in test");
         assert!(result.is_zero_copy());
     }
 
@@ -230,7 +230,7 @@ mod tests {
             price REAL NOT NULL,
             description TEXT
         );";
-        let schema = analyzer().analyze_str(sql, "shop").unwrap();
+        let schema = analyzer().analyze_str(sql, "shop").expect("schema analysis should succeed");
         let shapes = shape_ir::extract::extract_schema(&schema);
         assert!(shapes.shapes.contains_key("products"));
 
@@ -250,7 +250,7 @@ mod tests {
             name TEXT NOT NULL,
             email TEXT
         );";
-        let sql_schema = analyzer().analyze_str(sql, "sql_users").unwrap();
+        let sql_schema = analyzer().analyze_str(sql, "sql_users").expect("schema analysis should succeed");
         let sql_shapes = shape_ir::extract::extract_schema(&sql_schema);
         let sql_shape = &sql_shapes.shapes["users"];
 

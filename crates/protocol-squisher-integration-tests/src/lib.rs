@@ -437,10 +437,10 @@ mod tests {
             metadata: HashMap::new(),
         };
 
-        let id = store.store_analysis(record).unwrap();
+        let id = store.store_analysis(record).expect("operation should succeed in test");
         assert_eq!(id, "e2e-001");
 
-        let retrieved = store.get_analysis("e2e-001").unwrap();
+        let retrieved = store.get_analysis("e2e-001").expect("operation should succeed in test");
         assert_eq!(retrieved.source_type, "rust_user");
         assert_eq!(retrieved.transport_class, "Concorde");
     }
@@ -575,11 +575,11 @@ mod tests {
                 timestamp: format!("2026-0{}-01T00:00:00Z", i + 1),
                 metadata: HashMap::new(),
             };
-            store.store_analysis(record).unwrap();
+            store.store_analysis(record).expect("operation should succeed in test");
         }
 
         // Query and convert to reports.
-        let records = store.query_similar("User.id", "UserDTO.id", 10).unwrap();
+        let records = store.query_similar("User.id", "UserDTO.id", 10).expect("operation should succeed in test");
         assert_eq!(records.len(), 3);
 
         // Conversion to SquishabilityReport would happen in the integration facade.
@@ -620,10 +620,10 @@ mod tests {
             timestamp: "2026-02-28T12:00:00Z".to_string(),
             metadata: HashMap::new(),
         };
-        store.store_analysis(record).unwrap();
+        store.store_analysis(record).expect("operation should succeed in test");
 
         // Step 5: Verify end-to-end.
-        let retrieved = store.get_analysis("pipeline-001").unwrap();
+        let retrieved = store.get_analysis("pipeline-001").expect("operation should succeed in test");
         assert_eq!(retrieved.transport_class, "Concorde");
         assert_eq!(retrieved.source_type, "rust_user");
     }
@@ -652,12 +652,12 @@ mod tests {
                 timestamp: format!("2026-0{}-15T12:00:00Z", i + 1),
                 metadata: HashMap::new(),
             };
-            store.store_analysis(record).unwrap();
+            store.store_analysis(record).expect("operation should succeed in test");
         }
 
         let trend = store
             .compatibility_trend("Order.total", "OrderDTO.total")
-            .unwrap();
+            .expect("operation should succeed in test");
         assert_eq!(trend.len(), 5);
         // Chronologically ordered.
         for window in trend.windows(2) {
@@ -685,7 +685,7 @@ mod tests {
                 first_seen: format!("2026-0{}-01T00:00:00Z", i + 1),
                 content_hash: Some(format!("sha256:{i:064x}")),
             };
-            store.record_schema_version(entry).unwrap();
+            store.record_schema_version(entry).expect("operation should succeed in test");
             version_count += 1;
         }
 
@@ -726,7 +726,7 @@ mod tests {
 
         let mut suggestion_count = 0;
         for entry in entries {
-            store.log_suggestion(entry).unwrap();
+            store.log_suggestion(entry).expect("operation should succeed in test");
             suggestion_count += 1;
         }
 
@@ -794,49 +794,49 @@ mod cross_domain_shape_tests {
 
     fn shapes_from_protobuf(input: &str) -> shape_ir::extract::ExtractedShapes {
         let analyzer = protocol_squisher_protobuf_analyzer::ProtobufAnalyzer::new();
-        let schema = SchemaAnalyzer::analyze_str(&analyzer, input, "proto").unwrap();
+        let schema = SchemaAnalyzer::analyze_str(&analyzer, input, "proto").expect("schema analysis should succeed");
         extract_schema(&schema)
     }
 
     fn shapes_from_json_schema(input: &str) -> shape_ir::extract::ExtractedShapes {
         let analyzer = protocol_squisher_json_schema_analyzer::JsonSchemaAnalyzer::new();
-        let schema = SchemaAnalyzer::analyze_str(&analyzer, input, "jsonschema").unwrap();
+        let schema = SchemaAnalyzer::analyze_str(&analyzer, input, "jsonschema").expect("schema analysis should succeed");
         extract_schema(&schema)
     }
 
     fn shapes_from_graphql(input: &str) -> shape_ir::extract::ExtractedShapes {
         let analyzer = protocol_squisher_graphql_analyzer::GraphqlAnalyzer::new();
-        let schema = SchemaAnalyzer::analyze_str(&analyzer, input, "graphql").unwrap();
+        let schema = SchemaAnalyzer::analyze_str(&analyzer, input, "graphql").expect("schema analysis should succeed");
         extract_schema(&schema)
     }
 
     fn shapes_from_avro(input: &str) -> shape_ir::extract::ExtractedShapes {
         let analyzer = protocol_squisher_avro_analyzer::AvroAnalyzer::new();
-        let schema = SchemaAnalyzer::analyze_str(&analyzer, input, "avro").unwrap();
+        let schema = SchemaAnalyzer::analyze_str(&analyzer, input, "avro").expect("schema analysis should succeed");
         extract_schema(&schema)
     }
 
     fn shapes_from_thrift(input: &str) -> shape_ir::extract::ExtractedShapes {
         let analyzer = protocol_squisher_thrift_analyzer::ThriftAnalyzer::new();
-        let schema = SchemaAnalyzer::analyze_str(&analyzer, input, "thrift").unwrap();
+        let schema = SchemaAnalyzer::analyze_str(&analyzer, input, "thrift").expect("schema analysis should succeed");
         extract_schema(&schema)
     }
 
     fn shapes_from_sql(input: &str) -> shape_ir::extract::ExtractedShapes {
         let analyzer = protocol_squisher_sql_analyzer::SqlAnalyzer::new();
-        let schema = SchemaAnalyzer::analyze_str(&analyzer, input, "sql").unwrap();
+        let schema = SchemaAnalyzer::analyze_str(&analyzer, input, "sql").expect("schema analysis should succeed");
         extract_schema(&schema)
     }
 
     fn shapes_from_openapi(input: &str) -> shape_ir::extract::ExtractedShapes {
         let analyzer = protocol_squisher_openapi_analyzer::OpenApiAnalyzer::new();
-        let schema = SchemaAnalyzer::analyze_str(&analyzer, input, "openapi").unwrap();
+        let schema = SchemaAnalyzer::analyze_str(&analyzer, input, "openapi").expect("schema analysis should succeed");
         extract_schema(&schema)
     }
 
     fn shapes_from_arrow(input: &str) -> shape_ir::extract::ExtractedShapes {
         let analyzer = protocol_squisher_arrow_analyzer::ArrowAnalyzer::new();
-        let schema = SchemaAnalyzer::analyze_str(&analyzer, input, "arrow").unwrap();
+        let schema = SchemaAnalyzer::analyze_str(&analyzer, input, "arrow").expect("schema analysis should succeed");
         extract_schema(&schema)
     }
 
@@ -1172,7 +1172,7 @@ mod cross_domain_shape_tests {
                 Field::new("id", DataType::Int32, false),
                 Field::new("name", DataType::Utf8, false),
             ]);
-            serde_json::to_string(&s).unwrap()
+            serde_json::to_string(&s).expect("value should serialize to JSON")
         };
         let arrow = shapes_from_arrow(&arrow_json);
 
@@ -1221,7 +1221,7 @@ mod cross_domain_shape_tests {
                 Field::new("id", DataType::Int32, false),
                 Field::new("name", DataType::Utf8, false),
             ]);
-            serde_json::to_string(&s).unwrap()
+            serde_json::to_string(&s).expect("value should serialize to JSON")
         };
         let arrow_shapes = shapes_from_arrow(&arrow_json);
         let openapi_str = serde_json::json!({
@@ -1262,7 +1262,7 @@ mod cross_domain_shape_tests {
                 Field::new("id", DataType::Int32, false),
                 Field::new("name", DataType::Utf8, false),
             ]);
-            serde_json::to_string(&s).unwrap()
+            serde_json::to_string(&s).expect("value should serialize to JSON")
         };
         let arrow_shapes = shapes_from_arrow(&arrow_json);
         let avro_shapes = shapes_from_avro(
@@ -1385,7 +1385,7 @@ mod cross_domain_shape_tests {
                 Field::new("id", DataType::Int32, false),
                 Field::new("name", DataType::Utf8, false),
             ]);
-            serde_json::to_string(&s).unwrap()
+            serde_json::to_string(&s).expect("value should serialize to JSON")
         };
         let shapes = shapes_from_arrow(&arrow_json);
         assert!(shapes.shapes.contains_key("arrow"));
@@ -1399,7 +1399,7 @@ mod cross_domain_shape_tests {
                 Field::new("id", DataType::Int32, false),
                 Field::new("name", DataType::Utf8, false),
             ]);
-            serde_json::to_string(&s).unwrap()
+            serde_json::to_string(&s).expect("value should serialize to JSON")
         };
         let arrow_shapes = shapes_from_arrow(&arrow_json);
         let sql_shapes = shapes_from_sql(
@@ -1429,7 +1429,7 @@ mod cross_domain_shape_tests {
                 Field::new("id", DataType::Int32, false),
                 Field::new("name", DataType::Utf8, false),
             ]);
-            serde_json::to_string(&s).unwrap()
+            serde_json::to_string(&s).expect("value should serialize to JSON")
         };
         let arrow_shapes = shapes_from_arrow(&arrow_json);
         let proto_shapes = shapes_from_protobuf(
