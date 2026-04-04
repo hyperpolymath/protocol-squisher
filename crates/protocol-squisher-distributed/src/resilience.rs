@@ -124,22 +124,26 @@ pub fn retry_with_backoff<T, E>(
     max_retries: usize,
     base_delay_ms: u64,
 ) -> Result<T, E> {
-    let mut last_error = None;
+    // Run the first attempt unconditionally to guarantee we have an error
+    // value to return, eliminating the need for Option + expect/unwrap.
+    let mut last_error = match operation() {
+        Ok(value) => return Ok(value),
+        Err(e) => e,
+    };
 
-    for attempt in 0..=max_retries {
+    for attempt in 1..=max_retries {
+        let delay = base_delay_ms.saturating_mul(1u64 << (attempt - 1));
+        std::thread::sleep(std::time::Duration::from_millis(delay));
+
         match operation() {
             Ok(value) => return Ok(value),
             Err(e) => {
-                last_error = Some(e);
-                if attempt < max_retries {
-                    let delay = base_delay_ms.saturating_mul(1u64 << attempt);
-                    std::thread::sleep(std::time::Duration::from_millis(delay));
-                }
+                last_error = e;
             },
         }
     }
 
-    Err(last_error.expect("at least one attempt must have been made"))
+    Err(last_error)
 }
 
 #[cfg(test)]

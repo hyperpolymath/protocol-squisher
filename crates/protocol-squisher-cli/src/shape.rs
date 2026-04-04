@@ -523,8 +523,9 @@ pub fn run(command: ShapeCommand) -> Result<()> {
                 let extracted = extract_schema(&ir_schema);
 
                 if extracted.shapes.len() == 1 {
+                    // SAFETY: len() == 1 confirmed above, so next() always yields Some
                     let (name, shape) = extracted.shapes.into_iter().next()
-                        .expect("shapes vec confirmed to have exactly 1 element");
+                        .ok_or_else(|| anyhow::anyhow!("shapes vec unexpectedly empty after len() == 1 check"))?;
                     PanllFrame::from_shape(&name, &shape)
                 } else {
                     // Multiple types — build category

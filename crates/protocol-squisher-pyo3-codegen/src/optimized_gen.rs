@@ -336,7 +336,7 @@ impl OptimizedPyO3Generator {
             for field in fields {
                 if matches!(field.class, TransportClass::Wheelbarrow) {
                     code.push_str(&format!(
-                        "        // JSON fallback for {}\n        let json_val = serde_json::to_value(&self.{}).unwrap();\n        dict.set_item(\"{}\", json_val.to_string())?;\n",
+                        "        // JSON fallback for {}\n        let json_val = serde_json::to_value(&self.{}).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;\n        dict.set_item(\"{}\", json_val.to_string())?;\n",
                         field.field_name, field.field_name, field.field_name
                     ));
                 } else {

@@ -52,14 +52,14 @@
 
 | # | Crate | Files | unwrap() | Status | Notes |
 |---|-------|-------|----------|--------|-------|
-| 22 | cli | formats(5) feedback(3) integration(2) shape(1) | 11 | **DONE** | 1 production (shape.rs guarded by len check)->expect(). Rest test code. |
+| 22 | cli | formats(5) feedback(3) integration(2) shape(1) | 11 | **DONE** | shape.rs expect()->ok_or_else(anyhow). Rest test code. |
 | 23 | benches | 4 files | 9 | **DONE** | Bench code->expect(). (shape-ir bench done separately) |
 | 24 | echidna-bridge | types(4) tactic(2) cache(1) | 7 | **DONE** | All test code->expect(). |
 | 25 | ir | types(2) lib(2) constraints(2) | 6 | **DONE** | All test code->expect(). |
 | 26 | examples | 2 files | 5 | **DONE** | Example code->expect(). |
-| 27 | pyo3-codegen | optimized(2) module(1) | 3 | **DONE** | 1 in generated code string (correct to leave). 2 test->expect(). |
+| 27 | pyo3-codegen | optimized(2) module(1) | 3 | **DONE** | Generated code unwrap()->map_err(PyValueError). 2 test->expect(). |
 | 28 | security-bridge | runtime_verify(3) | 3 | **DONE** | All test code->expect(). |
-| 29 | distributed | resilience(1) | 1 | **DONE** | Test code->expect(). |
+| 29 | distributed | resilience(1) | 1 | **DONE** | retry_with_backoff restructured to eliminate expect(). |
 
 ## Progress Summary
 
@@ -71,11 +71,10 @@
 
 ## Residual unwrap() (NOT bugs)
 
-These 7 instances are intentionally left:
-1. `pyo3-codegen/src/optimized_gen.rs:339` -- inside a format string that generates Python FFI code
-2. `protobuf-analyzer/README.md:75-76` -- documentation example
-3. `protobuf-analyzer/USAGE.md:161-162` -- documentation example
-4. `rescript-analyzer/README.md:25,35` -- documentation example
+These 6 instances are intentionally left:
+1. `protobuf-analyzer/README.md:75-76` -- documentation example
+2. `protobuf-analyzer/USAGE.md:161-162` -- documentation example
+3. `rescript-analyzer/README.md:25,35` -- documentation example
 
 ## Session Log
 
