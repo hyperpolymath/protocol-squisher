@@ -4,13 +4,13 @@
     "team"
   ],
   "capabilities": {
-    "primary": {
-      "description": "TODO: describe this service's primary capability",
+    "static-analysis": {
+      "description": "Multi-protocol static analyser with 13 format analyzers and formal verification via Agda/Lean/Coq.",
       "endpoint": "/api",
       "panel_compatible": true,
       "protocol": "http",
       "requires_auth": false,
-      "type": "custom"
+      "type": "static-analysis"
     }
   },
   "consumes": [
