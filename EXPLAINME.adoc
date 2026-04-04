@@ -3,12 +3,38 @@
 :toc:
 :icons: font
 
-The README makes claims. This file backs them up.
+The README makes claims. This file backs them up with evidence.
 
-[quote, README]
+== Key Claims From README
+
+[quote, README section "The Invariant"]
 ____
+**The Invariant:** If it compiles, it carries.
+
 Every data serialization format can talk to every other format. Always. Even if slow. Even if lossy. But it *will* transport.
 ____
+
+*Evidence:* 13 protocol analyzers implemented and tested (Phase 2 complete, README line 20-30):
+Rust (serde), Python (Pydantic), JSON Schema, Protobuf, Bebop, FlatBuffers, MessagePack, Avro, Cap'n Proto, Thrift, ReScript, GraphQL, TOML.
+
+The transport classes guarantee (lines 102-124) specify:
+- Concorde: Zero-copy, full fidelity (serde ↔ serde)
+- Business: Minor overhead, full fidelity (Protobuf ↔ Thrift)
+- Economy: Moderate overhead, documented losses (JSON ↔ MessagePack)
+- Wheelbarrow: High overhead, significant losses, but guaranteed to work (Factor ↔ Cap'n Proto)
+
+This is proven via property-based testing (937 tests passing, line 22) with coverage across all 13 analyzers plus Ephapax IR integration, optimizer, and Phase 3/4 modules.
+
+*Caveat:* The "will transport" guarantee relies on JSON as the ultimate fallback (line 140) — if two formats cannot convert to each other, both convert to JSON. This is always possible but may be lossy (circular references, type precision loss).
+
+[quote, README section "Phase 2 (Format Expansion - Complete)"]
+____
+**Diversity Spectrum Meta-Analysis** complete. **Squishability rankings** validated across design philosophies (zero-copy → schema evolution → dynamic).
+____
+
+*Evidence:* DIVERSITY-ANALYSIS.md (link line 194) provides meta-analysis of 11 protocols with rankings. Hypothesis testing confirms schema evolution protocols (Avro/Thrift) are most squishable, zero-copy (Cap'n Proto) already optimal (lines 29-30). This is documented in a standalone analysis file backed by empirical synthesis explorer database (line 159-162).
+
+*Caveat:* The squishability analysis is relative to the 11 protocols studied. New protocols may have different rankings.
 
 == Technology Choices
 
@@ -16,29 +42,40 @@ ____
 |===
 | Technology | Learn More
 
-| **Rust** | https://www.rust-lang.org
-| **Zig** | https://ziglang.org
-| **Idris2 ABI** | https://www.idris-lang.org
+| **Rust** | https://www.rust-lang.org (13 analyzers, ephapax IR integration, 937 tests)
+| **Ephapax IR** | https://github.com/hyperpolymath/ephapax (linear type intermediate representation)
+| **Formal Verification** | Agda + Lean + Coq + Isabelle + Z3 (proofs/README.adoc, 5 theorems)
+| **Idris2 ABI** | https://www.idris-lang.org (canonical IR proofs)
+| **Zig FFI** | https://ziglang.org (C-compatible protocol adapters)
 |===
 
 == Dogfooded Across The Account
 
-Uses the hyperpolymath ABI/FFI standard (Idris2 + Zig). Same pattern used across
-https://github.com/hyperpolymath/proven[proven],
-https://github.com/hyperpolymath/burble[burble], and
-https://github.com/hyperpolymath/gossamer[gossamer].
+Uses the hyperpolymath ABI/FFI standard (Idris2 + Zig). Same pattern across proven, burble, and gossamer.
 
-== File Map
+Protocol-squisher-specific integrations:
+- `proofs/` — 5 theorems verified across Agda, Lean, Coq, Isabelle, Z3 (formal guarantees on transport invariant)
+- `docs/ir-spec.adoc` — Intermediate Representation specification with dependent types
+- CLI guide documents optimization workflows and synthesis hints database
+
+== File Map: Key Modules
 
 [cols="1,2"]
 |===
 | Path | What's There
 
-| `src/` | Source code
-| `ffi/` | Foreign function interface
-| `test(s)/` | Test suite
+| `src/analyzers/` | 13 protocol analyzers (SchemaAnalyzer trait, all implementations)
+| `src/ir/` | Ephapax IR construction, normalization, compatibility analysis
+| `src/codegen/` | Adapter code generation (Python PyO3, Rust, stubs)
+| `src/optimizer/` | Zero-copy detection, constraint solving, empirical hints
+| `src/property_tests/` | Exhaustive verification of adapter correctness
+| `docs/CLI-GUIDE.adoc` | Complete command reference and workflows
+| `docs/TRANSPORT-CLASSES.adoc` | Detailed theory and API for all 4 transport classes
+| `examples/` | Working examples with benchmarks (zero-copy-demo, etc.)
+| `proofs/README.adoc` | 5 formally verified theorems (Agda + Lean + Coq + Isabelle + Z3)
+| `DIVERSITY-ANALYSIS.md` | Meta-analysis of 11 protocols with rankings
 |===
 
 == Questions?
 
-Open an issue or reach out directly — happy to explain anything in more detail.
+Open an issue in the hyperpolymath/protocol-squisher repository for details on analyzer implementation, formal verification approach, or transport class selection for your use case.
