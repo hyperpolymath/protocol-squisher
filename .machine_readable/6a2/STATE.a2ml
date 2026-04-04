@@ -15,10 +15,11 @@
   '((version . "1.2.0")
     (schema-version . "1.1")
     (created . "2026-01-04")
-    (updated . "2026-03-10f")
+    (updated . "2026-04-04")
     (project . "protocol-squisher")
     (repo . "hyperpolymath/protocol-squisher")
-    (branch . "main")))
+    (branch . "main")
+    (crg-grade . "C")))
 
 (define project-context
   '((name . "protocol-squisher")
