@@ -1,0 +1,152 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# tlaiser manifest for protocol-squisher
+
+[project]
+name = "protocol-squisher"
+version = "0.1.0"
+description = "State machines for the Protocol Squisher universal protocol interoperability engine"
+
+# ── Schema analysis pipeline ──────────────────────────────────────────────────
+# Source: src/lib.rs, src/main.rs
+# An analyzer receives a schema file, parses it into IR, then hands off for
+# compatibility analysis. States track the analysis pipeline.
+
+[[state-machines]]
+name = "SchemaAnalysis"
+states = ["Unloaded", "Parsing", "Parsed", "AnalysisFailed"]
+initial-state = "Unloaded"
+description = "Schema file analysis lifecycle. A schema is loaded from disk, parsed into IR, and validated."
+
+  [[state-machines.variables]]
+  name = "type_count"
+  init = "0"
+  type = "INTEGER"
+
+  [[state-machines.variables]]
+  name = "error_message"
+  init = "\"none\""
+  type = "STRING"
+
+  [[state-machines.transitions]]
+  from = "Unloaded"
+  to = "Parsing"
+  label = "analyze_file"
+
+  [[state-machines.transitions]]
+  from = "Parsing"
+  to = "Parsed"
+  label = "parse_succeeds"
+  action = "type_count := type_count + 1"
+
+  [[state-machines.transitions]]
+  from = "Parsing"
+  to = "AnalysisFailed"
+  label = "parse_fails"
+  action = "error_message := \"parse error\""
+
+  [[state-machines.transitions]]
+  from = "Parsed"
+  to = "Unloaded"
+  label = "reset"
+  action = "type_count := 0"
+
+# ── Compatibility comparison ──────────────────────────────────────────────────
+# Source: src/lib.rs bidirectional_compare, compat module
+# Transport classes: Concorde > BusinessClass > Economy > Wheelbarrow > Incompatible
+
+[[state-machines]]
+name = "CompatibilityCheck"
+states = ["Idle", "Comparing", "Concorde", "BusinessClass", "Economy", "Wheelbarrow", "Incompatible"]
+initial-state = "Idle"
+description = "Bidirectional compatibility comparison between two IR schemas, producing a transport class result."
+
+  [[state-machines.variables]]
+  name = "loss_count"
+  init = "0"
+  type = "INTEGER"
+
+  [[state-machines.transitions]]
+  from = "Idle"
+  to = "Comparing"
+  label = "start_compare"
+
+  [[state-machines.transitions]]
+  from = "Comparing"
+  to = "Concorde"
+  label = "zero_loss_full_fidelity"
+  guard = "loss_count = 0"
+
+  [[state-machines.transitions]]
+  from = "Comparing"
+  to = "BusinessClass"
+  label = "minor_loss_only"
+  guard = "loss_count > 0"
+
+  [[state-machines.transitions]]
+  from = "Comparing"
+  to = "Economy"
+  label = "moderate_loss"
+  guard = "loss_count > 0"
+
+  [[state-machines.transitions]]
+  from = "Comparing"
+  to = "Wheelbarrow"
+  label = "major_loss_but_viable"
+  guard = "loss_count > 0"
+
+  [[state-machines.transitions]]
+  from = "Comparing"
+  to = "Incompatible"
+  label = "schemas_incompatible"
+
+  [[state-machines.transitions]]
+  from = "Concorde"
+  to = "Idle"
+  label = "reset"
+  action = "loss_count := 0"
+
+  [[state-machines.transitions]]
+  from = "BusinessClass"
+  to = "Idle"
+  label = "reset"
+  action = "loss_count := 0"
+
+  [[state-machines.transitions]]
+  from = "Economy"
+  to = "Idle"
+  label = "reset"
+  action = "loss_count := 0"
+
+  [[state-machines.transitions]]
+  from = "Wheelbarrow"
+  to = "Idle"
+  label = "reset"
+  action = "loss_count := 0"
+
+  [[state-machines.transitions]]
+  from = "Incompatible"
+  to = "Idle"
+  label = "reset"
+  action = "loss_count := 0"
+
+# ── Safety properties ─────────────────────────────────────────────────────────
+
+[[properties]]
+name = "SquisherInvariant"
+kind = "safety"
+formula = "[](CompatibilityCheck = Incompatible => loss_count >= 0)"
+
+[[properties]]
+name = "ConcrodeImpliesNoLoss"
+kind = "safety"
+formula = "[](CompatibilityCheck = Concorde => loss_count = 0)"
+
+[[properties]]
+name = "AnalysisEventuallyCompletes"
+kind = "liveness"
+formula = "<>(SchemaAnalysis = Parsed \\/ SchemaAnalysis = AnalysisFailed)"
+
+[tlc]
+workers = 4
+max-states = 100000
+symmetry = false
