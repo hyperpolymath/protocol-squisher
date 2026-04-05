@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: PMPL-1.0-or-later
 // SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
 
-//! VQL (VeriSimDB Query Language) query builders.
+//! VCL (VeriSimDB Query Language) query builders.
 //!
-//! These functions construct VQL strings for the common query patterns used
+//! These functions construct VCL strings for the common query patterns used
 //! by protocol-squisher: temporal history, vector similarity, provenance
 //! tracking, and graph traversal of type relationships.
 
@@ -69,7 +69,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn vql_temporal_builder() {
+    fn vcl_temporal_builder() {
         let query = build_temporal_query("User.id", "UserDTO.id", "2026-01-01", "2026-02-28");
         assert!(query.contains("TEMPORAL BETWEEN"));
         assert!(query.contains("User.id"));
@@ -78,7 +78,7 @@ mod tests {
     }
 
     #[test]
-    fn vql_vector_builder() {
+    fn vcl_vector_builder() {
         let embedding = vec![0.1, 0.2, 0.3];
         let query = build_vector_query(&embedding, 5);
         assert!(query.contains("VECTOR NEAREST"));
@@ -87,7 +87,7 @@ mod tests {
     }
 
     #[test]
-    fn vql_provenance_builder() {
+    fn vcl_provenance_builder() {
         let query = build_provenance_query("1.0.0", Some("protobuf"));
         assert!(query.contains("PROVENANCE"));
         assert!(query.contains("1.0.0"));
@@ -95,14 +95,14 @@ mod tests {
     }
 
     #[test]
-    fn vql_provenance_no_format() {
+    fn vcl_provenance_no_format() {
         let query = build_provenance_query("2.0.0", None);
         assert!(query.contains("PROVENANCE"));
         assert!(!query.contains("format"));
     }
 
     #[test]
-    fn vql_graph_builder() {
+    fn vcl_graph_builder() {
         let query = build_graph_query("User", 3);
         assert!(query.contains("GRAPH TRAVERSE"));
         assert!(query.contains("User"));

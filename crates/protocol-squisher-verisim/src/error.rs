@@ -20,8 +20,8 @@ pub enum VeriSimError {
     #[error("VeriSimDB unavailable at {url}")]
     Unavailable { url: String },
 
-    /// VQL query syntax or execution error.
-    #[error("VQL query error: {0}")]
+    /// VCL query syntax or execution error.
+    #[error("VCL query error: {0}")]
     QueryError(String),
 
     /// Requested entity was not found.

@@ -4,7 +4,7 @@
 //! HTTP client for VeriSimDB's REST API.
 //!
 //! `VeriSimDBClient` provides typed access to VeriSimDB's core operations:
-//! health checks, VQL queries, entity CRUD, and vector similarity search.
+//! health checks, VCL queries, entity CRUD, and vector similarity search.
 
 use crate::error::VeriSimError;
 use serde_json::Value;
@@ -39,10 +39,10 @@ impl VeriSimDBClient {
         Ok(response.status().is_success())
     }
 
-    /// Execute a VQL (VeriSimDB Query Language) query.
-    pub fn vql_query(&self, vql: &str) -> Result<Value, VeriSimError> {
-        let url = format!("{}/api/v1/vql", self.base_url);
-        let body = serde_json::json!({ "query": vql });
+    /// Execute a VCL (VeriSimDB Query Language) query.
+    pub fn vcl_query(&self, vcl: &str) -> Result<Value, VeriSimError> {
+        let url = format!("{}/api/v1/vcl", self.base_url);
+        let body = serde_json::json!({ "query": vcl });
 
         let response = reqwest::blocking::Client::new()
             .post(&url)

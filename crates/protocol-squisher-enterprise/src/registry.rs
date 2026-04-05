@@ -362,13 +362,13 @@ impl RegistryBackend for HttpRegistryBackend {
     }
 
     fn list_versions(&self, name: &str) -> Result<Vec<String>> {
-        let vql = format!(
+        let vcl = format!(
             "SELECT version FROM schema_registry WHERE name = '{}'",
             name.replace('\'', "''")
         );
         let result = self
             .client
-            .vql_query(&vql)
+            .vcl_query(&vcl)
             .map_err(|e| anyhow::anyhow!("VeriSimDB list_versions query failed: {e}"))?;
 
         let records: Vec<RegistryIndexRecord> = serde_json::from_value(result).unwrap_or_default();
@@ -378,10 +378,10 @@ impl RegistryBackend for HttpRegistryBackend {
     }
 
     fn list_schemas(&self) -> Result<Vec<RegistryIndexRecord>> {
-        let vql = "SELECT * FROM schema_registry";
+        let vcl = "SELECT * FROM schema_registry";
         let result = self
             .client
-            .vql_query(vql)
+            .vcl_query(vcl)
             .map_err(|e| anyhow::anyhow!("VeriSimDB list_schemas query failed: {e}"))?;
 
         let records: Vec<RegistryIndexRecord> = serde_json::from_value(result).unwrap_or_default();

@@ -97,7 +97,7 @@ members = [
   "crates/protocol-squisher-graphql-analyzer",
   "crates/protocol-squisher-toml-analyzer",
   "crates/protocol-squisher-echidna-bridge",
-  "crates/protocol-squisher-verisimdb",
+  "crates/protocol-squisher-verisim",
   "crates/protocol-squisher-constraints",
   "crates/protocol-squisher-server",
   "crates/protocol-squisher-sql-analyzer",

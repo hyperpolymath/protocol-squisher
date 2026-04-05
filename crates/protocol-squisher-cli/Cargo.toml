@@ -47,7 +47,7 @@ protocol-squisher-json-fallback = { path = "../protocol-squisher-json-fallback" 
 protocol-squisher-meta-analysis = { path = "../protocol-squisher-meta-analysis" }
 protocol-squisher-transport-primitives = { path = "../../ephapax-ir" }
 protocol-squisher-echidna-bridge = { path = "../protocol-squisher-echidna-bridge" }
-protocol-squisher-verisimdb = { path = "../protocol-squisher-verisimdb" }
+protocol-squisher-verisim = { path = "../protocol-squisher-verisim" }
 shape-ir = { path = "../shape-ir" }
 
 serde = { version = "1.0", features = ["derive"] }

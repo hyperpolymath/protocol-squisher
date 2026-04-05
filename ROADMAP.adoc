@@ -404,7 +404,7 @@ The five pillars are not isolated. protocol-squisher's IR enables cross-pillar a
 
 - **Container ↔ Protocol:** Analyze container port mappings as protocol boundaries.
   Which protocols are exposed? Are they compatible with consumers?
-- **Database ↔ Protocol:** VQL schema analysis through the protocol IR.
+- **Database ↔ Protocol:** VCL schema analysis through the protocol IR.
   Database query schemas map to the same constraint types.
 - **Language ↔ Protocol:** FFI boundaries are protocol boundaries.
   Rust ↔ Python type mapping is protocol-squisher's original use case.

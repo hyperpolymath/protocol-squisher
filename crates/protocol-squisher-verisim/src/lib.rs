@@ -15,7 +15,7 @@
 //!                                       ↓
 //!                              VeriSimDBStore (HTTP)  or  InMemoryStore (fallback)
 //!                                       ↓
-//!                              VQL queries for trends, provenance, similarity
+//!                              VCL queries for trends, provenance, similarity
 //! ```
 //!
 //! ## Modality Mapping

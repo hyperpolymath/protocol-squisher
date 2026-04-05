@@ -46,7 +46,7 @@
 | 18 | server | lib(19) | 19 | **DONE** | All test code->expect(). |
 | 19 | openapi-analyzer | lib(12) ephapax_bridge(3) parser(2) converter(2) | 19 | **DONE** | All test code->expect(). |
 | 20 | arrow-analyzer | lib(11) ephapax_bridge(3) parser(2) converter(1) | 17 | **DONE** | All test code->expect(). |
-| 21 | verisimdb | store(13) models(4) | 17 | **DONE** | All test code->expect(). |
+| 21 | verisim | store(13) models(4) | 17 | **DONE** | All test code->expect(). |
 
 ### TIER 3 -- Low-count crates (<15 unwrap)
 

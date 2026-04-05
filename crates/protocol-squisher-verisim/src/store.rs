@@ -201,13 +201,13 @@ impl AnalysisStore for VeriSimDBStore {
         target_type: &str,
         limit: usize,
     ) -> Result<Vec<AnalysisRecord>, VeriSimError> {
-        let vql = format!(
+        let vcl = format!(
             "SELECT * FROM analyses \
              WHERE source_type = '{source_type}' \
              OR target_type = '{target_type}' \
              LIMIT {limit}"
         );
-        let result = self.client.vql_query(&vql)?;
+        let result = self.client.vcl_query(&vcl)?;
         serde_json::from_value(result).map_err(|e| VeriSimError::SerializationError(e.to_string()))
     }
 
@@ -216,13 +216,13 @@ impl AnalysisStore for VeriSimDBStore {
         source_type: &str,
         target_type: &str,
     ) -> Result<Vec<AnalysisRecord>, VeriSimError> {
-        let vql = crate::queries::build_temporal_query(
+        let vcl = crate::queries::build_temporal_query(
             source_type,
             target_type,
             "1970-01-01",
             "2099-12-31",
         );
-        let result = self.client.vql_query(&vql)?;
+        let result = self.client.vcl_query(&vcl)?;
         serde_json::from_value(result).map_err(|e| VeriSimError::SerializationError(e.to_string()))
     }
 
@@ -230,8 +230,8 @@ impl AnalysisStore for VeriSimDBStore {
         &self,
         analyzer_version: &str,
     ) -> Result<Vec<AnalysisRecord>, VeriSimError> {
-        let vql = crate::queries::build_provenance_query(analyzer_version, None);
-        let result = self.client.vql_query(&vql)?;
+        let vcl = crate::queries::build_provenance_query(analyzer_version, None);
+        let result = self.client.vcl_query(&vcl)?;
         serde_json::from_value(result).map_err(|e| VeriSimError::SerializationError(e.to_string()))
     }
 
