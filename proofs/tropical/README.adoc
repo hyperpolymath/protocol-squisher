@@ -1,0 +1,88 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+= Protocol Squisher — Tropical Connection
+Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+:toc:
+
+== What this directory contains
+
+Formal foundations for the claim that Protocol Squisher's 4-class transport
+semilattice (Concorde / Business / Economy / Wheelbarrow) is a *tropical
+optimisation problem* — specifically, that optimal adapter path search is
+Dijkstra on an idempotent (tropical) semiring.
+
+== Key files
+
+[cols="1,2"]
+|===
+| File | Contents
+
+| `TropicalAdapterPath.lean`
+| Core formalisation in Lean 4.  Defines the min-max (bottleneck) semiring
+  over transport grades, proves the 8 semiring axioms, states the minimax
+  path optimality theorem, and documents the duality with the max-plus
+  tropical semiring from `tropical-resource-typing`.
+|===
+
+== The mathematical claim
+
+Protocol Squisher classifies adapter paths by their *bottleneck quality*:
+the quality of the worst step in the path.  Finding the optimal path
+(maximum fidelity) is equivalent to minimising the bottleneck cost, which
+is the classical *minimax path problem*.
+
+The minimax path problem is solved exactly by Dijkstra's algorithm on the
+*(Nat, min, max, ∞, 0)* semiring, also called the **min-max semiring** or
+**bottleneck semiring**.  This semiring is:
+
+* Idempotent (min(n,n) = n) — making it a *dioid*
+* A tropical semiring in the general sense (idempotent addition)
+* Dual to the max-plus semiring via the map g ↦ (maxGrade − g)
+
+== Relationship to `tropical-resource-typing`
+
+The `tropical-resource-typing` repository proves a max-plus CommSemiring
+instance (⊕ = max, ⊗ = +) and uses it to grade session types.  Both
+structures are dioids; they are related by an order-reversing isomorphism
+on [0, maxGrade].
+
+The analogue of `tropical_grade_le_sequentialTotal` (proved there) holds
+here: the bottleneck cost of a path is always ≤ the naive sequential sum
+of step costs (because max(a,b) ≤ a+b for naturals).  This is proved in
+`pathCost_le_sequential`.
+
+== What is proved (zero sorry)
+
+[cols="2,3"]
+|===
+| Theorem | Content
+
+| `grade_injective` | Distinct classes have distinct grades
+| `grade_total` | The ordering is total
+| `tcJoin_comm/assoc/idem` | Transport semilattice is a commutative idempotent join
+| `tcJoin_concorde_left/right` | Concorde is the identity of join
+| `pathCost_append` | Cost of concatenated paths = max of individual costs
+| `tcAdd_comm/assoc/idem` | Min operation is comm, assoc, idempotent
+| `tcMul_comm/assoc` | Max operation is comm, assoc
+| `tcMul_one_left/right` | Grade 0 (Concorde) is multiplicative identity
+| `tcMul_add_distrib_left` | Distributivity: max distributes over min
+| `dual_tcAdd_is_max` | Order-duality: dual(min(m,n)) = max(dual(m), dual(n))
+| `pathCost_le_sequential` | Bottleneck ≤ sequential sum (tropical refinement analogue)
+|===
+
+== Open items
+
+. **Dijkstra correctness** — prove that the Dijkstra algorithm on the
+  (min, max) semiring finds the minimax path.  Standard result (Mohri 2002);
+  needs formalisation.
+. **Explicit semiring homomorphism** — the order-reversing map from the min-max
+  semiring to the max-plus semiring should be proved as a semiring homomorphism,
+  not just as a lattice anti-isomorphism.
+. **Connection to `TropicalSessionTypes.lean`** — construct an explicit functor
+  between the CommSemiring instances.
+
+== Cross-references
+
+* `tropical-resource-typing/TropicalSessionTypes.lean` — max-plus session type grades
+* `tropical-resource-typing/Tropical.thy` — Isabelle/HOL dioid instance
+* `proofs/lean/concorde_safety.lean` — `TransportClass` definition reused here
+* `nextgen-typing/docs/ARCHITECTURE.adoc` — pipeline context
