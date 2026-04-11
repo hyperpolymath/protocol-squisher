@@ -1,80 +1,69 @@
-;; SPDX-License-Identifier: PMPL-1.0-or-later
-;; ECOSYSTEM.scm - Ecosystem Positioning
-;; protocol-squisher
-;;
-;; IMPORTANT: Satellite relationships must be kept up to date.
-;; When adding/removing satellites, update this file and the satellite's ECOSYSTEM.scm.
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+#
+# ECOSYSTEM.a2ml — protocol-squisher ecosystem position
+# Converted from ECOSYSTEM.scm (was Scheme-format; migrated to A2ML 2026-04-11)
 
-(ecosystem
-  (version . "1.2.0")
-  (name . "protocol-squisher")
-  (type . "library + research-tool")
-  (purpose . "Universal data shape reasoning engine — formally reason about data structure across serialization formats, databases, APIs, type systems, and memory layouts, with algebraic guarantees")
+[metadata]
+version = "1.3.0"
+last-updated = "2026-04-11"
 
-  (position-in-ecosystem
-   (category . "developer-tools + foundational-research")
-   (layer . "interoperability + data-shape-algebra")
-   (vision . "18-month plan: format converter → universal data shape reasoning engine (VISION-18-MONTHS.md)"))
+[project]
+name = "protocol-squisher"
+type = "library + research-tool"
+purpose = """
+Universal data shape reasoning engine — formally reason about data structure
+across serialisation formats, databases, APIs, type systems, and memory layouts,
+with algebraic guarantees.  The 4-class transport semilattice
+(Concorde/Business/Economy/Wheelbarrow) is formally a tropical optimisation
+problem: adapter path search is Dijkstra over a max-plus semiring.
+"""
 
-  (related-projects
-   ((name . "ephapax")
-    (relationship . "core-dependency")
-    (note . "Linear type system - canonical IR implemented in ephapax with Idris2 dependent types for zero-copy safety proofs"))
-   ((name . "ECHIDNA")
-    (relationship . "verification-platform")
-    (note . "Neurosymbolic theorem proving platform - formal verification of transport class analysis (Agda, Lean, Coq integration)"))
-   ((name . "serde")
-    (relationship . "dependency")
-    (note . "Rust serialization framework - source format"))
-   ((name . "pydantic")
-    (relationship . "target-integration")
-    (note . "Python validation library - target format"))
-   ((name . "PyO3")
-    (relationship . "dependency")
-    (note . "Rust-Python FFI bindings for generated adapters"))
-   ((name . "proven")
-    (relationship . "sibling-standard")
-    (note . "Formal verification for adapter correctness proofs"))
-   ((name . "Idris2")
-    (relationship . "verification-language")
-    (note . "Dependently-typed language used for ephapax IR implementation with totality checking"))
-   ;; New related projects (vision direction)
-   ((name . "Cambria")
-    (relationship . "inspiration")
-    (note . "Ink & Switch lens-based system for evolving JSON schemas in local-first software — closest existing system to our vision, but we generalise beyond JSON"))
-   ((name . "Apache Arrow")
-    (relationship . "potential-consumer")
-    (note . "Columnar in-memory format with well-defined type system — Arrow schemas are data shapes, Phase 3 will include an Arrow extractor"))
-   ((name . "buf.build")
-    (relationship . "inspiration")
-    (note . "Protobuf schema management with breaking change detection — does for Protobuf what we aim to do for all data shapes"))
-   ((name . "CUE")
-    (relationship . "inspiration")
-    (note . "Constraint-based configuration language with lattice-based type system — philosophically aligned with our linearity lattice and transport class semilattice"))
-   ((name . "BX community")
-    (relationship . "academic-foundation")
-    (note . "Bidirectional transformations research (symmetric lenses, delta lenses) — theoretical foundation for our morphism algebra"))))
+[pipeline]
+position = "co-product"
+chain = "katagoria → typell → typed-wasm → PanLL"
+tropical-connection = """
+The transport semilattice is max-under-composition (tropical).  The minimax
+adapter path search is Dijkstra on a max-plus semiring.  The formal foundation
+lives in tropical-resource-typing (Isabelle/HOL + Lean 4).
+"""
+coordination = "nextgen-typing"
 
-  (what-this-is
-   "A universal data shape reasoning engine with algebraic guarantees"
-   "A code generator that synthesizes type-safe adapters between serialization formats"
-   "A compatibility analyzer that classifies format pairs by transport class (Concorde/Business/Economy/Wheelbarrow)"
-   "A formal guarantee system: if it compiles, data will transport (even if lossy)"
-   "A JSON fallback mechanism that ensures universal compatibility"
-   "A performance optimizer that generates zero-copy paths when possible"
-   "(Vision) A category-theoretic foundation for reasoning about data shape across all structural boundaries")
+[position-in-ecosystem]
+category = "developer-tools + foundational-research"
+layer = "interoperability + data-shape-algebra"
+vision = "format converter → universal data shape reasoning engine"
 
-  (what-this-is-not
-   "Not an RPC framework - focuses on data serialization only"
-   "Not a runtime library - generates standalone adapter code"
-   "Not a schema registry - analyzes schemas but doesn't store them"
-   "Not a format converter CLI - generates code for integration, not one-off conversions"
-   "Not a replacement for manual FFI when performance is critical")
+[related-projects]
+projects = [
+  { name = "ephapax", relationship = "core-dependency", notes = "Linear type system — canonical IR implemented in ephapax with Idris2 dependent types for zero-copy safety proofs." },
+  { name = "tropical-resource-typing", relationship = "formal-foundation", notes = "Isabelle/HOL max-plus semiring + Lean 4 tropical session types. Formal basis for the transport semilattice tropical connection." },
+  { name = "nextgen-typing", relationship = "coordination-parent", notes = "Canonical architecture doc. The protocol-squisher tropical connection is documented in the Research Section there." },
+  { name = "typell", relationship = "related-research", notes = "TypeLL QTT semiring has structural parallels. Tropical grades give tighter resource bounds than QTT overestimates." },
+  { name = "katagoria", relationship = "research-upstream", notes = "Future speculative tropical extensions (multiparty, probabilistic) may originate there." },
+  { name = "ECHIDNA", relationship = "verification-platform", notes = "Neurosymbolic theorem proving — formal verification of transport class analysis." },
+  { name = "proven", relationship = "sibling-standard", notes = "Formal verification for adapter correctness proofs." },
+  # Inspirations / external
+  { name = "Cambria", relationship = "inspiration", notes = "Ink & Switch lens-based system for evolving JSON schemas — closest existing system, but we generalise beyond JSON." },
+  { name = "Apache Arrow", relationship = "potential-consumer", notes = "Columnar in-memory format. Arrow schemas are data shapes; Phase 3 includes an Arrow extractor." },
+  { name = "buf.build", relationship = "inspiration", notes = "Protobuf schema management with breaking change detection." },
+  { name = "CUE", relationship = "inspiration", notes = "Constraint-based configuration with lattice-based type system — philosophically aligned with our transport class semilattice." },
+]
 
-  ;; Maintenance note: Review satellite relationships when:
-  ;; - Adding new repos with similar suffix patterns (-ssg, -mcp, -scm, -ffi)
-  ;; - Removing or archiving repos
-  ;; - Changing the portfolio structure
-  (maintenance-checks
-   (satellite-sync . "Ensure parent and satellite ECOSYSTEM.scm files are consistent")
-   (portfolio-review . "Verify all satellites are listed in parent repo")))
+[what-this-is]
+is = [
+  "A universal data shape reasoning engine with algebraic guarantees",
+  "A code generator synthesising type-safe adapters between serialisation formats",
+  "A compatibility analyser classifying format pairs by transport class (Concorde/Business/Economy/Wheelbarrow)",
+  "A formal guarantee system: if it compiles, data will transport (even if lossy)",
+  "A JSON fallback mechanism ensuring universal compatibility",
+  "A performance optimiser generating zero-copy paths when possible",
+  "(Vision) A category-theoretic foundation for reasoning about data shape across all structural boundaries",
+]
+is-not = [
+  "Not an RPC framework — focuses on data serialisation only",
+  "Not a runtime library — generates standalone adapter code",
+  "Not a schema registry — analyses schemas but doesn't store them",
+  "Not a format converter CLI — generates code for integration, not one-off conversions",
+  "Not a replacement for manual FFI when performance is critical",
+]
