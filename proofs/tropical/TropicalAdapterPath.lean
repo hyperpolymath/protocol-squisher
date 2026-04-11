@@ -43,8 +43,11 @@
 
   ## Open items (no sorry here — these are documented future work)
 
-  1. Prove the Dijkstra correctness theorem for min-max semirings
-     (the classical result; cite Mohri 2002 or similar).
+  1. ~~Prove the Dijkstra correctness theorem for min-max semirings~~ **DONE**:
+     `foldl_tcAdd_le_init` + `foldl_tcAdd_le_mem` + `minimax_path_optimal`
+     prove the optimal-path property for the foldl-min formulation.
+     Full graph-algorithmic Dijkstra correctness (generalised to arbitrary graphs)
+     remains future work; the classical result is Mohri 2002.
   2. Formalise the order-reversing isomorphism explicitly as a semiring
      homomorphism (not just stated in comments).
   3. Connect to `TropicalSessionTypes.lean` CommSemiring instance directly
@@ -266,18 +269,50 @@ theorem best_of_two (P Q : AdapterPath) :
     tcAdd (pathCost P) (pathCost Q) =
     Nat.min (pathCost P) (pathCost Q) := rfl
 
-/-- The path whose cost equals min of all alternative costs is optimal. -/
+-- ─── Helper lemmas for foldl min ────────────────────────────────────────────
+
+/-- The result of foldl tcAdd is always ≤ the initial accumulator.
+    Induction: each step replaces acc with (min acc (pathCost Q)) ≤ acc. -/
+private theorem foldl_tcAdd_le_init :
+    ∀ (acc : Nat) (xs : List AdapterPath),
+    xs.foldl (fun a Q => tcAdd a (pathCost Q)) acc ≤ acc
+  | _,   []         => Nat.le_refl _
+  | acc, Q :: rest  =>
+      -- foldl on (Q::rest) = foldl on rest with new acc = tcAdd acc (pathCost Q)
+      -- IH: foldl_on_rest ≤ tcAdd acc (pathCost Q)
+      -- And: tcAdd acc (pathCost Q) = min acc _ ≤ acc
+      Nat.le_trans
+        (foldl_tcAdd_le_init (tcAdd acc (pathCost Q)) rest)
+        (Nat.min_le_left acc (pathCost Q))
+
+/-- The result of foldl tcAdd is ≤ the pathCost of every list member.
+    This is the core lemma: foldl min gives the global minimum. -/
+private theorem foldl_tcAdd_le_mem :
+    ∀ (acc : Nat) (xs : List AdapterPath) (Q : AdapterPath),
+    Q ∈ xs → xs.foldl (fun a R => tcAdd a (pathCost R)) acc ≤ pathCost Q
+  | _,   [],          _, hQ  => absurd hQ (List.not_mem_nil _)
+  | acc, R :: rest,   Q, hQ  =>
+      match List.mem_cons.mp hQ with
+      | Or.inl h =>
+          -- Q is the head R.  Cost = foldl on rest with acc' = tcAdd acc (pathCost R).
+          -- foldl_tcAdd_le_init: foldl_on_rest ≤ tcAdd acc (pathCost R)
+          -- And: tcAdd acc (pathCost R) = min acc (pathCost R) ≤ pathCost R = pathCost Q
+          h ▸ Nat.le_trans
+                (foldl_tcAdd_le_init (tcAdd acc (pathCost Q)) rest)
+                (Nat.min_le_right acc (pathCost Q))
+      | Or.inr h =>
+          -- Q is in the tail.  Apply IH with updated accumulator.
+          foldl_tcAdd_le_mem (tcAdd acc (pathCost R)) rest Q h
+
+/-- The path whose cost equals the foldl-min over all alternatives is optimal.
+    Proof: substitute h, then apply foldl_tcAdd_le_mem directly. -/
 theorem minimax_path_optimal
     (P : AdapterPath) (alts : List AdapterPath)
     (h : pathCost P = alts.foldl (fun acc Q => tcAdd acc (pathCost Q)) tcZero) :
     IsOptimalPath P alts := by
   intro Q hQ
-  -- After folding tcAdd = min over all alternatives, the result is ≤ any element.
-  -- This follows from: foldl min tcZero gives the global minimum.
-  -- Detailed proof omitted (requires List.foldl_min lemma);
-  -- the structure is standard and provable without sorry.
-  -- See open item 1 in the module docstring.
-  omega
+  rw [h]
+  exact foldl_tcAdd_le_mem tcZero alts Q hQ
 
 -- ============================================================================
 -- 6.  Tropical duality: connecting to TropicalSessionTypes

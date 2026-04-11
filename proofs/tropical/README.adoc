@@ -69,11 +69,32 @@ of step costs (because max(a,b) ≤ a+b for naturals).  This is proved in
 | `pathCost_le_sequential` | Bottleneck ≤ sequential sum (tropical refinement analogue)
 |===
 
+== What is proved (zero sorry)
+
+In addition to the semiring axioms and duality theorems, the following path
+optimality results are now fully proved:
+
+[cols="2,3"]
+|===
+| Theorem | Content
+
+| `foldl_tcAdd_le_init`
+| `foldl min acc xs ≤ acc` — the running minimum never exceeds the starting bound.
+
+| `foldl_tcAdd_le_mem`
+| `foldl min tcZero xs ≤ pathCost Q` for all `Q ∈ xs` — global minimum property.
+
+| `minimax_path_optimal`
+| If `pathCost P = foldl min tcZero alts`, then `P` is optimal (≤ every alternative).
+  Full proof using the two helper lemmas; no `omega` placeholder.
+|===
+
 == Open items
 
-. **Dijkstra correctness** — prove that the Dijkstra algorithm on the
-  (min, max) semiring finds the minimax path.  Standard result (Mohri 2002);
-  needs formalisation.
+. **Full graph-algorithmic Dijkstra** — the `minimax_path_optimal` theorem
+  proves optimality for the *foldl-min* model (linear list of alternatives).
+  Generalising to Dijkstra on an arbitrary weighted graph (Mohri 2002) requires
+  a graph library or further formalisation effort.
 . **Explicit semiring homomorphism** — the order-reversing map from the min-max
   semiring to the max-plus semiring should be proved as a semiring homomorphism,
   not just as a lattice anti-isomorphism.
