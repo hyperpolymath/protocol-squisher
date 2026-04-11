@@ -1,247 +1,38 @@
-;; SPDX-License-Identifier: PMPL-1.0-or-later
-;; STATE.scm - Project State and Progress
-;; protocol-squisher
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+#
+# STATE.a2ml — Protocol Squisher project state
+[metadata]
+project = "protocol-squisher"
+version = "1.2.0"
+last-updated = "2026-04-04"
+status = "active"
+session = "converted from scheme — 2026-04-11"
 
-(define-module (protocol_squisher state)
-  #:export (metadata
-            project-context
-            current-position
-            release-readiness
-            blockers-and-issues
-            critical-next-actions
-            session-history))
+[project-context]
+name = "Protocol Squisher"
+purpose = """Universal data shape reasoning engine — from format converter to algebraic foundation"""
+completion-percentage = 95
 
-(define metadata
-  '((version . "1.2.0")
-    (schema-version . "1.1")
-    (created . "2026-01-04")
-    (updated . "2026-04-04")
-    (project . "protocol-squisher")
-    (repo . "hyperpolymath/protocol-squisher")
-    (branch . "main")
-    (crg-grade . "C")))
+[position]
+phase = "vision-phase-1"   # design | implementation | testing | maintenance | archived
+maturity = "experimental"  # experimental | alpha | beta | production | lts
 
-(define project-context
-  '((name . "protocol-squisher")
-    (tagline . "Universal data shape reasoning engine — from format converter to algebraic foundation")
-    (direction . "18-month vision: universal data shape reasoning engine (see VISION-18-MONTHS.md)")
-    (tech-stack
-      . ("Rust" "Idris2" "ephapax" "Zig" "PyO3" "serde" "proptest" "criterion" "Podman"))
-    (policy
-      (abi-language . "Idris2")
-      (ffi-language . "Zig")
-      (fallback-path . "JSON wheelbarrow"))))
+[route-to-mvp]
+milestones = [
+  # No milestones recorded
+]
 
-(define current-position
-  '((phase . "vision-phase-1")
-    (overall-completion . 95)
-    (crate-version . "1.1.0")
-    (test-count . 1378)  ;; sealed P1-5 — Phase 5 visual language (70 new tests, 12 seam tests)
-    (vision
-      (direction . "universal data shape reasoning engine")
-      (vision-document . "VISION-18-MONTHS.md")
-      (phase-1-status . "sealed — 11 constructors, comparison engine, extraction, metrics, benchmarks, CLI, property tests, compose tests (16), extract edge cases (Result/Set/Tuple)")
-      (phase-2-status . "sealed — ShapeCategory (category laws, Dijkstra pathfinding, monoidal structure), 35 category unit tests + property tests, compose_arrows tested")
-      (phase-3-status . "sealed — 3 domain extractors: SQL DDL (29), OpenAPI/Swagger (33), Arrow IPC (29). 22 cross-domain tests, 7-format category test, 15+ pairwise combos proven")
-      (phase-4-status . "complete — temporal algebra: SchemaTimeline, VersionedShape, EvolutionStep, SemverClassification, forecast_compatibility, plan_evolution, next_version. 28 tests + 1 doc-test")
-      (phase-5-status . "complete — render.rs (ASCII tree, DOT graph, timeline, morphism table, evolution strategy), panll.rs (PanLL L/N/W three-panel model), CLI (shape render/dot/timeline/panll). 29 render tests + 20 panll tests + 9 doc-tests")
-      (phase-6-status . "not-started"))
-    (components
-      ;; New direction — universal data shape
-      ((shape-ir . "working — 165 tests (124 unit + 36 property + 5 doc), all 11 constructors, comparison engine, shape extractors, CLI integration, morphism metrics, ShapeCategory (category laws, Dijkstra pathfinding, symmetric monoidal structure), benchmarks")
-       ;; Existing foundation (Phases 1-3 still valid)
-       (core-ir . "working — foundation for shape extractors")
-       (compat-engine . "working")
-       (cli . "working")
-       (format-analyzers . "working — 17 analyzers (13 serialization + SQL DDL + OpenAPI + Arrow IPC + TOML domain extractors)")
-       (json-fallback . "working")
-       (optimizer . "working")
-       (proofs . "complete — 5 Agda theorems + cross-validated in Coq, Isabelle, Z3")
-       (podman-workflows . "working")
-       (maintenance-automation . "working")
-       (security-bridge . "hardened — negotiation, audit, downgrade risk, capabilities, cert expiry, TLS probe")
-       (distributed . "hardened — job queue, progress tracking, retry policies, stats, partition rebalancer")
-       (performance . "hardened — SIMD byte search, chunked streaming, hardware detect, lazy schemas")
-       (echidna-bridge . "complete — 30-backend cross-prover, CLI-integrated, offline fallback")
-       (verisimdb . "complete — analysis persistence, InMemory fallback, CLI-integrated")
-       (feedback-o-tron . "working — suggestion generation from stored analysis records")))))
+[blockers-and-issues]
+issues = [
+  # No blockers recorded
+]
 
-(define release-readiness
-  '((status . "released")
-    (release-tag . "v1.1.1")
-    (release-date . "2026-02-28")
-    (latest-security-sweep
-      (date . "2026-02-28")
-      (cargo-audit . "0 vulnerabilities / 275 dependencies")
-      (dependabot-open . 0)
-      (secret-scanning-open . 0)
-      (code-scanning-open . 0))
-    (latest-verification
-      (date . "2026-02-28")
-      (checks
-        ("cargo check --workspace --all-targets"
-         "cargo test --workspace (937 pass)"
-         "cargo clippy --workspace -- -D warnings (clean)"
-         "cargo fmt --all -- --check (clean)"
-         "cargo audit (clean)")))))
+[critical-next-actions]
+actions = [
+  # No actions recorded
+]
 
-(define blockers-and-issues
-  '((critical . ())
-    (high . ())
-    (medium
-      "Phase 3/4 features hardened and CLI-integrated but not production-tested."
-      "ECHIDNA/VeriSimDB integration is offline-first; live service testing pending."
-      "HN launch post ready but not submitted.")
-    (low
-      "JSON postulates in CarriesInvariant.agda remain (justified runtime axiom).")))
-
-(define critical-next-actions
-  '((immediate
-      "Vision Phase 6: Write academic paper on universal data shape reasoning."
-      "Publish shape-ir crate to crates.io."
-      "Production testing of Phase 3+ features (security-bridge, enterprise, distributed).")
-    (this-week
-      "PanLL ReScript module: consume PanllFrame JSON in TEA three-panel UI."
-      "Formal Idris2 verification of category laws (dependent type proofs)."
-      "Functor/natural transformation abstractions for ShapeCategory.")
-    (next-milestone
-      "Vision Phase 6 complete: Paper submitted + crates published."
-      "VeriSimDB-backed enterprise registry (live, not stub)."
-      "TUI (ratatui) visual explorer for shapes/categories.")))
-
-(define session-history
-  '((session-2026-03-10d-vision-phase3-domain-extractors
-      (date . "2026-03-10")
-      (accomplishments
-        "Phase 3 domain extractor 1: SQL DDL analyzer (protocol-squisher-sql-analyzer) — 29 tests."
-        "Hand-written SQL DDL parser: CREATE TABLE, column types, NOT NULL, PRIMARY KEY, FOREIGN KEY, dialect detection (PostgreSQL/MySQL/SQLite), quoted identifiers, comments."
-        "SQL → IR converter: 40+ SQL type mappings (INTEGER→I32, BIGSERIAL→I64, TIMESTAMPTZ→DateTime, UUID→Uuid, JSONB→Json, etc.), nullable→Optional, PK always non-optional."
-        "Phase 3 domain extractor 2: OpenAPI/Swagger analyzer (protocol-squisher-openapi-analyzer) — 33 tests."
-        "OpenAPI parser: JSON+YAML input, OAS 3.0/3.1 and Swagger 2.0, object/enum/array/map/allOf/oneOf/anyOf schemas, format hints (date-time→DateTime, uuid→Uuid), $ref resolution."
-        "OpenAPI → IR converter: objects→Struct, enums→Enum, oneOf→Union, arrays→Alias(Vec), maps→Alias(Map), format hints override base type, required/optional property mapping."
-        "Both analyzers wired into CLI: ProtocolFormat enum, analyze_file/analyze_str dispatch, formats now 16 total."
-        "Critical cross-domain comparison tests: SQL↔manual shape Concorde (isomorphic), OpenAPI↔SQL Concorde (isomorphic)."
-        "Fixed SQL parser bugs: 'key' column name matching 'KEY' keyword exclusion, double-quoted identifiers splitting on embedded spaces."
-        "Test count: 1175 → 1208 (29 SQL + 33 OpenAPI - 29 already counted). All clippy-clean, 0 failures.")
-      (notes
-        "Phase 3 is proving the vision: database schemas, API contracts, and serialization formats are now all 'data shapes' that can be compared across domains. The cross-domain comparison tests are the killer feature — proving that a SQL table and an OpenAPI object with the same fields are isomorphic (Concorde transport class)."))
-    (session-2026-03-10c-vision-phase2-category
-      (date . "2026-03-10")
-      (accomplishments
-        "Phase 2 core: ShapeCategory (~450 lines) with objects, arrows, identity, composition, Dijkstra minimax pathfinding, compare_all, lossless_reachable, roundtrip_class, isomorphic_pairs."
-        "Symmetric monoidal structure: add_product (tensor with Unit as unit object), add_coproduct (sum / disjoint union), with projection/embedding and injection/case-analysis arrows."
-        "32 category unit tests: construction, identity laws (left/right), associativity, pathfinding (5 scenarios), compose_path, compare_all, lossless reachability, outgoing/incoming, display, struct evolution, roundtrip (3 scenarios), isomorphic pairs, product/tensor (3), coproduct (2)."
-        "9 category property tests: pathfinding self/direct/composed-class, compare_all arrow count, isomorphic pair symmetry, lossless reachable correctness, transport class total order."
-        "CLI `shape graph` subcommand: builds category from multiple inputs, compare_all, pathfinding with composed transport class, isomorphic pairs, lossless reachability — text and JSON output."
-        "MorphismMetrics wired into CLI compare output (direction label, identity%, reversibility%, net bits)."
-        "5 criterion benchmark groups including category benchmarks (find_path, compose_path, lossless_reachable, compare_all, find_path_8_nodes)."
-        "Test count: 158 → 165 shape-ir (total workspace 1102+). All clippy-clean.")
-      (notes
-        "Phase 2 core complete. ShapeCategory implements full category laws with Dijkstra adapter discovery. Monoidal structure provides tensor product and coproduct. CLI integration enables interactive category exploration. Next: formal Idris2 verification, functor abstractions, then Phase 3 domain extractors."))
-    (session-2026-03-10b-vision-phase1-expansion
-      (date . "2026-03-10")
-      (accomplishments
-        "Expanded comparison engine: Dependent pair comparison (binder+body), Recursive type comparison with alpha-equivalence, Ref alpha-renaming through environment threading."
-        "Built shape extractor bridge (extract.rs ~400 lines): Canonical IR → Shape IR, mapping all IrType variants including self-referential types to Recursive and Any/Json to recursive 6-variant JSON shape."
-        "Wired shape-ir into CLI: `protocol-squisher shape extract` and `shape compare` subcommands with text/JSON output."
-        "Proved algebraic laws via 12 property tests: transport class semilattice (associative, commutative, idempotent, identity, absorbing), product/sum canonical forms, morphism composition associativity, information content additivity."
-        "Defined MorphismMetrics: classify_morphism() computing transport_class, identity/loss/padding ratios, net_bits, pure_embedding/projection detection, reversibility score."
-        "Test count increased 84 → 116 (32 new: 12 compare, 5 information metrics, 12 property, 8 extraction, minus 5 doc overlap)."
-        "All clippy-clean, all tests passing.")
-      (notes
-        "All STATE.scm immediate actions completed. Phase 1 core engine now has full constructor coverage, cross-format extraction, CLI integration, and algebraic law proofs. Ready for Phase 1 polish (benchmarks, docs) then Phase 2 category theory."))
-    (session-2026-03-10-vision-phase1-infrastructure
-      (date . "2026-03-10")
-      (accomplishments
-        "Major direction change: from format converter to universal data shape reasoning engine."
-        "Created shape-ir crate with 84 tests (79 unit + 5 doc): Shape enum, TransportClass, Linearity, InformationContent, comparison engine."
-        "Wrote VISION-18-MONTHS.md: 6-phase, 18-month plan (Shape IR → Algebra → Eat the World → Temporal → Visual → Paper)."
-        "Updated Justfile: build-shape, test-shape, check-shape, bench-shape, vision-check, invariants recipes."
-        "Updated STATE.scm: new direction, vision tracking, shape-ir component, updated next actions."
-        "Updated ECOSYSTEM.scm: added Cambria, Apache Arrow, buf.build, CUE, BX community as related projects."
-        "Updated TOPOLOGY.md: added shape-ir architecture diagram and vision dashboard section."
-        "Created INTENT.md: intellectual lineage (Cambria, Spivak, BX, optics, information theory)."
-        "Created LEARNING.md: living document for insights during 18-month development."
-        "Updated Trustfile with vision commitment, shape-ir invariants, and phase quality gates.")
-      (notes
-        "The 13 existing analyzers remain valid as foundation — they become domain-specific Shape extractors in Phase 3. Test count: 937 existing + 84 shape-ir = 1021 total."))
-    (session-2026-02-28-phase4ab-library-extraction
-      (date . "2026-02-28")
-      (accomplishments
-        "Phase 4a: Defined SchemaAnalyzer trait in protocol-squisher-ir, implemented across all 13 analyzers."
-        "Phase 4b: Rewrote src/lib.rs with full public API (13 analyzer modules, compat, meta, optimizer, prelude)."
-        "Added all_analyzers() registry returning 13 type-erased trait objects for dynamic dispatch."
-        "Test count increased 921 → 937 (13 trait tests + 3 library API tests)."
-        "Rewrote ROADMAP.adoc with Phases 4-6 (PanLL substrate, ProtocolModule, Five Pillars)."
-        "Identified Quality/Observability as the missing fifth pillar."
-        "Synchronized all 16 non-Cargo files to v1.1.0 (versions, test counts)."
-        "Applied cargo fmt across all crates."
-        "Ran full panic-attack security suite: assail + assault + abduct + adjudicate → PASS."
-        "cargo audit: 0 vulnerabilities / 275 dependencies."
-        "Rewrote ROADMAP.adoc with Phases 4-6 (PanLL substrate, ProtocolModule, Five Pillars)."
-        "Identified Quality/Observability as the missing fifth pillar."
-        "Updated STATE.scm critical-next-actions for Phase 4 work."
-        "Updated all documentation: CHANGELOG, README, TOPOLOGY, METRICS, HN post.")
-      (notes
-        "Phase 4a/4b complete. protocol-squisher now usable as a library dependency via `use protocol_squisher::prelude::*`. Five-pillar architecture: Languages, Databases, Protocols, Containers, Quality."))
-    (session-2026-02-28-full-integration-phase3-proofs
-      (date . "2026-02-28")
-      (accomplishments
-        "CLI pipeline integration: created integration.rs facade wiring ECHIDNA bridge + VeriSimDB into analyze, compile, feedback, and synthesize commands."
-        "Enterprise: HttpRegistryBackend now backed by VeriSimDB (was stub)."
-        "Distributed: PartitionRebalancer module for workload balancing across workers."
-        "Security: cert expiry validation (validate_cert_chain_at), TLS probing stub (probe_tls_version), check_cert_expiry."
-        "10 new end-to-end integration tests covering full pipeline (analysis → proof → storage → feedback)."
-        "4 new formal proofs: OptimizationSoundness.agda, optimization_soundness.smt2, wheelbarrow_necessity.lean, ContainerPropagation.v."
-        "Test count increased 892 → 921 (29 new tests)."
-        "Updated TOPOLOGY.md and STATE.scm with accurate counts and new component rows."
-        "Zero Admitted/sorry/postulate/believe_me in new proofs.")
-      (notes
-        "Major integration push. All external services (ECHIDNA, VeriSimDB) are fully wired into CLI with offline fallback. Formal proofs now cover optimization soundness, container propagation, and wheelbarrow necessity across Agda, Coq, Lean, and Z3."))
-    (session-2026-02-28-phase3-hardening-proofs-analyzers
-      (date . "2026-02-28")
-      (accomplishments
-        "Phase 3 crate hardening: security-bridge (+negotiation, +audit, +downgrade risk, +capabilities trait, +10 tests), enterprise (+audit queries, +governance reports, +migration validation, +registry search, +marketplace validation, +16 tests), distributed (+job queue, +progress tracker, +retry policies, +stats, +7 tests), performance (+SIMD find_byte/sum_u32/xor_bytes, +chunked streaming, +hardware detection, +lazy schemas, +12 tests)."
-        "Formal proofs in 3 new systems: Coq (ConcordeSafety, CarriesInvariant), Isabelle (WheelbarrowNecessity), Z3/SMT (transport exhaustiveness, Concorde constraints)."
-        "Two new analyzers: GraphQL SDL (+15 tests) and TOML structural inference (+13 tests)."
-        "Test count increased 742 → 829 (87 new tests)."
-        "Protocol analyzers increased 11 → 13."
-        "Zero clippy warnings, all tests passing.")
-      (notes
-        "Major Phase 3 push. All four Phase 3 crates significantly hardened with new types, traits, and functions. Proofs cross-validated across 5 proof systems total. New analyzers follow established 3-module pattern (parser → converter → ephapax_bridge)."))
-    (session-2026-02-28-post-v1-hardening
-      (date . "2026-02-28")
-      (accomplishments
-        "Replaced 2 postulates in WheelbarrowNecessity.agda with constructive proofs."
-        "Filled adapter-composition {!!} hole in CarriesInvariant.agda."
-        "Added 5 RSR workflows: mirror, instant-sync, guix-nix-policy, rsr-antipattern, npm-bun-blocker."
-        "Fleshed out Phase 3 scaffolds: security-bridge (+WireGuard, +reverse mapping, +6 tests), distributed (+batch scheduling, +partitioning, +5 tests), performance/simd (+byte comparison, +hashing, +10 tests)."
-        "Captured v1.0.0 benchmark baseline (73 benchmarks across 4 suites)."
-        "cargo-audit clean: 0 vulnerabilities / 188 dependencies."
-        "Test count increased 721 → 742."
-        "Updated HN launch post and METRICS.md for v1.0.0.")
-      (notes
-        "All Agda postulates replaced except JSON axioms (justified runtime assumption). Phase 3 features are real implementations now, not just stubs."))
-    (session-2026-02-28-v1-release-hygiene
-      (date . "2026-02-28")
-      (accomplishments
-        "Fixed 13 loose ends (license headers, Justfile recipes, dead code, docs, proofs)."
-        "Bumped all 30 Cargo.toml versions from 0.1.0 to 1.0.0."
-        "Fixed author email across all Cargo.toml (j.d.a.jewell@open.ac.uk)."
-        "Added missing authors field to 9 crates."
-        "Removed dead code: 4 unused Avro converter wrappers, 1 unused JSON Schema method."
-        "Created CHANGELOG.md with honest v1.0.0 release notes."
-        "Corrected ROADMAP Phase 3/4 honesty — unchecked stub features."
-        "Updated TOPOLOGY.md with accurate completion percentages."
-        "Updated README test count (312 → 721) and proof claims."
-        "Tagged v1.0.0, created GitHub release, mirrored to GitLab.")
-      (notes
-        "Major honesty pass. Phase 1-2 genuinely complete. Phase 3-4 items documented as scaffolding."))
-    (session-2026-02-24-docs-and-sync
-      (date . "2026-02-24")
-      (accomplishments
-        "Refreshed machine-readable governance files for syntax and accuracy."
-        "Aligned workflow documentation with .machines_readable/6scm authoritative path."
-        "Prepared repository for local and remote synchronization after documentation sorting.")
-      (notes
-        "This session intentionally focused on documentation coherence and sync readiness."))))
+[maintenance-status]
+last-run-utc = "2026-04-04T00:00:00Z"
+last-result = "unknown"  # unknown | pass | warn | fail
