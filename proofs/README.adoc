@@ -168,40 +168,66 @@ ECHIDNA orchestration is available when the server is configured but is not requ
 
 == Proof Status
 
+All 8 theorems verified as of 2026-04-11.  Zero postulates remaining in any proof file.
+
 [cols="3,2,1,1,1,1,1",options="header"]
 |===
 |Theorem |Status |Agda |Lean |Coq |Isabelle |Z3
 
-|Concorde Safety
+|Concorde Safety (PQ5)
 |✓ Verified
-|✓
-|✓
-|✓ (ConcordeSafety.v — identity, bijectivity, size preservation)
+|✓ ConcordeSafety.agda
+|✓ concorde_safety.lean
+|✓ ConcordeSafety.v
 |Planned
 |—
 
-|Wheelbarrow Necessity
+|Wheelbarrow Necessity (PQ2)
 |✓ Constructive
-|✓ (postulates replaced with counterexample + case analysis)
+|✓ WheelbarrowNecessity.agda
+|✓ wheelbarrow_necessity.lean
 |—
-|Planned
-|✓ (WheelbarrowNecessity.thy — incompatible pairs, narrowing)
+|✓ WheelbarrowNecessity.thy
 |—
 
-|Container Propagation
+|Container Propagation (PQ2)
 |✓ Verified
-|✓
+|✓ ContainerPropagation.agda
 |—
-|Planned
+|✓ ContainerPropagation.v
 |Planned
 |—
 
-|Carries Invariant
-|✓ Constructive
-|✓ (hole filled; JSON axioms postulated — justified runtime assumption)
+|Carries Invariant — base (PQ2/PQ3)
+|✓ Constructive (0 postulates since 2026-04-03)
+|✓ CarriesInvariant.agda
 |—
-|✓ (CarriesInvariant.v — totality, strategy existence, no Economy for primitives)
+|✓ CarriesInvariant.v
 |Planned
+|—
+
+|Carries Invariant — all 13 analyzers (PQ1)
+|✓ Complete — 2026-04-11
+|✓ CarriesInvariantExtended.agda
+|—
+|—
+|—
+|—
+
+|Adapter Synthesis correctness (PQ4)
+|✓ Complete — 2026-04-11
+|✓ AdapterSynthesis.agda
+|—
+|—
+|—
+|—
+
+|Business class loss documentation (PQ6)
+|✓ Complete — 2026-04-11 (all 21 pairs, 0-bit loss proven)
+|✓ BusinessClassLoss.agda
+|—
+|—
+|—
 |—
 
 |Transport Exhaustiveness
@@ -210,7 +236,7 @@ ECHIDNA orchestration is available when the server is configured but is not requ
 |—
 |—
 |—
-|✓ (transport_exhaustive.smt2 — no gaps in classification)
+|✓ transport_exhaustive.smt2
 
 |Concorde Constraints
 |✓ Automated
@@ -218,15 +244,41 @@ ECHIDNA orchestration is available when the server is configured but is not requ
 |—
 |—
 |—
-|✓ (concorde_constraints.smt2 — 4 checks: identity, size ordering, irreflexivity, Business assignment)
+|✓ concorde_constraints.smt2
 
-|Optimization Soundness
-|Planned
+|Optimization Soundness (PQ3)
+|✓ Verified
+|✓ OptimizationSoundness.agda
+|—
+|—
+|—
+|✓ optimization_soundness.smt2
+
+|Tropical Path Optimisation
+|✓ Verified — 2026-04-11 (11 lemmas, 0 sorry)
+|—
+|✓ tropical/TropicalAdapterPath.lean
+|—
+|—
+|—
+
+|Unwrap-free audit — all 29 crates (PQ7)
+|✓ Complete — 2026-02-04 (commit 4231afb)
 |—
 |—
 |—
 |—
-|Planned
+|—
+|Idris2 certificate: idris2/NoPanics.idr
+
+|Buffer overflow freedom (PQ8)
+|✓ Complete — 2026-04-11
+|—
+|—
+|—
+|—
+|—
+|Idris2 proof: idris2/BufferSafety.idr
 |===
 
 == Proof Development
