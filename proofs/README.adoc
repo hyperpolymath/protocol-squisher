@@ -5,11 +5,16 @@
 :toclevels: 3
 
 [.lead]
-**Theorem prover verification of protocol-squisher's core invariants using ECHIDNA.**
+**Formal proofs of protocol-squisher's core invariants in Agda, Lean, Coq, Isabelle, and Z3.**
 
 == Overview
 
-This directory contains formal proofs verifying the correctness of protocol-squisher's transport class analysis and code generation. We use multiple theorem provers via ECHIDNA to cross-validate our claims.
+This directory contains formal proofs verifying the correctness of protocol-squisher's transport class analysis and code generation.
+The primary proofs are in Agda; additional proofs in Lean, Coq, Isabelle, and Z3 provide cross-prover coverage for selected theorems.
+
+ECHIDNA integration (`protocol-squisher-echidna-bridge`) can orchestrate verification when an ECHIDNA server is reachable
+(`ECHIDNA_URL` environment variable; defaults to `http://localhost:8000`).
+Without a running ECHIDNA instance the CLI falls back to offline mode and proofs must be checked manually with the individual theorem provers.
 
 == Proof Structure
 
@@ -157,15 +162,9 @@ just cross-verify ConcordeSafety
 
 === CI Integration
 
-Proofs are automatically verified in `.github/workflows/formal-verification.yml`:
-
-[source,yaml]
-----
-- name: Verify Formal Proofs
-  run: |
-    echidna verify --all-provers proofs/
-    echidna cross-verify --theorem ConcordeSafety
-----
+The CI workflow `.github/workflows/formal-verification.yml` runs each prover directly
+(Agda, Lean, Coq, Z3).
+ECHIDNA orchestration is available when the server is configured but is not required for CI.
 
 == Proof Status
 
