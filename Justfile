@@ -7,6 +7,8 @@ set dotenv-load := true
 set positional-arguments := true
 
 # Project metadata
+import? "contractile.just"
+
 project := "protocol-squisher"
 version := "1.1.0"
 
