@@ -1,63 +1,217 @@
--- SPDX-License-Identifier: PMPL-1.0-or-later
--- Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
---
--- Protocol Squisher ABI Foreign Function Declarations
---
--- Declares the C ABI functions implemented by the Zig FFI layer.
--- These functions provide the external interface for protocol
--- compatibility analysis and adapter generation.
+||| SPDX-License-Identifier: PMPL-1.0-or-later
+||| Foreign Function Interface Declarations for PROTOCOL_SQUISHER
+|||
+||| This module declares all C-compatible functions that will be
+||| implemented in the Zig FFI layer.
+|||
+||| All functions are declared here with type signatures and safety proofs.
+||| Implementations live in ffi/zig/
 
 module ProtocolSquisher.ABI.Foreign
 
 import ProtocolSquisher.ABI.Types
+import ProtocolSquisher.ABI.Layout
 
--- | Initialize the protocol squisher engine
--- Returns a handle (>0) on success, -1 on failure
-%foreign "C:squisher_init,libprotocol_squisher_ffi"
-export
-squisher_init : PrimIO Int
+%default total
 
--- | Free resources associated with a squisher handle
-%foreign "C:squisher_free,libprotocol_squisher_ffi"
-export
-squisher_free : Int -> PrimIO ()
+--------------------------------------------------------------------------------
+-- Library Lifecycle
+--------------------------------------------------------------------------------
 
--- | Analyze compatibility between two protocol formats
--- handle: squisher handle from squisher_init
--- source_format: source ProtocolFormat enum value (0-9)
--- target_format: target ProtocolFormat enum value (0-9)
--- Returns: TransportClass enum value (0-3), or -1 on error
-%foreign "C:squisher_analyze_compatibility,libprotocol_squisher_ffi"
+||| Initialize the library
+||| Returns a handle to the library instance, or Nothing on failure
 export
-squisher_analyze_compatibility : Int -> Int -> Int -> PrimIO Int
+%foreign "C:protocol_squisher_init, libprotocol_squisher"
+prim__init : PrimIO Bits64
 
--- | Generate an adapter between two protocol schemas
--- handle: squisher handle from squisher_init
--- source_schema: source schema definition as string
--- target_schema: target schema definition as string
--- source_format: source ProtocolFormat enum value (0-9)
--- target_format: target ProtocolFormat enum value (0-9)
--- Returns: number of field mappings generated, or -1 on error
-%foreign "C:squisher_generate_adapter,libprotocol_squisher_ffi"
+||| Safe wrapper for library initialization
 export
-squisher_generate_adapter : Int -> String -> String -> Int -> Int -> PrimIO Int
+init : IO (Maybe Handle)
+init = do
+  ptr <- primIO prim__init
+  pure (createHandle ptr)
 
--- | Get the number of field mappings in the last generated adapter
--- handle: squisher handle from squisher_init
--- Returns: mapping count, or -1 on error
-%foreign "C:squisher_get_mapping_count,libprotocol_squisher_ffi"
+||| Clean up library resources
 export
-squisher_get_mapping_count : Int -> PrimIO Int
+%foreign "C:protocol_squisher_free, libprotocol_squisher"
+prim__free : Bits64 -> PrimIO ()
 
--- | Get the overall transport class for the last generated adapter
--- handle: squisher handle from squisher_init
--- Returns: TransportClass enum value (0-3), or -1 on error
-%foreign "C:squisher_get_transport_class,libprotocol_squisher_ffi"
+||| Safe wrapper for cleanup
 export
-squisher_get_transport_class : Int -> PrimIO Int
+free : Handle -> IO ()
+free h = primIO (prim__free (handlePtr h))
 
--- | Get the number of supported protocol formats
--- Always returns 10 (Protobuf through Python)
-%foreign "C:squisher_format_count,libprotocol_squisher_ffi"
+--------------------------------------------------------------------------------
+-- Core Operations
+--------------------------------------------------------------------------------
+
+||| Example operation: process data
 export
-squisher_format_count : PrimIO Int
+%foreign "C:protocol_squisher_process, libprotocol_squisher"
+prim__process : Bits64 -> Bits32 -> PrimIO Bits32
+
+||| Safe wrapper with error handling
+export
+process : Handle -> Bits32 -> IO (Either Result Bits32)
+process h input = do
+  result <- primIO (prim__process (handlePtr h) input)
+  pure $ case result of
+    0 => Left Error
+    n => Right n
+
+--------------------------------------------------------------------------------
+-- String Operations
+--------------------------------------------------------------------------------
+
+||| Convert C string to Idris String
+export
+%foreign "support:idris2_getString, libidris2_support"
+prim__getString : Bits64 -> String
+
+||| Free C string
+export
+%foreign "C:protocol_squisher_free_string, libprotocol_squisher"
+prim__freeString : Bits64 -> PrimIO ()
+
+||| Get string result from library
+export
+%foreign "C:protocol_squisher_get_string, libprotocol_squisher"
+prim__getResult : Bits64 -> PrimIO Bits64
+
+||| Safe string getter
+export
+getString : Handle -> IO (Maybe String)
+getString h = do
+  ptr <- primIO (prim__getResult (handlePtr h))
+  if ptr == 0
+    then pure Nothing
+    else do
+      let str = prim__getString ptr
+      primIO (prim__freeString ptr)
+      pure (Just str)
+
+--------------------------------------------------------------------------------
+-- Array/Buffer Operations
+--------------------------------------------------------------------------------
+
+||| Process array data
+export
+%foreign "C:protocol_squisher_process_array, libprotocol_squisher"
+prim__processArray : Bits64 -> Bits64 -> Bits32 -> PrimIO Bits32
+
+||| Safe array processor
+export
+processArray : Handle -> (buffer : Bits64) -> (len : Bits32) -> IO (Either Result ())
+processArray h buf len = do
+  result <- primIO (prim__processArray (handlePtr h) buf len)
+  pure $ case resultFromInt result of
+    Just Ok => Right ()
+    Just err => Left err
+    Nothing => Left Error
+  where
+    resultFromInt : Bits32 -> Maybe Result
+    resultFromInt 0 = Just Ok
+    resultFromInt 1 = Just Error
+    resultFromInt 2 = Just InvalidParam
+    resultFromInt 3 = Just OutOfMemory
+    resultFromInt 4 = Just NullPointer
+    resultFromInt _ = Nothing
+
+--------------------------------------------------------------------------------
+-- Error Handling
+--------------------------------------------------------------------------------
+
+||| Get last error message
+export
+%foreign "C:protocol_squisher_last_error, libprotocol_squisher"
+prim__lastError : PrimIO Bits64
+
+||| Retrieve last error as string
+export
+lastError : IO (Maybe String)
+lastError = do
+  ptr <- primIO prim__lastError
+  if ptr == 0
+    then pure Nothing
+    else pure (Just (prim__getString ptr))
+
+||| Get error description for result code
+export
+errorDescription : Result -> String
+errorDescription Ok = "Success"
+errorDescription Error = "Generic error"
+errorDescription InvalidParam = "Invalid parameter"
+errorDescription OutOfMemory = "Out of memory"
+errorDescription NullPointer = "Null pointer"
+
+--------------------------------------------------------------------------------
+-- Version Information
+--------------------------------------------------------------------------------
+
+||| Get library version
+export
+%foreign "C:protocol_squisher_version, libprotocol_squisher"
+prim__version : PrimIO Bits64
+
+||| Get version as string
+export
+version : IO String
+version = do
+  ptr <- primIO prim__version
+  pure (prim__getString ptr)
+
+||| Get library build info
+export
+%foreign "C:protocol_squisher_build_info, libprotocol_squisher"
+prim__buildInfo : PrimIO Bits64
+
+||| Get build information
+export
+buildInfo : IO String
+buildInfo = do
+  ptr <- primIO prim__buildInfo
+  pure (prim__getString ptr)
+
+--------------------------------------------------------------------------------
+-- Callback Support
+--------------------------------------------------------------------------------
+
+||| Callback function type (C ABI)
+public export
+Callback : Type
+Callback = Bits64 -> Bits32 -> Bits32
+
+||| Register a callback
+export
+%foreign "C:protocol_squisher_register_callback, libprotocol_squisher"
+prim__registerCallback : Bits64 -> AnyPtr -> PrimIO Bits32
+
+||| Safe callback registration
+export
+registerCallback : Handle -> Callback -> IO (Either Result ())
+registerCallback h cb = do
+  result <- primIO (prim__registerCallback (handlePtr h) (cast cb))
+  pure $ case resultFromInt result of
+    Just Ok => Right ()
+    Just err => Left err
+    Nothing => Left Error
+  where
+    resultFromInt : Bits32 -> Maybe Result
+    resultFromInt 0 = Just Ok
+    resultFromInt _ = Just Error
+
+--------------------------------------------------------------------------------
+-- Utility Functions
+--------------------------------------------------------------------------------
+
+||| Check if library is initialized
+export
+%foreign "C:protocol_squisher_is_initialized, libprotocol_squisher"
+prim__isInitialized : Bits64 -> PrimIO Bits32
+
+||| Check initialization status
+export
+isInitialized : Handle -> IO Bool
+isInitialized h = do
+  result <- primIO (prim__isInitialized (handlePtr h))
+  pure (result /= 0)
