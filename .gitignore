@@ -78,3 +78,11 @@ tests/pyo3-integration/.venv/
 tests/pyo3-integration/target/
 tests/pyo3-integration/.pytest_cache/
 tests/pyo3-integration/__pycache__/
+target/
+node_modules/
+_build/
+deps/
+.elixir_ls/
+.cache/
+build/
+dist/
