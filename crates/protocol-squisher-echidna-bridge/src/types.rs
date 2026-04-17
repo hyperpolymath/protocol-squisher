@@ -7,13 +7,24 @@
 //! interface. Each proof goal targets a specific prover backend (one of 30
 //! supported engines) and tracks status through a well-defined lifecycle:
 //! `Pending → InProgress → Success | Failed | Timeout`.
+//!
+//! DRIFT NOTICE (2026-04-17): ECHIDNA commit `8f573f1` expanded its upstream
+//! `ProverKind` from 30 → ~68 variants (28 new `*TypeChecker` suffixes). This
+//! mirror intentionally remains at 30 pending a phase-2 parity decision. See
+//! `.machine_readable/6a2/STATE.a2ml` `[blockers-and-issues]` for rationale.
+//! Non-exhaustive matches (`goal_generator.rs`) absorb unknown variants via
+//! `_ =>` fallback arms, so the mirror staleness does not break compilation.
 
 use serde::{Deserialize, Serialize};
 
-/// Supported prover backends in ECHIDNA (30 engines).
+/// Supported prover backends in ECHIDNA (30 engines mirrored — see DRIFT NOTICE above).
 ///
 /// Each variant represents a distinct theorem proving or verification engine.
 /// The bridge generates prover-specific goal syntax via `ProofGoalGenerator`.
+// TODO(echidna-drift-2026-04-17): upstream ECHIDNA now exposes ~68 variants
+// (28 new `*TypeChecker` suffixes from commit 8f573f1). Decide in phase 2:
+// (a) mirror the full set, or (b) switch this crate to a path dep on echidna
+// proper and drop the mirror.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ProverKind {

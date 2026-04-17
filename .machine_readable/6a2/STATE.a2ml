@@ -25,14 +25,29 @@ milestones = [
 
 [blockers-and-issues]
 issues = [
-  # No blockers recorded
+  # Drift logged 2026-04-17: echidna ProverKind expanded in commit 8f573f1
+  # from 30 to ~68 variants (28 new *TypeChecker suffixes: Ordinary, Phantom,
+  # Polymorphic, Existential, HigherKinded, Row, Subtyping, Intersection,
+  # Union, Gradual, Hoare, Indexed, Linear, Affine, Relevant, Ordered,
+  # Uniqueness, Immutable, Capability, Bunched, Temporal, Provability,
+  # Impure, Coeffect, Probabilistic, Dyadic, Homotopy, Cubical).
+  # protocol-squisher-echidna-bridge carries a MIRROR enum at
+  # crates/protocol-squisher-echidna-bridge/src/types.rs (not a path dep),
+  # so the expansion does not break compilation. Non-exhaustive matches in
+  # goal_generator.rs absorb unknown variants via the _ => fallback arm.
+  # DECISION DEFERRED (phase 2): extend the mirror to parity with echidna.
+  # Until then, any new *TypeChecker prover goals will fall through to the
+  # generic "[Prover:?] Prove:" comment goal rather than producing
+  # prover-specific syntax.
 ]
 
 [critical-next-actions]
 actions = [
-  # No actions recorded
+  # Phase-2 decision: mirror all 68 echidna ProverKind variants (or move to
+  # path dep on echidna proper), and add prover-specific goal rendering
+  # for the 28 new *TypeChecker variants where useful.
 ]
 
 [maintenance-status]
-last-run-utc = "2026-04-04T00:00:00Z"
-last-result = "unknown"  # unknown | pass | warn | fail
+last-run-utc = "2026-04-17T00:00:00Z"
+last-result = "pass"  # 21/21 bridge tests pass post-echidna-expansion drift audit
