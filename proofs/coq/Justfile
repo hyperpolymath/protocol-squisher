@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Justfile for Protocol Squisher Coq proofs
+
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
+default:
+    @just --list --unsorted
+
+check:
+    coqc -Q . ProtocolSquisher Types.v
+    coqc -Q . ProtocolSquisher ConcordeSafety.v
+    coqc -Q . ProtocolSquisher CarriesInvariant.v
+    @echo "All Coq proofs verified."
+
+clean:
+    rm -f *.vo *.vok *.vos *.glob .*.aux
