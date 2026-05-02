@@ -30,7 +30,7 @@ protocol-squisher-thrift-analyzer = { path = "../protocol-squisher-thrift-analyz
 protocol-squisher-sql-analyzer = { path = "../protocol-squisher-sql-analyzer" }
 protocol-squisher-openapi-analyzer = { path = "../protocol-squisher-openapi-analyzer" }
 protocol-squisher-arrow-analyzer = { path = "../protocol-squisher-arrow-analyzer" }
-arrow-schema = { version = "58.1", features = ["serde"] }
+arrow-schema = { version = "58.2", features = ["serde"] }
 shape-ir = { path = "../shape-ir" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
