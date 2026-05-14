@@ -1,0 +1,380 @@
+[
+  {
+    "severity": "critical",
+    "rule_module": "cicd_rules",
+    "type": "banned_language_file",
+    "file": "crates/protocol-squisher-python-analyzer/scripts/introspect_pydantic.py"
+  },
+  {
+    "severity": "critical",
+    "rule_module": "cicd_rules",
+    "type": "banned_language_file",
+    "file": "docs/samples/github_api.py"
+  },
+  {
+    "severity": "critical",
+    "rule_module": "cicd_rules",
+    "type": "banned_language_file",
+    "file": "examples/mixed-transport/models.py"
+  },
+  {
+    "severity": "critical",
+    "rule_module": "cicd_rules",
+    "type": "banned_language_file",
+    "file": "examples/mixed-transport/test.py"
+  },
+  {
+    "severity": "critical",
+    "rule_module": "cicd_rules",
+    "type": "banned_language_file",
+    "file": "examples/zero-copy-demo/models.py"
+  },
+  {
+    "severity": "critical",
+    "rule_module": "cicd_rules",
+    "type": "banned_language_file",
+    "file": "examples/zero-copy-demo/test.py"
+  },
+  {
+    "severity": "critical",
+    "rule_module": "cicd_rules",
+    "type": "banned_language_file",
+    "file": "tests/pyo3-integration/python/pyo3_integration_test/__init__.py"
+  },
+  {
+    "severity": "critical",
+    "rule_module": "cicd_rules",
+    "type": "banned_language_file",
+    "file": "tests/pyo3-integration/python/tests/__init__.py"
+  },
+  {
+    "severity": "critical",
+    "rule_module": "cicd_rules",
+    "type": "banned_language_file",
+    "file": "tests/pyo3-integration/python/tests/test_generated_types.py"
+  },
+  {
+    "severity": "critical",
+    "rule_module": "code_safety",
+    "type": "admitted",
+    "file": "proofs/coq/ContainerPropagation.v"
+  },
+  {
+    "severity": "critical",
+    "rule_module": "code_safety",
+    "type": "believe_me",
+    "file": "proofs/idris2/BufferSafety.idr"
+  },
+  {
+    "severity": "critical",
+    "rule_module": "code_safety",
+    "type": "sorry",
+    "file": "proofs/lean/wheelbarrow_necessity.lean"
+  },
+  {
+    "severity": "critical",
+    "rule_module": "code_safety",
+    "type": "sorry",
+    "file": "proofs/tropical/TropicalAdapterPath.lean"
+  },
+  {
+    "severity": "critical",
+    "rule_module": "code_safety",
+    "type": "unwrap_dangerous_default",
+    "file": "crates/protocol-squisher-cli/src/integration.rs"
+  },
+  {
+    "severity": "critical",
+    "rule_module": "code_safety",
+    "type": "unwrap_dangerous_default",
+    "file": "crates/protocol-squisher-meta-analysis/src/lib.rs"
+  },
+  {
+    "severity": "critical",
+    "rule_module": "code_safety",
+    "type": "unwrap_dangerous_default",
+    "file": "crates/protocol-squisher-protobuf-analyzer/src/parser.rs"
+  },
+  {
+    "severity": "critical",
+    "rule_module": "code_safety",
+    "type": "unwrap_dangerous_default",
+    "file": "crates/protocol-squisher-rust-analyzer/src/converter.rs"
+  },
+  {
+    "severity": "critical",
+    "rule_module": "code_safety",
+    "type": "unwrap_dangerous_default",
+    "file": "crates/shape-ir/src/compare.rs"
+  },
+  {
+    "severity": "critical",
+    "rule_module": "code_safety",
+    "type": "unwrap_dangerous_default",
+    "file": "crates/shape-ir/src/render.rs"
+  },
+  {
+    "severity": "critical",
+    "rule_module": "code_safety",
+    "type": "unwrap_dangerous_default",
+    "file": "crates/shape-ir/src/tests/property_tests.rs"
+  },
+  {
+    "severity": "critical",
+    "rule_module": "workflow_audit",
+    "type": "actions_expression_injection",
+    "file": "boj-build.yml"
+  },
+  {
+    "severity": "critical",
+    "rule_module": "workflow_audit",
+    "type": "actions_expression_injection",
+    "file": "hypatia-scan.yml"
+  },
+  {
+    "severity": "critical",
+    "rule_module": "workflow_audit",
+    "type": "actions_expression_injection",
+    "file": "mirror.yml"
+  },
+  {
+    "severity": "critical",
+    "rule_module": "workflow_audit",
+    "type": "actions_expression_injection",
+    "file": "quality.yml"
+  },
+  {
+    "severity": "high",
+    "rule_module": "cicd_rules",
+    "type": "missing_requirement",
+    "file": ".github/dependabot.yml"
+  },
+  {
+    "severity": "high",
+    "rule_module": "cicd_rules",
+    "type": "missing_requirement",
+    "file": ".github/workflows/scorecard.yml"
+  },
+  {
+    "severity": "high",
+    "rule_module": "cicd_rules",
+    "type": "missing_requirement",
+    "file": "permissions: read-all"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "assert_total",
+    "file": "proofs/idris2/BufferSafety.idr"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "lean_native_decide",
+    "file": "proofs/lean/wheelbarrow_necessity.lean"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "panic_macro",
+    "file": "crates/protocol-squisher-arrow-analyzer/src/converter.rs"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "panic_macro",
+    "file": "crates/protocol-squisher-arrow-analyzer/src/lib.rs"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "panic_macro",
+    "file": "crates/protocol-squisher-cli/tests/enterprise_integration.rs"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "panic_macro",
+    "file": "crates/protocol-squisher-cli/tests/research_integration.rs"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "panic_macro",
+    "file": "crates/protocol-squisher-graphql-analyzer/src/lib.rs"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "panic_macro",
+    "file": "crates/protocol-squisher-openapi-analyzer/src/converter.rs"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "panic_macro",
+    "file": "crates/protocol-squisher-openapi-analyzer/src/lib.rs"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "panic_macro",
+    "file": "crates/protocol-squisher-openapi-analyzer/src/parser.rs"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "panic_macro",
+    "file": "crates/protocol-squisher-performance/src/streaming.rs"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "panic_macro",
+    "file": "crates/protocol-squisher-security-bridge/src/lib.rs"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "panic_macro",
+    "file": "crates/protocol-squisher-sql-analyzer/src/converter.rs"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "panic_macro",
+    "file": "crates/protocol-squisher-sql-analyzer/src/lib.rs"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "panic_macro",
+    "file": "crates/protocol-squisher-toml-analyzer/src/lib.rs"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "panic_macro",
+    "file": "crates/protocol-squisher-toml-analyzer/src/parser.rs"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "panic_macro",
+    "file": "crates/shape-ir/src/extract.rs"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "panic_macro",
+    "file": "crates/shape-ir/src/tests/category_tests.rs"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "panic_macro",
+    "file": "crates/shape-ir/src/tests/shape_tests.rs"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "shell_download_then_run",
+    "file": "setup.sh"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "unwrap_without_check",
+    "file": "benches/analysis_throughput.rs"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "unwrap_without_check",
+    "file": "benches/generated_vs_handwritten.rs"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "unwrap_without_check",
+    "file": "benches/optimizer_bench.rs"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "unwrap_without_check",
+    "file": "benches/transport_classes.rs"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "unwrap_without_check",
+    "file": "crates/protocol-squisher-json-schema-analyzer/src/lib.rs"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "unwrap_without_check",
+    "file": "crates/protocol-squisher-messagepack-analyzer/src/lib.rs"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "unwrap_without_check",
+    "file": "crates/protocol-squisher-rescript-analyzer/src/lib.rs"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "unwrap_without_check",
+    "file": "crates/protocol-squisher-server/src/lib.rs"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "unwrap_without_check",
+    "file": "crates/shape-ir/src/category.rs"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "unwrap_without_check",
+    "file": "crates/shape-ir/src/compose.rs"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "unwrap_without_check",
+    "file": "examples/rust_python_interop.rs"
+  },
+  {
+    "severity": "high",
+    "rule_module": "code_safety",
+    "type": "unwrap_without_check",
+    "file": "examples/schema_format_comparison.rs"
+  },
+  {
+    "severity": "high",
+    "rule_module": "git_state",
+    "type": "GS005",
+    "file": "."
+  },
+  {
+    "severity": "high",
+    "rule_module": "migration_rules",
+    "type": "deprecated_api",
+    "file": "crates/protocol-squisher-rescript-analyzer/tests/interop_test.res"
+  },
+  {
+    "severity": "high",
+    "rule_module": "workflow_audit",
+    "type": "unsafe_curl_payload",
+    "file": "boj-build.yml"
+  },
+  {
+    "severity": "high",
+    "rule_module": "workflow_audit",
+    "type": "unsafe_curl_payload",
+    "file": "hypatia-scan.yml"
+  }
+]
