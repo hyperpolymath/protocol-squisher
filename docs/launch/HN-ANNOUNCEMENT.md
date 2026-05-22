@@ -174,7 +174,7 @@ Issues: https://github.com/hyperpolymath/protocol-squisher/issues
 
 ## License
 
-PMPL-1.0-or-later (Palimpsest License)
+MPL-2.0 (Palimpsest License)
 
 ---
 

@@ -10,10 +10,10 @@ tags: [governance, help, license, security, privacy]
 
 ## License
 
-protocol-squisher is released under the **Palimpsest License (PMPL-1.0-or-later)**, a free and open-source software license. You may use, modify, and redistribute the software under the terms of this license.
+protocol-squisher is released under the **Palimpsest License (MPL-2.0)**, a free and open-source software license. You may use, modify, and redistribute the software under the terms of this license.
 
 - Full license text: `LICENSE` in the repository root
-- SPDX identifier: `PMPL-1.0-or-later`
+- SPDX identifier: `MPL-2.0`
 
 Third-party dependencies retain their original licenses (MIT, Apache-2.0, BSD, etc.). protocol-squisher does not relicense any third-party code.
 

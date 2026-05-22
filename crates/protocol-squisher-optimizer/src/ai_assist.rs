@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 
 use crate::{EmpiricalSynthesisHints, EphapaxOptimizationResult, EphapaxOptimizer};
 use protocol_squisher_compat::EphapaxCompatibilityEngine;

@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 
 [build-system]
 requires = ["maturin>=1.0,<2.0"]
@@ -12,7 +12,7 @@ requires-python = ">=3.8"
 authors = [
     {name = "Jonathan D.A. Jewell", email = "j.d.a.jewell@open.ac.uk"}
 ]
-license = {text = "PMPL-1.0-or-later"}
+license = {text = "MPL-2.0"}
 dependencies = [
     "pydantic>=2.0",
 ]

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 // SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
 //! Optimized PyO3 code generation using ephapax transport class analysis
 //!
@@ -202,7 +202,7 @@ impl OptimizedPyO3Generator {
     }
 
     fn generate_header(&self) -> String {
-        "// SPDX-License-Identifier: PMPL-1.0-or-later\n\
+        "// SPDX-License-Identifier: MPL-2.0\n\
              // Auto-generated PyO3 bindings with ephapax optimization\n\
              // DO NOT EDIT - regenerate using protocol-squisher\n\n\
              use pyo3::prelude::*;\n\

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # panic-attack-stub.sh - Lightweight stand-in for the panic-attack binary.
 #
 # Provides the same CLI surface expected by panic-assail-regression.sh:

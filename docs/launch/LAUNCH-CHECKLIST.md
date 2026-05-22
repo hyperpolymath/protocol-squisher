@@ -21,7 +21,7 @@
 - [ ] Performance numbers match latest benchmarks
 - [ ] Test count accurate (as of 2026-02-24: 678 passed, 7 ignored)
 - [ ] Examples referenced in announcements still exist
-- [ ] License information correct (PMPL-1.0-or-later)
+- [ ] License information correct (MPL-2.0)
 
 ### Repository Readiness
 - [ ] README.adoc up to date

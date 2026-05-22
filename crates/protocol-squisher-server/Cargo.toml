@@ -1,11 +1,11 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 
 [package]
 name = "protocol-squisher-server"
 version = "1.1.0"
 edition = "2021"
 authors = ["Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"]
-license = "PMPL-1.0-or-later"
+license = "MPL-2.0"
 description = "HTTP/JSON server for protocol-squisher analysis, comparison, and constraint evaluation"
 repository = "https://github.com/hyperpolymath/protocol-squisher"
 homepage = "https://github.com/hyperpolymath/protocol-squisher"

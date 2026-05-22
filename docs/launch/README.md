@@ -279,7 +279,7 @@ Never hide the costs:
 **GitHub:** https://github.com/hyperpolymath/protocol-squisher
 **Issues:** https://github.com/hyperpolymath/protocol-squisher/issues
 **Author:** [@hyperpolymath](https://github.com/hyperpolymath)
-**License:** PMPL-1.0-or-later
+**License:** MPL-2.0
 
 ---
 

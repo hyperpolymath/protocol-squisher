@@ -83,4 +83,4 @@ protocol-squisher welcomes contributions of all kinds:
 
 See `CONTRIBUTING.md` in the repository for detailed guidelines.
 
-All contributions are released under the Palimpsest License (PMPL-1.0-or-later) unless otherwise specified.
+All contributions are released under the Palimpsest License (MPL-2.0) unless otherwise specified.

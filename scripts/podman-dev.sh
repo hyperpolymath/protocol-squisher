@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 
 # Avoid strict shell options here: podman-compose's shell wrapper can misbehave
 # when inherited `SHELLOPTS` enables strict flags.

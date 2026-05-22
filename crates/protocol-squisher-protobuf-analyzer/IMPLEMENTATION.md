@@ -322,7 +322,7 @@ if analysis.is_zero_copy() {
 
 ## Compliance
 
-- **License**: PMPL-1.0-or-later
+- **License**: MPL-2.0
 - **Author**: Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 - **SPDX headers**: Present in all files
 - **Cargo.toml**: Complete metadata

@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Reproducible Podman development image for protocol-squisher.
 
 FROM docker.io/library/rust:1.89-bookworm

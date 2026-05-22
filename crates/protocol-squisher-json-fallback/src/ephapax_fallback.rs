@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 // SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
 //! Ephapax-aware JSON fallback for Wheelbarrow-class conversions
 //!
@@ -172,7 +172,7 @@ impl EphapaxFallbackGenerator {
 
         // Header
         code.push_str(
-            "// SPDX-License-Identifier: PMPL-1.0-or-later\n\
+            "// SPDX-License-Identifier: MPL-2.0\n\
              // Auto-generated JSON fallback conversions\n\
              // DO NOT EDIT - regenerate using protocol-squisher\n\n\
              use serde::{Serialize, Deserialize};\n\
@@ -368,7 +368,7 @@ impl std::error::Error for ConversionError {}
         let mut code = String::new();
 
         // Header
-        code.push_str("# SPDX-License-Identifier: PMPL-1.0-or-later\n");
+        code.push_str("# SPDX-License-Identifier: MPL-2.0\n");
         code.push_str("# Auto-generated JSON fallback conversions\n");
         code.push_str("# DO NOT EDIT - regenerate using protocol-squisher\n\n");
         code.push_str("import json\nfrom typing import Any, Dict\n\n");

@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
 
 [package]
@@ -6,7 +6,7 @@ name = "shape-ir"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.86"
-license = "PMPL-1.0-or-later"
+license = "MPL-2.0"
 authors = ["Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"]
 description = "Universal data shape intermediate representation — the algebra of data shape"
 repository = "https://github.com/hyperpolymath/protocol-squisher"

@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
 
 [package]
@@ -8,7 +8,7 @@ edition = "2021"
 rust-version = "1.83"
 authors = ["Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"]
 description = "JSON Schema to IR converter for protocol-squisher"
-license = "PMPL-1.0-or-later"
+license = "MPL-2.0"
 repository = "https://github.com/hyperpolymath/protocol-squisher"
 homepage = "https://github.com/hyperpolymath/protocol-squisher"
 

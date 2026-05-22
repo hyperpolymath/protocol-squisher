@@ -91,4 +91,4 @@ for a in &analyzers {
 
 ## License
 
-protocol-squisher is released under the Palimpsest License (PMPL-1.0-or-later), a free and open-source license with no corporate governance requirements.
+protocol-squisher is released under the Palimpsest License (MPL-2.0), a free and open-source license with no corporate governance requirements.

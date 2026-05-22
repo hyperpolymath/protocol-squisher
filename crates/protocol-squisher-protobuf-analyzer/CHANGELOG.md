@@ -134,4 +134,4 @@ See the main protocol-squisher repository for contribution guidelines.
 
 ## License
 
-PMPL-1.0-or-later
+MPL-2.0
