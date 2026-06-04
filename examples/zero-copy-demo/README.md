@@ -1,3 +1,7 @@
+<!--
+SPDX-License-Identifier: MPL-2.0
+Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+-->
 # Zero-Copy Interop Example
 
 This example demonstrates **Concorde-class** (zero-copy, 100% fidelity) conversions between Rust and Python.

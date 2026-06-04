@@ -21,6 +21,7 @@ jobs:
   verify-agda:
     name: Verify Agda Proofs
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
@@ -51,6 +52,7 @@ jobs:
   verify-lean:
     name: Verify Lean Proofs
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
@@ -79,6 +81,7 @@ EOF
   cross-verify:
     name: Cross-Prover Validation
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: [verify-agda, verify-lean]
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
@@ -112,6 +115,7 @@ EOF
   echidna-integration:
     name: ECHIDNA Neural Synthesis
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: false  # Disabled until ECHIDNA is available
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-
+// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 use crate::migration::{MigrationAction, MigrationPlan};
 use protocol_squisher_compat::TransportClass;
 use serde::{Deserialize, Serialize};

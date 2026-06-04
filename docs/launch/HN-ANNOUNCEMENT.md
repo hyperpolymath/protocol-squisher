@@ -1,3 +1,7 @@
+<!--
+SPDX-License-Identifier: MPL-2.0
+Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+-->
 # Show HN: Protocol Squisher – Universal Protocol Interoperability with Formal Guarantees
 
 **TL;DR:** Automatic adapter synthesis between any two serialization formats. If it compiles, it carries. 937 tests, formal proofs in Agda (5 theorems) + Lean/Coq/Isabelle/Z3, 13 format analyzers, v1.1.0 released.

@@ -1,3 +1,7 @@
+<!--
+SPDX-License-Identifier: MPL-2.0
+Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+-->
 # Container Guide (Podman)
 
 Protocol Squisher now includes a Podman-native developer container for reproducible builds, tests, and benchmark dry-runs.

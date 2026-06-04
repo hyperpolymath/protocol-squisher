@@ -1,3 +1,7 @@
+<!--
+SPDX-License-Identifier: MPL-2.0
+Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+-->
 # Mixed Transport Example
 
 This example demonstrates **mixed transport classes** - when some fields are zero-copy (Concorde) but others require conversion (Business) or JSON fallback (Wheelbarrow).

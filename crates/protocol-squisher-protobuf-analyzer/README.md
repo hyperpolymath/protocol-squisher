@@ -1,3 +1,7 @@
+<!--
+SPDX-License-Identifier: MPL-2.0
+Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+-->
 # Protocol Squisher Protobuf Analyzer
 
 Analyzes Protocol Buffer (.proto) schema files and converts them to the protocol-squisher canonical IR format with ephapax transport class analysis.

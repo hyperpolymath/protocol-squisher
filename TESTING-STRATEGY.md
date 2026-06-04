@@ -1,3 +1,7 @@
+<!--
+SPDX-License-Identifier: MPL-2.0
+Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+-->
 # Testing Strategy: Every Possible Possibility
 
 **Goal:** Achieve comprehensive coverage of all conversion scenarios, edge cases, and failure modes.

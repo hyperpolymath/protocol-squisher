@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-
+// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 use crate::{EmpiricalSynthesisHints, EphapaxOptimizationResult, EphapaxOptimizer};
 use protocol_squisher_compat::EphapaxCompatibilityEngine;
 use protocol_squisher_ir::IrSchema;

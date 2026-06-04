@@ -1,5 +1,6 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: MPL-2.0
+# Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+#!/usr/bin/env python3
 # SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
 """
 Test script demonstrating zero-copy interop between Python and Rust.

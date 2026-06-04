@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-// Copyright (c) 2025 Jonathan D.A. Jewell
-
+// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 //! Meta-analysis framework for discovering squishing patterns across protocols.
 //!
 //! This crate provides tools to:

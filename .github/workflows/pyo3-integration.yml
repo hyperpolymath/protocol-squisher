@@ -24,6 +24,7 @@ jobs:
   test:
     name: PyO3 Integration Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       matrix:
         python-version: ['3.11', '3.12', '3.13']

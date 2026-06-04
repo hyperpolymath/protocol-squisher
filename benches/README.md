@@ -1,3 +1,7 @@
+<!--
+SPDX-License-Identifier: MPL-2.0
+Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+-->
 # Protocol Squisher Benchmarks
 
 Comprehensive performance benchmarking suite to validate transport class overhead claims and compare generated code against baselines.

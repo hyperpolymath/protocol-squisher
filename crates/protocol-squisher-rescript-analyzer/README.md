@@ -1,3 +1,7 @@
+<!--
+SPDX-License-Identifier: MPL-2.0
+Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+-->
 # ReScript Analyzer for Protocol Squisher
 
 **Status**: ✅ Complete and tested (60 tests passing)
