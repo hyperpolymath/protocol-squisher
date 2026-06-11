@@ -372,4 +372,39 @@ theorem pathCost_le_sequential (path : AdapterPath) :
           _ ≤ grade c + (c2 :: rest).foldl (fun acc x => acc + grade x) 0 :=
               Nat.add_le_add_left ih _
 
+-- ============================================================================
+-- 7.  Hub ceiling — the no-go corollary
+-- ============================================================================
+
+/-- **Hub ceiling** — corollary of `pathCost_mono`.
+
+    Any adapter path that routes through an edge `e` (a transport step of
+    grade `g = grade e`) has `pathCost` at least `g`.  The bottleneck of a
+    whole path is floored by every individual step it contains.
+
+    Read as a no-go result for universal, high-fidelity interoperability:
+    if every conversion is forced through a single common hub, and the hub's
+    best embedding of some format is graded `g`, then no path through that
+    hub can carry that format at fidelity better than `g`.  One hub therefore
+    caps the fidelity of every format that must pass through it.  "Universal"
+    (one hub serving all formats) and "high fidelity" (grade 0 for all
+    formats) are contradictory the moment any format embeds into the hub at
+    grade > 0.  Universal *low* fidelity is the achievable point — that is
+    what JSON already is.
+
+    This corollary was never stated during the v1.x development.  It closes
+    Protocol Squisher's universal-interoperability claim using the project's
+    own algebra: transport-class composition is `max` (the bottleneck), and
+    `max` over a path can only be raised, never lowered, by the steps in it. -/
+theorem hub_ceiling (e : TransportClass) (path : List TransportClass)
+    (h : e ∈ path) : grade e ≤ pathCost path := by
+  induction path with
+  | nil => exact absurd h (List.not_mem_nil e)
+  | cons c cs ih =>
+    rcases List.mem_cons.mp h with rfl | h'
+    · cases cs with
+      | nil          => simp [pathCost]
+      | cons c2 rest => simp [pathCost, Nat.le_max_left]
+    · exact Nat.le_trans (ih h') (pathCost_mono c cs)
+
 end Hyperpolymath.ProtocolSquisher.Tropical
