@@ -14,3 +14,6 @@ check:
 
 clean:
     rm -f *.vo *.vok *.vos *.glob .*.aux
+
+secret-scan-trufflehog:
+    @command -v trufflehog >/dev/null && trufflehog filesystem . --only-verified || true
