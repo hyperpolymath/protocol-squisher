@@ -1,0 +1,27 @@
+////
+SPDX-License-Identifier: MPL-2.0
+SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+////
+= Retired workflows
+
+These GitHub Actions workflows exercised the archived v1.x code or proofs. They
+were moved here, unchanged, when the working tree was archived under
+`provenance/`; the active workflows at `.github/workflows/` are now limited to
+estate infrastructure plus a documentation lint. The files are kept for the
+record, not run.
+
+[cols="1,3",options="header"]
+|===
+| Workflow | Why retired
+
+| `ci.yml` | Formats and builds the Rust workspace; the archive is not built.
+| `rust-ci.yml` | Thin wrapper for the estate Rust CI reusable; no Rust build for the archive.
+| `codeql.yml` | CodeQL analysis of the Rust sources; the archive is not analysed.
+| `formal-verification.yml` | Runs the Agda/Coq/Lean/Isabelle/Z3 provers; the proofs are archived as they were.
+| `stress-test.yml` | Scheduled release build and stress run over the crates.
+| `dogfood-gate.yml` | Runs the CLI against schemas (dogfooding the tool).
+| `pyo3-integration.yml` | Builds and runs the PyO3 Python integration tests.
+| `echidna-validation.yml` | Builds the echidna bridge and runs ECHIDNA validation.
+| `nightly-real-verified.yml` | Nightly verification against a real backend.
+|===
