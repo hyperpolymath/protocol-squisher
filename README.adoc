@@ -1,0 +1,41 @@
+////
+SPDX-License-Identifier: MPL-2.0
+SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+////
+= Protocol Squisher
+
+image:https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg[License: MPL-2.0,link=LICENSE]
+
+Restarted June 2026. The previous incarnation — roughly thirty-five Rust crates,
+thirteen analysers, and proofs across six provers, developed January–June 2026 —
+is archived, complete and unedited, in `provenance/`. See
+`provenance/PROVENANCE.adoc` for what it was, what it established, and where it
+failed.
+
+== The three threads
+
+* *The field.* Moving data between serialization formats is manual and lossy, and
+  the tooling that exists answers compatibility as a binary yes/no — too coarse
+  to act on.
+* *The theory challenge.* Can compatibility be graded rather than declared — can
+  the loss in a conversion be measured, and composed along a chain of them?
+* *The practical challenge.* Can adapters be synthesised automatically, with the
+  loss they incur documented, at a fidelity worth using?
+
+== What is settled
+
+The universal-interoperability claim is closed. Transport-class composition is
+`max` — a path is only as good as its worst step — so any route through a shared
+hub is capped by that hub's worst embedding. "Universal" and "high fidelity" are
+therefore contradictory the moment any format embeds into the hub at less than
+perfect grade; universal _low_ fidelity is what JSON already is. This is the
+`hub_ceiling` corollary, machine-checked under Lean 4.13.0:
+`provenance/proofs/tropical/TropicalAdapterPath.lean`.
+
+== What this repo will become
+
+[listing]
+----
+[JJ: to be decided — see SEED-QUESTIONS.adoc]
+----
