@@ -1,0 +1,56 @@
+////
+SPDX-License-Identifier: MPL-2.0
+SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+////
+= Protocol Squisher — Seed Questions
+
+Questions whose answers would fix the scope of any successor. They are open
+questions, not proposals. The history that prompts them is in
+`provenance/PROVENANCE.adoc`.
+
+. Now that the hub-ceiling result has closed the _universal_ framing, is there a
+  successor that still wants universality, or does every viable one target a
+  single, named pair of formats?
+
+. Should a successor be built on each format's official upstream parser
+  (grammar-faithful), given that the v1.x analysers were regex- and line-based?
+
+. Is the durable artefact a tool at all, or is it the vocabulary — the transport
+  grades, or the can-copy × can-drop linearity lattice
+  (`provenance/crates/shape-ir/src/linearity.rs`)? If it is the vocabulary,
+  should it be contributed to a boundary that already exists (buf, CUE, Arrow,
+  a lens or optics library) rather than re-implemented here?
+
+. Is there standalone demand for a schema-bloat linter — the one empirically
+  suggestive thread, that evolution formats accrete optional and deprecated
+  fields — independent of any conversion feature?
+
+. What is the smallest claim a successor could make that would _not_ require a
+  corpus to support — something validated by construction, or by a handful of
+  real schemas?
+
+. If empirical validation is required, who runs the corpus harness
+  (`provenance/explorer/`, and the sibling `squisher-corpus`) to completion, on
+  what real schemas, and what result would falsify the core claim?
+
+. Should the tropical / bottleneck identification continue in this repository,
+  or move wholesale to `tropical-resource-typing`, where its max-plus twin
+  already lives?
+
+. Does the linearity lattice belong to this project, or to `ephapax`, where
+  resource semantics are the main subject?
+
+. What would make automated adapter synthesis (the miniKanren approach,
+  `provenance/crates/protocol-squisher-minikanren/src/lib.rs`) worth more than
+  hand-writing the few adapters anyone actually needs?
+
+. Who is the user, concretely, and what conversion do they perform by hand today
+  that a successor would replace?
+
+. What single measurement would show that a successor works, and can it be taken
+  before any code is written?
+
+. Is "nothing at all" — treating the question as answered and closing the
+  repository — an acceptable outcome? If not, what specifically remains
+  unfinished?
