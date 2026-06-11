@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+#
+# STATE.a2ml — Protocol Squisher project state
+[metadata]
+project = "protocol-squisher"
+version = "1.2.0"
+last-updated = "2026-06-11"
+status = "restarted"
+session = "provenance restructure — 2026-06-11"
+
+[project-context]
+name = "Protocol Squisher"
+purpose = """Restarted. The v1.x incarnation is archived, complete and unedited, in provenance/ (see provenance/PROVENANCE.adoc). Successor scope undecided."""
+completion-percentage = 0
+
+[position]
+phase = "successor-undecided"   # design | implementation | testing | maintenance | archived
+maturity = "experimental"       # experimental | alpha | beta | production | lts
+
+[route-to-mvp]
+milestones = [
+  # Successor scope undecided — see SEED-QUESTIONS.adoc
+]
+
+[blockers-and-issues]
+issues = [
+  # None. The universal-interoperability claim is closed by the hub_ceiling
+  # corollary in provenance/proofs/tropical/TropicalAdapterPath.lean.
+]
+
+[critical-next-actions]
+actions = [
+  # Decide the successor scope, or whether there is one — see SEED-QUESTIONS.adoc.
+]
+
+[maintenance-status]
+last-run-utc = "2026-06-11T00:00:00Z"
+last-result = "n/a"  # the archived tree under provenance/ is not built; root carries docs only
