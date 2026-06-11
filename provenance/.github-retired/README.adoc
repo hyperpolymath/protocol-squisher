@@ -24,4 +24,6 @@ record, not run.
 | `pyo3-integration.yml` | Builds and runs the PyO3 Python integration tests.
 | `echidna-validation.yml` | Builds the echidna bridge and runs ECHIDNA validation.
 | `nightly-real-verified.yml` | Nightly verification against a real backend.
+| `seambot-integration.yml` | Runs `cargo test` on the integration-tests crate against the archived code.
+| `hypatia-scan.yml` | Estate security scan that builds the archived Elixir crawler (`mix deps.get`); retired so the archive is not built.
 |===
