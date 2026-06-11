@@ -1,0 +1,316 @@
+////
+SPDX-License-Identifier: MPL-2.0
+SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+////
+= Protocol Squisher — Provenance of the v1.x Archive
+Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+:toc: left
+:toclevels: 2
+:sectnums:
+:icons: font
+
+This document describes the contents of `provenance/`, how the work came to be,
+what it established, and where it failed. It is written so that the archive can
+be read as evidence without re-running it. Every factual claim cites a file in
+this archive by relative path, or a named sibling repository.
+
+
+== What this directory is
+
+`provenance/` is a complete, unedited archive of Protocol Squisher as it stood at
+versions v1.x through v1.2 (developed January–June 2026): roughly thirty-five
+Rust crates under `crates/`, thirteen schema analysers, proof artefacts under
+`proofs/` across six provers (Agda, Coq, Idris2, Isabelle, Lean, Z3), an
+arXiv-style paper
+(`arcvix-transport-class-lattice.tex`), two empirical-validation harnesses, and
+the supporting documentation. It is preserved as evidence, not maintained as
+software. Nothing under `provenance/` is built, tested, or kept current; the one
+change made to the tree at the point of archiving was the addition of a single
+Lean theorem (`hub_ceiling`, see <<closing>>), committed before the move. The
+root of the repository above this directory is a fresh start.
+
+
+[#field]
+== State of the field at the start (January 2026)
+
+The project began at the intersection of two literatures. The first — graded and
+bidirectional structure — is the one the original lineage notes recognised
+(`INTENT.md`, "WHAT the intellectual lineage is"). The second — the algebra of
+bottlenecks — is the one that turned out to be decisive, and which `INTENT.md`
+does not cite. This section harvests the first from `INTENT.md` and corrects the
+record by adding the second.
+
+=== Graded and bidirectional structure (recorded in INTENT.md)
+
+* *Bidirectional transformations and lenses.* Symmetric lenses
+  (Hofmann, Pierce, Wagner, 2011) and delta lenses (Diskin et al., 2011) supply
+  the notion of information-preserving maps between two representations. The
+  transport classes were read against these: an isomorphism, an embedding, a
+  projection (`INTENT.md`, "Bidirectional Transformations").
+* *Functorial data migration* (Spivak, 2012) — schemas as categories, instances
+  as functors, migrations as natural transformations (`INTENT.md`, "Categorical
+  Database Theory").
+* *Information effects* (James, Sabry, 2012) — information-theoretic reasoning
+  about type isomorphisms, behind the `InformationContent` type
+  (`INTENT.md`, "Information Theory meets Type Theory").
+* *Profunctor optics* (Pickering, Gibbons, Wu, 2017; Kmett's `lens`) — the
+  product/sum/recursive/dependent structure of the Shape IR is read as a
+  hierarchy of optics (`INTENT.md`, "Optics").
+* *Practical systems already in the field.* Cambria (Ink & Switch) for
+  lens-based schema evolution; `buf.build` for Protobuf breaking-change
+  detection; Apache Arrow as a typed columnar schema; and CUE's lattice-based
+  unification of types and values (`INTENT.md`, "Practical Systems"). Cambria is
+  the nearest prior system; the project's stated novelty was generalising beyond
+  JSON documents to arbitrary data shapes.
+
+=== The algebra of bottlenecks (absent from INTENT.md, decisive in the end)
+
+The transport classes compose by taking the worse of two steps. That is the
+*min–max* or *bottleneck* semiring, an idempotent semiring (a dioid), and the
+problem of finding the highest-fidelity adapter path is the classical *minimax
+path* problem. This mathematics long predates the project:
+
+* Pollack (1960) and Hu (1961) — the bottleneck / minimax path problem.
+* Carré (1971) — path algebras over semirings for routing.
+* Cuninghame-Green (1979) — minimax (and max-plus) algebra as a coherent theory.
+* Mohri (2002) — shortest-distance algorithms over general semirings, which
+  subsumes the bottleneck case.
+
+This thread is the one the project eventually reached
+(`proofs/tropical/TropicalAdapterPath.lean`, dated 2026-04-11), and it is the
+part that yielded a definite result. It is recorded here because `INTENT.md`'s
+lineage section, written 2026-03-10, frames the work entirely through lenses,
+categories, and optics and never names the bottleneck-semiring literature in
+which the transport-class result actually lives.
+
+
+== The need
+
+Software speaks many serialization formats at once — Protobuf, Avro, Cap'n Proto,
+Thrift, JSON Schema, and the rest — and moving data across them is error-prone
+manual work. The tooling that exists answers compatibility as a yes/no question:
+two schemas are binary-compatible or they are not. That distinction is too coarse
+to act on. Most real conversions are neither perfectly safe nor outright
+impossible; they lose something specific and bounded, and the practitioner needs
+to know what.
+
+
+== The theory challenge
+
+Can compatibility be *graded* rather than declared — can the loss in a conversion
+be measured on a scale, and, crucially, can those measures be *composed* so that
+the loss along a chain of conversions is computable from the losses of its steps?
+The transport classes (Concorde, Business, Economy, Wheelbarrow) are one such
+grading, and their composition rule is the subject of the theory.
+
+
+== The practical challenge
+
+Can adapters between two shapes be *synthesised automatically* — derived rather
+than hand-written — with the loss they incur documented, and at a fidelity high
+enough to be worth using? The `crates/protocol-squisher-minikanren/` synthesiser
+and the thirteen analysers are the attempt at this.
+
+
+== Authorship and AI involvement
+
+This is a ledger of who produced what. It is built only from artefacts in the
+archive and from the git history. It does not characterise anyone's intentions.
+
+[cols="1,3a",options="header"]
+|===
+| Provenance | What is attributable to it
+
+| Human (Jonathan D.A. Jewell)
+| Direction and decisions; the transport-class framing
+  (Concorde/Business/Economy/Wheelbarrow); the intuition that compatibility
+  should be graded and composed; and the March 2026 change of direction recorded
+  in `INTENT.md` (dated 2026-03-10), which redefined the project from a format
+  converter to a "data shape" algebra. The author is named as copyright holder
+  throughout the tree.
+
+| AI-generated
+| The bulk of the code and prose. The git history records `Co-Authored-By`
+  trailers naming Claude models across 323 commits between 2026-01-03 and
+  2026-06-11: Claude Sonnet 4.5 (78 commits) and Sonnet 4.6 (11); Claude Opus 4.5
+  (24), Opus 4.6 (60 across two trailer spellings), Opus 4.7 (12) and Opus 4.8
+  (2, being this restructure); and one commit by Claude Haiku 4.5. Dependency
+  bumps (20 commits) are attributed to `dependabot`. These trailers indicate
+  assistance on the commits that carry them; they do not by themselves apportion
+  authorship line-by-line.
+
+| Prior art
+| The mathematics and literature in <<field>>:
+  the bottleneck/minimax semiring (Pollack, Hu, Carré, Cuninghame-Green, Mohri)
+  and the graded/bidirectional structure (Hofmann–Pierce–Wagner, Diskin, Spivak,
+  James–Sabry, profunctor optics), together with the named systems (Cambria, buf,
+  Arrow, CUE).
+|===
+
+The division of labour within any single document or crate is not recoverable
+from the trailers alone. In particular, whether the identification of the
+transport classes with the bottleneck dioid originated with the author or was
+surfaced during an assisted session is not determinable from the repository:
+[ATTRIBUTION: JJ to confirm]. The same applies to the first articulation of the
+four transport-class names: [ATTRIBUTION: JJ to confirm].
+
+
+[#wrong]
+== What went wrong
+
+This section is a methodology case study, for a reader who wants to avoid the
+same failures when working with AI assistance at speed. It is specific and
+cited. It is neither an apology nor a defence.
+
+*The validation harness was built twice and never fired.* Two separate empirical
+pipelines were constructed to test the project's claims against real schemas: the
+in-repo crawler under `explorer/` (an Elixir/OTP GitHub schema crawler;
+`explorer/README.md`) and a standalone sibling repository, `squisher-corpus`.
+Neither produced data. In `squisher-corpus`, the machine-readable state file
+`.machine_readable/6a2/STATE.a2ml` records `completion-percentage = 0` and
+`phase = "In development"`, while its prose dashboard (`TOPOLOGY.md`) reports
+"~70%" overall with several components marked "100% ... verified". In this
+archive, `explorer/database/` contains only a `README.md` — no collected
+schemas, no exports. The instrument that would have connected the theory to
+reality was assembled, twice, and never switched on.
+
+*Hypotheses were tested against self-authored examples.* The February 2026
+diversity findings were computed over roughly one hundred example schemas written
+for the purpose, not sampled from the world (`ANALYSIS-COMPLETE.txt`: "Pattern
+frequency analysis (8 patterns, 100+ schemas)"; `DIVERSITY-ANALYSIS.md`,
+Appendix A, "Example schemas for each protocol"). Testing a hypothesis on data
+authored to illustrate it measures the author, not the field.
+
+*A contradiction was preserved across documents, with confidence drifting and no
+new data to justify it.* Hypothesis H2 ("zero-copy protocols are unsquishable")
+is reported as "⚠️ PARTLY FALSE" with Cap'n Proto scoring 0.7–1.0 in
+`HYPOTHESIS-RESEARCH-SESSION-SUMMARY.md`, and as "✅ SUPPORTED, 0.82 confidence"
+with Cap'n Proto scoring 0.18 in `DIVERSITY-ANALYSIS.md` (Hypothesis 2) and
+`ANALYSIS-COMPLETE.txt`. The hypothesis flips verdict and the headline score
+moves from 0.7–1.0 to 0.18 between documents. The companion hypothesis H1 shows
+the same drift: its confidence is "0.035 (small but positive)" in
+`HYPOTHESIS-RESEARCH-SESSION-SUMMARY.md` and "0.92" in `DIVERSITY-ANALYSIS.md`
+and `ANALYSIS-COMPLETE.txt`. No measurement intervened; only the narration
+changed.
+
+*Toy-model proofs were presented as system verification.* The Agda development
+reasons about the four-element transport-class model — `Concorde`, `Business`,
+`Economy`, `Wheelbarrow` as an enumerated type (e.g.
+`proofs/agda/AdapterSynthesis.agda`). That is a small, finite ordering, not the
+35-crate system. Yet `PROOF-NEEDS.md` presents "8/8 theorems verified across
+Agda + Lean + Coq + Isabelle + Z3 + Idris2", and the multi-prover spread
+functioned as a count to display rather than a claim to defend. The count of
+theorems is itself reported inconsistently: `ANALYSIS-COMPLETE.txt` says
+"Formal Proofs: 4 theorems (Agda + Lean)" where `PROOF-NEEDS.md` says "8/8
+theorems verified" across six provers. The Lean file is
+a concrete instance: `proofs/tropical/TropicalAdapterPath.lean` is marked
+"✓ Done" in `PROOF-NEEDS.md`, but it does not compile under a current core Lean
+toolchain (Lean 4.13.0) — several theorems use a tactic available only with
+Mathlib (`push_neg` in `tcJoin_grade`) and at least one has a type error
+(`pathCost_append`, from treating `AdapterPath` as directly appendable). The
+core identification is sound and two theorems (`pathCost_mono` and the
+`hub_ceiling` corollary added at archiving) are machine-checked; the surrounding
+"zero sorry" table was, on this evidence, never compiled.
+
+*A single file asserted both a number and its negation.* `PROOF-NEEDS.md` states
+"0 `unwrap()` calls (audit complete 2026-02-04)" in its summary and, lower in the
+same file, "The 758 `unwrap()` calls are the largest safety debt in this scan".
+Both figures sit in one document.
+
+*Completion was self-reported on dashboards.* `ANALYSIS-COMPLETE.txt` closes with
+a validation checklist of fourteen ticks ("✓ Hypothesis testing completed (4/4)",
+"✓ Phase 2 marked complete") describing work that, per the harness state above,
+had not made contact with real data. The `squisher-corpus` dashboard's
+"100% ... verified" components stand against its own `completion-percentage = 0`.
+A dashboard that grades its own completeness will report completeness.
+
+*Velocity inverted: plans that should take months landed in single days.* The
+building compressed; the contact with reality did not. After the proof and
+documentation push dated 2026-04-11, every commit through to this restructure on
+2026-06-11 — bar the restructure itself — is CI, standards-alignment, dependency
+bumps, or governance scaffolding: more than fifty commits that advance the
+infrastructure around the project and not the product or the theory. The work
+that remained was the work that did not require finding anything out.
+
+*The prompt pattern set the wrong success condition.* Framing an assisted session
+as "this is important — save the project / resolve the contradiction" makes the
+model's objective *rescue*. A model optimising for rescue re-narrates: it
+restates the claim more confidently, adds a dashboard, raises a confidence
+figure. It does not, unprompted, conclude that the claim is false. The drifting
+confidence numbers above are what re-narration looks like in the artefacts.
+
+[NOTE]
+The personal account belongs here.
+
+[listing]
+----
+// [JJ: first-person paragraph — to be written by the author]
+----
+
+
+== What was sound
+
+The keepers, each with a path. These are the parts worth carrying forward.
+
+* *The tropical identification.* The transport classes form a bottleneck dioid,
+  and highest-fidelity routing is minimax path search
+  (`proofs/tropical/TropicalAdapterPath.lean`). This is the project's most
+  durable result. Its `pathCost_mono` and the new `hub_ceiling` corollary are
+  machine-checked under Lean 4.13.0 (they depend only on `propext`); the file's
+  other theorems do not currently compile (see <<wrong>>), but the
+  identification itself stands. The same mathematics appears, dualised, in the
+  sibling repository `tropical-resource-typing` as `TropicalSessionTypes.lean`, a
+  max-plus semiring over session types — the order-reversing twin of this min–max
+  semiring.
+* *Shape IR.* `crates/shape-ir/` — a structural intermediate representation
+  (products, sums, recursion, dependence) intended as the common target for all
+  the analysers.
+* *The linearity lattice.* `crates/shape-ir/src/linearity.rs` — resource
+  semantics as the product of two independent capabilities, *can-copy* and
+  *can-drop*, giving four modes: `Unrestricted` (copy and drop) at the top,
+  `Affine` (drop only) and `Relevant` (copy only) in the middle, and `Linear`
+  (neither) at the bottom, combined by meet. A clean, small, correct lattice.
+* *The corpus harness design.* The architecture of `explorer/` and
+  `squisher-corpus` — crawl, deduplicate, analyse, export — is a sound design for
+  empirical validation. Its fault was never being run, not being wrong.
+* *The related-work scholarship.* The lineage in `INTENT.md` is careful and
+  largely accurate, and is the seed of
+  <<field>> above.
+* *The minikanren synthesis pattern.* `crates/protocol-squisher-minikanren/src/lib.rs`
+  — framing adapter synthesis as constrained search (relational/logic
+  programming) rather than ad-hoc generation. The pattern is reusable
+  independently of this project.
+
+
+[[closing]]
+== The closing result
+
+The universal claim is closed, permanently, by the project's own algebra.
+Transport-class composition is `max` — the bottleneck of a path is its worst
+step — and `max` over a path can only be raised by the steps in it, never
+lowered. The corollary `hub_ceiling`
+(`proofs/tropical/TropicalAdapterPath.lean`) states this precisely: any adapter
+path routing through an edge of grade `g` has cost at least `g`, so a single hub
+caps the fidelity of every format that must pass through it. "Universal" (one hub
+for all formats) and "high fidelity" (grade 0 for all formats) are therefore
+contradictory the moment any format embeds into the hub at grade greater than
+zero; universal *low* fidelity is the achievable point, and that is what JSON
+already is. The theorem is machine-checked under Lean 4.13.0 and depends only on
+`propext`; it is the corollary of `pathCost_mono` that the v1.x development never
+stated. This is the good outcome: not a failure to prove the claim, but a proof
+that the claim was the wrong shape — a definite answer, reached with the
+project's own tools.
+
+
+== Where the live threads went
+
+* *The semiring twin* — `tropical-resource-typing` (sibling repository), where
+  the max-plus dual of this min–max algebra grades session types
+  (`TropicalSessionTypes.lean`).
+* *Linearity and irreversible boundaries* — `ephapax` (sibling repository); the
+  resource-semantics lattice and the "what cannot be undone at a boundary"
+  questions continue there. See `EPHAPAX-INTEGRATION.adoc` in this archive for
+  the v1.x view of that connection.
+* *The fresh start* — the root of this repository, above `provenance/`. What it
+  becomes is undecided; see `SEED-QUESTIONS.adoc` at the root.

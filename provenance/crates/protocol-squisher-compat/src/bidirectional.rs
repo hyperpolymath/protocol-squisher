@@ -1,0 +1,391 @@
+// SPDX-License-Identifier: MPL-2.0
+// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+//! Bidirectional compatibility analysis.
+//!
+//! Transport classes are **asymmetric**: converting A->B may be Concorde
+//! (safe widening) while B->A is Economy (lossy narrowing). Real-world
+//! interoperability requires understanding both directions.
+//!
+//! This module provides:
+//! - Bidirectional comparison (forward + reverse in one call)
+//! - Round-trip fidelity analysis (A->B->A information preservation)
+//! - Asymmetry detection (highlights where directions differ)
+
+use crate::schema::{compare_schemas, SchemaComparison};
+use crate::transport::TransportClass;
+use protocol_squisher_ir::IrSchema;
+use serde::{Deserialize, Serialize};
+
+/// Result of bidirectional schema comparison.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BidirectionalResult {
+    /// Forward comparison (source -> target)
+    pub forward: SchemaComparison,
+    /// Reverse comparison (target -> source)
+    pub reverse: SchemaComparison,
+    /// Forward transport class
+    pub forward_class: TransportClass,
+    /// Reverse transport class
+    pub reverse_class: TransportClass,
+    /// Whether the transport classes are symmetric (same in both directions)
+    pub is_symmetric: bool,
+    /// Round-trip transport class (worst of forward and reverse)
+    pub round_trip_class: TransportClass,
+    /// Per-type asymmetry details
+    pub asymmetries: Vec<TypeAsymmetry>,
+}
+
+/// Describes an asymmetry between forward and reverse transport for a type.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TypeAsymmetry {
+    /// Type name
+    pub type_name: String,
+    /// Forward (source->target) transport class
+    pub forward_class: TransportClass,
+    /// Reverse (target->source) transport class
+    pub reverse_class: TransportClass,
+    /// Direction with worse class
+    pub bottleneck_direction: Direction,
+    /// Additional losses incurred in the worse direction
+    pub additional_losses: usize,
+}
+
+/// Which direction is the bottleneck.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Direction {
+    Forward,
+    Reverse,
+    Symmetric,
+}
+
+impl std::fmt::Display for Direction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Direction::Forward => write!(f, "forward (source -> target)"),
+            Direction::Reverse => write!(f, "reverse (target -> source)"),
+            Direction::Symmetric => write!(f, "symmetric"),
+        }
+    }
+}
+
+/// Perform bidirectional compatibility analysis between two schemas.
+pub fn bidirectional_compare(source: &IrSchema, target: &IrSchema) -> BidirectionalResult {
+    let forward = compare_schemas(source, target);
+    let reverse = compare_schemas(target, source);
+
+    let forward_class = forward.class;
+    let reverse_class = reverse.class;
+    let is_symmetric = forward_class == reverse_class;
+    let round_trip_class = forward_class.join(reverse_class);
+
+    // Detect per-type asymmetries
+    let mut asymmetries = Vec::new();
+    for (type_name, fwd_cmp) in &forward.type_comparisons {
+        if let Some(rev_cmp) = reverse.type_comparisons.get(type_name) {
+            if fwd_cmp.class != rev_cmp.class {
+                let (bottleneck_direction, additional_losses) = if fwd_cmp.class > rev_cmp.class {
+                    (
+                        Direction::Forward,
+                        fwd_cmp.losses.len().saturating_sub(rev_cmp.losses.len()),
+                    )
+                } else {
+                    (
+                        Direction::Reverse,
+                        rev_cmp.losses.len().saturating_sub(fwd_cmp.losses.len()),
+                    )
+                };
+
+                asymmetries.push(TypeAsymmetry {
+                    type_name: type_name.clone(),
+                    forward_class: fwd_cmp.class,
+                    reverse_class: rev_cmp.class,
+                    bottleneck_direction,
+                    additional_losses,
+                });
+            }
+        }
+    }
+
+    BidirectionalResult {
+        forward,
+        reverse,
+        forward_class,
+        reverse_class,
+        is_symmetric,
+        round_trip_class,
+        asymmetries,
+    }
+}
+
+impl BidirectionalResult {
+    /// Whether round-trip conversion preserves all information.
+    pub fn is_round_trip_lossless(&self) -> bool {
+        self.round_trip_class.is_lossless()
+    }
+
+    /// Whether conversion is possible in both directions.
+    pub fn is_bidirectionally_convertible(&self) -> bool {
+        self.forward_class.is_convertible() && self.reverse_class.is_convertible()
+    }
+
+    /// Get the number of types with asymmetric transport classes.
+    pub fn asymmetry_count(&self) -> usize {
+        self.asymmetries.len()
+    }
+
+    /// Build a detailed [`BidirectionalReport`] with field-level breakdown.
+    ///
+    /// The report shows fields only in A, fields only in B, compatible
+    /// and incompatible field pairs, and suggested transport class per direction.
+    pub fn detailed_report(&self) -> BidirectionalReport {
+        let types_only_in_a: Vec<String> = self.forward.source_only.clone();
+        let types_only_in_b: Vec<String> = self.forward.target_only.clone();
+
+        let mut compatible_fields = Vec::new();
+        let mut incompatible_fields = Vec::new();
+
+        for (type_name, fwd_cmp) in &self.forward.type_comparisons {
+            for fc in &fwd_cmp.field_comparisons {
+                if fc.class.is_convertible() {
+                    compatible_fields.push(FieldCompat {
+                        type_name: type_name.clone(),
+                        field_name: fc.name.clone(),
+                        forward_class: fc.class,
+                        reverse_class: self
+                            .reverse
+                            .type_comparisons
+                            .get(type_name)
+                            .and_then(|rc| {
+                                rc.field_comparisons
+                                    .iter()
+                                    .find(|rfc| rfc.name == fc.name)
+                                    .map(|rfc| rfc.class)
+                            })
+                            .unwrap_or(TransportClass::Incompatible),
+                    });
+                } else {
+                    incompatible_fields.push(FieldCompat {
+                        type_name: type_name.clone(),
+                        field_name: fc.name.clone(),
+                        forward_class: fc.class,
+                        reverse_class: TransportClass::Incompatible,
+                    });
+                }
+            }
+        }
+
+        BidirectionalReport {
+            types_only_in_a,
+            types_only_in_b,
+            compatible_fields,
+            incompatible_fields,
+            suggested_forward_class: self.forward_class,
+            suggested_reverse_class: self.reverse_class,
+            round_trip_class: self.round_trip_class,
+            is_symmetric: self.is_symmetric,
+        }
+    }
+}
+
+/// Detailed bidirectional report with field-level breakdown.
+///
+/// Designed for Pane-W visualization of compatibility matrices.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BidirectionalReport {
+    /// Types present only in schema A.
+    pub types_only_in_a: Vec<String>,
+    /// Types present only in schema B.
+    pub types_only_in_b: Vec<String>,
+    /// Fields that are compatible in at least one direction.
+    pub compatible_fields: Vec<FieldCompat>,
+    /// Fields that are incompatible in both directions.
+    pub incompatible_fields: Vec<FieldCompat>,
+    /// Suggested transport class for A->B direction.
+    pub suggested_forward_class: TransportClass,
+    /// Suggested transport class for B->A direction.
+    pub suggested_reverse_class: TransportClass,
+    /// Round-trip transport class.
+    pub round_trip_class: TransportClass,
+    /// Whether the comparison is symmetric.
+    pub is_symmetric: bool,
+}
+
+/// Field-level compatibility detail for bidirectional analysis.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FieldCompat {
+    /// Type this field belongs to.
+    pub type_name: String,
+    /// Field name.
+    pub field_name: String,
+    /// Transport class in the forward (A->B) direction.
+    pub forward_class: TransportClass,
+    /// Transport class in the reverse (B->A) direction.
+    pub reverse_class: TransportClass,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use protocol_squisher_ir::{
+        FieldDef, FieldMetadata, IrType, PrimitiveType, StructDef, TypeDef, TypeMetadata,
+    };
+
+    fn make_schema(name: &str, field_type: PrimitiveType) -> IrSchema {
+        let mut schema = IrSchema::new(name, "test");
+        schema.add_type(
+            "Record".to_string(),
+            TypeDef::Struct(StructDef {
+                name: "Record".to_string(),
+                fields: vec![FieldDef {
+                    name: "value".to_string(),
+                    ty: IrType::Primitive(field_type),
+                    optional: false,
+                    constraints: vec![],
+                    metadata: FieldMetadata::default(),
+                }],
+                metadata: TypeMetadata::default(),
+            }),
+        );
+        schema
+    }
+
+    #[test]
+    fn test_symmetric_comparison() {
+        let a = make_schema("a", PrimitiveType::I64);
+        let b = make_schema("b", PrimitiveType::I64);
+
+        let result = bidirectional_compare(&a, &b);
+        assert!(result.is_symmetric);
+        assert_eq!(result.forward_class, TransportClass::Concorde);
+        assert_eq!(result.reverse_class, TransportClass::Concorde);
+        assert_eq!(result.round_trip_class, TransportClass::Concorde);
+        assert!(result.is_round_trip_lossless());
+        assert_eq!(result.asymmetry_count(), 0);
+    }
+
+    #[test]
+    fn test_asymmetric_widening_narrowing() {
+        let narrow = make_schema("narrow", PrimitiveType::I32);
+        let wide = make_schema("wide", PrimitiveType::I64);
+
+        let result = bidirectional_compare(&narrow, &wide);
+
+        // i32->i64 should be better than i64->i32
+        assert!(!result.is_symmetric);
+        assert!(result.forward_class < result.reverse_class);
+
+        // Round-trip is the worse of the two
+        assert_eq!(
+            result.round_trip_class,
+            result.forward_class.join(result.reverse_class)
+        );
+        assert!(!result.is_round_trip_lossless());
+    }
+
+    #[test]
+    fn test_asymmetries_detected() {
+        let narrow = make_schema("narrow", PrimitiveType::I32);
+        let wide = make_schema("wide", PrimitiveType::I64);
+
+        let result = bidirectional_compare(&narrow, &wide);
+        assert!(result.asymmetry_count() > 0);
+
+        let asym = &result.asymmetries[0];
+        assert_eq!(asym.type_name, "Record");
+        assert_ne!(asym.forward_class, asym.reverse_class);
+    }
+
+    #[test]
+    fn test_bidirectionally_convertible() {
+        let a = make_schema("a", PrimitiveType::I32);
+        let b = make_schema("b", PrimitiveType::I64);
+
+        let result = bidirectional_compare(&a, &b);
+        assert!(result.is_bidirectionally_convertible());
+    }
+
+    #[test]
+    fn test_incompatible_not_bidirectional() {
+        let a = make_schema("a", PrimitiveType::String);
+        let b = make_schema("b", PrimitiveType::Bool);
+
+        let result = bidirectional_compare(&a, &b);
+        assert!(!result.is_bidirectionally_convertible());
+    }
+
+    #[test]
+    fn test_detailed_report_symmetric() {
+        let a = make_schema("a", PrimitiveType::I64);
+        let b = make_schema("b", PrimitiveType::I64);
+
+        let result = bidirectional_compare(&a, &b);
+        let report = result.detailed_report();
+
+        assert!(report.is_symmetric);
+        assert!(report.types_only_in_a.is_empty());
+        assert!(report.types_only_in_b.is_empty());
+        assert!(report.incompatible_fields.is_empty());
+        assert_eq!(report.suggested_forward_class, TransportClass::Concorde);
+        assert_eq!(report.suggested_reverse_class, TransportClass::Concorde);
+    }
+
+    #[test]
+    fn test_detailed_report_with_extra_types() {
+        let mut a = IrSchema::new("a", "test");
+        a.add_type(
+            "Shared".to_string(),
+            TypeDef::Struct(StructDef {
+                name: "Shared".to_string(),
+                fields: vec![FieldDef {
+                    name: "id".to_string(),
+                    ty: IrType::Primitive(PrimitiveType::I64),
+                    optional: false,
+                    constraints: vec![],
+                    metadata: FieldMetadata::default(),
+                }],
+                metadata: TypeMetadata::default(),
+            }),
+        );
+        a.add_type(
+            "OnlyInA".to_string(),
+            TypeDef::Struct(StructDef {
+                name: "OnlyInA".to_string(),
+                fields: vec![],
+                metadata: TypeMetadata::default(),
+            }),
+        );
+
+        let mut b = IrSchema::new("b", "test");
+        b.add_type(
+            "Shared".to_string(),
+            TypeDef::Struct(StructDef {
+                name: "Shared".to_string(),
+                fields: vec![FieldDef {
+                    name: "id".to_string(),
+                    ty: IrType::Primitive(PrimitiveType::I64),
+                    optional: false,
+                    constraints: vec![],
+                    metadata: FieldMetadata::default(),
+                }],
+                metadata: TypeMetadata::default(),
+            }),
+        );
+
+        let result = bidirectional_compare(&a, &b);
+        let report = result.detailed_report();
+        assert!(report.types_only_in_a.contains(&"OnlyInA".to_string()));
+        assert!(report.types_only_in_b.is_empty());
+    }
+
+    #[test]
+    fn test_detailed_report_asymmetric() {
+        let narrow = make_schema("narrow", PrimitiveType::I32);
+        let wide = make_schema("wide", PrimitiveType::I64);
+
+        let result = bidirectional_compare(&narrow, &wide);
+        let report = result.detailed_report();
+
+        assert!(!report.is_symmetric);
+        assert!(report.suggested_forward_class < report.suggested_reverse_class);
+    }
+}

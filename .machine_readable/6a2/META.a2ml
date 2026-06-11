@@ -3,8 +3,8 @@
 #
 # META.a2ml — Protocol Squisher meta-level information
 [metadata]
-version = "0.1.0"
-last-updated = "2026-04-11"
+version = "0.2.0"
+last-updated = "2026-06-11"
 
 [project-info]
 license = "MPL-2.0"
@@ -12,7 +12,17 @@ author = "Jonathan D.A. Jewell (hyperpolymath)"
 
 [architecture-decisions]
 decisions = [
-  # No ADRs recorded
+  # ADR-0001 (2026-06-11) — Provenance restructure.
+  # The complete v1.x working tree was moved, unchanged, into provenance/ as a
+  # frozen evidence archive (see provenance/PROVENANCE.adoc), and the repository
+  # root was reset for a fresh start with scope undecided (see
+  # SEED-QUESTIONS.adoc). The exact state before the restructure is preserved at
+  # the annotated tag pre-provenance-2026-06-11. The universal-interoperability
+  # claim is closed by the hub_ceiling corollary in
+  # provenance/proofs/tropical/TropicalAdapterPath.lean: transport-class
+  # composition is max, so any path through a shared hub is capped by that hub's
+  # worst embedding — "universal" and "high-fidelity" are contradictory, and
+  # universal low-fidelity is what JSON already is.
 ]
 
 [development-practices]

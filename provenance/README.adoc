@@ -1,0 +1,247 @@
+// SPDX-License-Identifier: MPL-2.0
+// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+image:https://img.shields.io/badge/License-MPL_2.0-blue.svg[License: MPL-2.0,link="https://opensource.org/licenses/MPL-2.0"]
+
+// SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
+= Protocol Squisher
+image:https://img.shields.io/badge/OpenSSF-Best_Practices-green?logo=openssourcesecurity[OpenSSF Best Practices,link="https://www.bestpractices.dev/en/projects/new?repo_url=https://github.com/hyperpolymath/protocol-squisher"]
+
+
+
+
+:toc: macro
+:toclevels: 3
+:icons: font
+
+[.lead]
+**Universal protocol interoperability through automatic adapter synthesis.**
+
+[NOTE]
+====
+**Status:** ✅ **Phase 2 Format Expansion Complete** (100%)
+
+**Phase 1 (MVP):**
+- 937 tests passing (ephapax IR + 13 analyzers + codegen + optimizer + property tests + Phase 3/4 modules)
+- Rust ↔ Python fully working (Concorde, Business, Economy, Wheelbarrow classes)
+- Formal verification (5 theorems proven in Agda; cross-validated in Lean, Coq, Isabelle, and Z3)
+- Comprehensive documentation (CLI guide, optimization guide, transport classes reference)
+
+**Phase 2 (Format Expansion - COMPLETE ✅):**
+- **13 protocol analyzers** implemented: Rust, Python, JSON Schema, Protobuf, Bebop, FlatBuffers, MessagePack, Avro, Cap'n Proto, Thrift, ReScript, GraphQL, TOML
+- **Diversity spectrum meta-analysis** complete (link:DIVERSITY-ANALYSIS.md[full report])
+- **Squishability rankings** validated across design philosophies (zero-copy → schema evolution → dynamic)
+- **Hypothesis testing** confirms: schema evolution protocols (Avro/Thrift) most squishable, zero-copy (Cap'n Proto) already optimal
+- **Protocol compatibility matrix** shows Business class achievable for most schema-based pairs
+
+**Phase 3 (Hardened):**
+- Security bridge hardened (negotiation, audit, downgrade risk)
+- Distributed squishing expanded (job queue, progress tracking, retry policies)
+- Performance primitives extended (SIMD byte search, chunked streaming, hardware detection, lazy schemas)
+- Enterprise features enhanced (audit queries, governance reports, migration validation)
+- Formal proofs cross-validated in Coq (ConcordeSafety, CarriesInvariant), Isabelle (WheelbarrowNecessity), Z3/SMT (exhaustiveness)
+
+**Phase 4 (Library Extraction - In Progress):**
+- `SchemaAnalyzer` trait defined and implemented across all 13 analyzers
+- Public library API exposed (`protocol_squisher::prelude`, `all_analyzers()` registry)
+- All analyzers accessible via `use protocol_squisher::{avro_analyzer, protobuf_analyzer, ...}`
+
+**Next:** Phase 4c-e (constraint evaluation API, bidirectional API, HTTP server)
+====
+
+____
+*The Invariant:* If it compiles, it carries.
+
+Every data serialization format can talk to every other format. Always. Even if slow. Even if lossy. But it *will* transport.
+____
+
+toc::[]
+
+== The Problem
+
+You have a Factor serialization library. Your colleague has a Cap'n Proto service. You need them to talk.
+
+**Current options:**
+
+1. Write a manual adapter (hours/days of work)
+2. Use JSON as lingua franca (slow, lossy, manual)
+3. Rewrite one side (expensive, political nightmare)
+4. Give up
+
+**What if there was another way?**
+
+== The Solution
+
+Protocol Squisher analyzes two incompatible serialization formats and synthesizes the *minimum viable adapter* that guarantees transport.
+
+[source,bash]
+----
+$ protocol-squisher analyze-schema --protocol capnproto --input capnproto-schema.capnp
+
+Compatibility Analysis:
+  Transport Class: Wheelbarrow (47% type fidelity)
+  Estimated Overhead: -60% performance
+  Losses: circular references, some type precision
+
+TRANSPORT VIABLE: ✓
+
+$ protocol-squisher compile \
+    --from capnproto \
+    --to rust \
+    --input capnproto-schema.capnp \
+    --output ./adapter/
+
+Generated:
+  ✓ adapter.rs (1,247 lines)
+  ✓ tests.rs (894 lines)
+  ✓ README.md
+
+Adapter guarantees:
+  [PROVEN] All data that enters will exit
+  [PROVEN] No undefined behavior
+  [DOCUMENTED] Type conversions and losses
+----
+
+== Transport Classes
+
+Protocol Squisher classifies every format pair into transport classes:
+
+[cols="1,2,2",options="header"]
+|===
+|Class |Description |Example
+
+|**Concorde**
+|Zero-copy, full fidelity, maximum performance
+|serde ↔ serde (same Rust types)
+
+|**Business Class**
+|Minor overhead, full fidelity
+|Protobuf ↔ Thrift (similar models)
+
+|**Economy**
+|Moderate overhead, documented losses
+|JSON ↔ MessagePack
+
+|**Wheelbarrow**
+|High overhead, significant losses, but *it works*
+|Factor ↔ Cap'n Proto
+|===
+
+== The Invariant
+
+**Every adapter we generate maintains this invariant:**
+
+____
+For any valid input `x` in format A, there exists a valid output `y` in format B such that `squish(x) = y`.
+
+If A cannot represent some value from B, we document the loss *before* you use the adapter.
+____
+
+We achieve this through:
+
+1. **Canonical IR**: Every format maps to our intermediate representation
+2. **Compatibility Analysis**: Before generating, we prove transport is possible
+3. **JSON Fallback**: When all else fails, JSON becomes the wheelbarrow
+4. **Property-Based Testing**: Exhaustive verification of adapter correctness
+
+== Quick Start
+
+[source,bash]
+----
+# Install
+cargo install --path crates/protocol-squisher-cli
+
+# Check Rust ↔ Python compatibility
+protocol-squisher check \
+  --rust examples/zero-copy-demo/src/lib.rs \
+  --python examples/zero-copy-demo/models.py
+
+# Get optimization suggestions
+protocol-squisher optimize --rust src/lib.rs --python models.py
+
+# Apply empirical explorer hints (optional)
+protocol-squisher optimize \
+  --rust src/lib.rs \
+  --python models.py \
+  --synthesis-hints target/explorer/database/synthesis-hints.json
+
+# Generate PyO3 bindings
+protocol-squisher generate \
+  --rust src/lib.rs \
+  --python models.py \
+  --output generated/ \
+  --stubs
+----
+
+**See link:docs/CLI-GUIDE.adoc[CLI Usage Guide] for complete documentation and workflows.**
+
+== Supported Formats
+
+=== Phase 1 (MVP - Complete ✅)
+- **Rust (serde)** - Zero-cost abstractions, borrow checker
+- **Python (Pydantic)** - Runtime validation, type hints
+- **JSON Schema** - Universal baseline
+- **Protobuf** - Field-number based binary protocol
+
+=== Phase 2 (Format Expansion - Complete ✅)
+- **Bebop** - Modern performant schema format
+- **FlatBuffers** - Zero-copy access, fixed layouts
+- **MessagePack** - Binary JSON alternative
+- **Avro** - Schema evolution focus, union types
+- **Cap'n Proto** - Theoretical performance optimum
+- **Thrift** - RPC-focused with multiple encodings
+- **ReScript** - OCaml-style type system, JS compilation
+- **GraphQL** - Schema Definition Language types and unions
+- **TOML** - Config file structural type inference
+
+=== Analysis Available
+- **link:DIVERSITY-ANALYSIS.md[Diversity Spectrum Meta-Analysis]** - Comprehensive squishability comparison across 11 protocols
+- **link:PROTOCOL-COMPARISON.txt[Protocol Comparison Table]** - Quick reference rankings and compatibility matrix
+
+See link:ROADMAP.adoc[ROADMAP.adoc] for the full expansion plan.
+
+== Documentation
+
+**Getting Started:**
+- link:docs/CLI-GUIDE.adoc[CLI Usage Guide] - Command reference and workflows (**start here**)
+- link:docs/CONTAINER-GUIDE.md[Container Guide (Podman)] - Reproducible dev/test/bench workflows
+- link:examples/README.md[Example Projects] - Working examples with benchmarks
+- link:docs/OPTIMIZATION-GUIDE.adoc[Optimization Guide] - How to achieve zero-copy transport
+- link:docs/TRANSPORT-CLASSES.adoc[Transport Classes Reference] - Detailed theory and API
+
+**Advanced:**
+- link:proofs/README.adoc[Formal Proofs] - Theorem prover verification (Agda + Lean + Coq + Isabelle + Z3)
+- link:ROADMAP.adoc[Roadmap] - Project roadmap and future plans
+- link:GAUNTLET.adoc[The Gauntlet] - Hard problems we're solving
+- link:docs/architecture.adoc[Architecture] - System architecture
+- link:docs/ir-spec.adoc[IR Specification] - The intermediate representation
+- **link:DIVERSITY-ANALYSIS.md[Diversity Analysis]** - Meta-analysis of 11 protocols, squishability rankings, hypothesis testing
+
+**Performance:**
+- link:docs/BENCHMARK-QUICKSTART.md[Benchmark Quick Start] - Run benchmarks in 5 minutes (**start here**)
+- link:benches/README.md[Benchmark Suite Documentation] - Comprehensive benchmark guide
+- link:docs/BENCHMARK-RESULTS.md[Results Interpretation] - How to read and validate performance
+
+== Contributing
+
+We welcome contributions! See link:CONTRIBUTING.adoc[CONTRIBUTING.adoc].
+
+**Especially valuable:**
+- New format analyzers
+- Real-world schema examples
+- Edge cases that break the invariant
+- Performance optimizations
+
+== License
+
+This project is licensed under the Mozilla Public License, v. 2.0. See the `LICENSE` file for details.
+
+SPDX-License-Identifier: MPL-2.0
+
+== Acknowledgments
+
+Inspired by the frustration of every polyglot developer who has ever had to bridge two serialization formats manually.
+
+
+== Architecture
+
+See link:TOPOLOGY.md[TOPOLOGY.md] for a visual architecture map and completion dashboard.

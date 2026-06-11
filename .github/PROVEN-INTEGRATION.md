@@ -1,3 +1,7 @@
+<!--
+SPDX-License-Identifier: MPL-2.0
+Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+-->
 # proven Integration Plan
 
 This document outlines the recommended [proven](https://github.com/hyperpolymath/proven) modules for Protocol Squisher.

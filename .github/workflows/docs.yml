@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: MPL-2.0
+# SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+#
+# Minimal documentation lint for the archived tree. It checks the root-level
+# AsciiDoc and the provenance record render without errors. It deliberately does
+# NOT build, test, or analyse the archived code under provenance/.
+name: docs
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  doc-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Root README present and non-empty
+        run: test -s README.adoc
+      - name: Install Asciidoctor
+        run: sudo gem install --no-document asciidoctor
+      - name: AsciiDoc syntax check (root docs + provenance record)
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          targets=(*.adoc provenance/PROVENANCE.adoc)
+          for f in "${targets[@]}"; do
+            echo "checking $f"
+            asciidoctor --failure-level=ERROR -o /dev/null "$f"
+          done
