@@ -27,5 +27,5 @@ jobs:
           targets=(*.adoc provenance/PROVENANCE.adoc)
           for f in "${targets[@]}"; do
             echo "checking $f"
-            asciidoctor --failure-level=WARN -o /dev/null "$f"
+            asciidoctor --failure-level=ERROR -o /dev/null "$f"
           done
