@@ -5,17 +5,17 @@
 [metadata]
 project = "protocol-squisher"
 version = "1.2.0"
-last-updated = "2026-06-11"
-status = "restarted"
+last-updated = "2026-07-06"
+status = "terminated"
 session = "provenance restructure — 2026-06-11"
 
 [project-context]
 name = "Protocol Squisher"
-purpose = """Restarted. The v1.x incarnation is archived, complete and unedited, in provenance/ (see provenance/PROVENANCE.adoc). Successor scope undecided."""
+purpose = """Terminated as an active project (2026-07-06). The universal-interoperability goal is closed by the hub_ceiling corollary; v1.x is archived in provenance/. No successor here: the living questions migrated to the joinery layer — graded fidelity to cleave (WF/OF), max/tropical loss-composition to cleave/tropical-resource-typing, the practical data-form to spline (thin alignment, not a universal hub). Empirical evidence continues in squisher-corpus."""
 completion-percentage = 0
 
 [position]
-phase = "successor-undecided"   # design | implementation | testing | maintenance | archived
+phase = "archived"              # design | implementation | testing | maintenance | archived
 maturity = "experimental"       # experimental | alpha | beta | production | lts
 
 [route-to-mvp]
@@ -31,7 +31,7 @@ issues = [
 
 [critical-next-actions]
 actions = [
-  # Decide the successor scope, or whether there is one — see SEED-QUESTIONS.adoc.
+  # None. Terminated 2026-07-06; questions migrated to cleave (graded fidelity) + spline (data-form). See README.
 ]
 
 [maintenance-status]

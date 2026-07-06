@@ -33,9 +33,26 @@ perfect grade; universal _low_ fidelity is what JSON already is. This is the
 `hub_ceiling` corollary, machine-checked under Lean 4.13.0:
 `provenance/proofs/tropical/TropicalAdapterPath.lean`.
 
-== What this repo will become
+== What this repo is now
 
-[listing]
-----
-[JJ: to be decided — see SEED-QUESTIONS.adoc]
-----
+*Terminated as an active project (2026-07-06).* The universal-interoperability
+goal is closed — see the `hub_ceiling` corollary above. The v1.x work is archived,
+complete and unedited, in `provenance/`. This repo is frozen as its own provenance
+and negative result: the Lean proof and the transport-class-lattice paper stand as
+the contribution. *There is no protocol-squisher v2.*
+
+=== Where the living questions went
+
+The three threads did not die with the universal claim — they migrated into the
+estate's *joinery* layer:
+
+* *Graded compatibility* — loss measured, not declared as a yes/no — is `cleave`'s
+  ordinal fidelity (WF/OF): what is preserved vs knowably traded across an interface.
+* *`max` / tropical composition of loss* is the same max-plus algebra as `cleave`'s
+  well-founded staircase and the estate's `tropical-resource-typing`.
+* *A practical data-form that sidesteps the universal trap* is `spline` — a thin
+  _alignment_ over what consumers already speak (Bebop control, WebRTC media),
+  explicitly not a universal hub. `spline` carries the squisher caution: take the
+  lessons, not the code.
+
+Empirical evidence continues in `squisher-corpus`.
