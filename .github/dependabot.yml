@@ -6,27 +6,62 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
+    # Batch this ecosystem into a single PR. Ungrouped, Dependabot
+    # opens one PR per dependency, and each PR re-fires every
+    # workflow in the repo.
+    groups:
+      cargo:
+        patterns:
+          - "*"
 
   - package-ecosystem: "cargo"
     directory: "/ephapax-ir"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
+    # Batch this ecosystem into a single PR. Ungrouped, Dependabot
+    # opens one PR per dependency, and each PR re-fires every
+    # workflow in the repo.
+    groups:
+      cargo:
+        patterns:
+          - "*"
 
   - package-ecosystem: "cargo"
     directory: "/examples/zero-copy-demo"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    # Batch this ecosystem into a single PR. Ungrouped, Dependabot
+    # opens one PR per dependency, and each PR re-fires every
+    # workflow in the repo.
+    groups:
+      cargo:
+        patterns:
+          - "*"
 
   - package-ecosystem: "cargo"
     directory: "/examples/mixed-transport"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    # Batch this ecosystem into a single PR. Ungrouped, Dependabot
+    # opens one PR per dependency, and each PR re-fires every
+    # workflow in the repo.
+    groups:
+      cargo:
+        patterns:
+          - "*"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
+    # Batch this ecosystem into a single PR. Ungrouped, Dependabot
+    # opens one PR per dependency, and each PR re-fires every
+    # workflow in the repo.
+    groups:
+      github-actions:
+        patterns:
+          - "*"
