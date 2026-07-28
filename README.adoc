@@ -55,4 +55,4 @@ estate's *joinery* layer:
   explicitly not a universal hub. `spline` carries the squisher caution: take the
   lessons, not the code.
 
-Empirical evidence continues in `squisher-corpus`.
+Empirical evidence continues in `protocol-squisher`.
