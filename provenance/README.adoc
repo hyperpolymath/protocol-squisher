@@ -223,7 +223,7 @@ See link:ROADMAP.adoc[ROADMAP.adoc] for the full expansion plan.
 
 == Contributing
 
-We welcome contributions! See link:CONTRIBUTING.adoc[CONTRIBUTING.adoc].
+We welcome contributions! See link:../.github/CONTRIBUTING.md[../.github/CONTRIBUTING.md].
 
 **Especially valuable:**
 - New format analyzers

@@ -587,7 +587,7 @@ library
 * *Formal proofs* - Extend our theorem library
 
 See
-https://github.com/hyperpolymath/protocol-squisher/blob/main/CONTRIBUTING.adoc[CONTRIBUTING.adoc].
+https://github.com/hyperpolymath/protocol-squisher/blob/main/../../../.github/CONTRIBUTING.md[../../../.github/CONTRIBUTING.md].
 
 === Acknowledgments
 

@@ -36,7 +36,7 @@ failed)
 * [ ] CHANGELOG.md current
 * [ ] LICENSE file present
 * [ ] SECURITY.md present
-* [ ] CONTRIBUTING.adoc present
+* [ ] ../../../.github/CONTRIBUTING.md present
 * [ ] All example READMEs current
 * [ ] Proofs verified (if mentioning in announcements)
 
