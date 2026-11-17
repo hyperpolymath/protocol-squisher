@@ -33,6 +33,26 @@ Done
 |`+proofs/tropical/TropicalAdapterPath.lean+` |✓ Done
 |===
 
+=== Agda check receipt (2026-11-17, Agda 2.8.0.2, agda-stdlib 2.3)
+
+Checked with `agda --safe --without-K --cubical-compatible` (PROOF-POLICY §2.1)
+from `proofs/agda/`. The "Done" entries above for the Agda files below are
+*open*: they do not typecheck. The same errors occur under the previous
+`--safe --without-K` flags, so they are not caused by `--cubical-compatible`.
+
+[width="100%",cols="40%,15%,45%",options="header",]
+|===
+|File |Status |Error
+|`Echo.agda` |checks (exit 0) |
+|`Types.agda` |open |`NotStrictlyPositive` at line 72: `IrType` occurs to the left of an arrow in constructor `Container₁`
+|`AdapterSynthesis.agda`, `CarriesInvariant.agda`, `ConcordeSafety.agda`, `ContainerPropagation.agda`, `OptimizationSoundness.agda` |open |import `Types`, which fails as above
+|`BusinessClassLoss.agda` |open |`ParseError` at line 237 column 41
+|`CarriesInvariantExtended.agda` |open |`ParseError` at line 153 column 46: a type signature cannot have a where clause
+|`WheelbarrowNecessity.agda` |open |`ParseError` at line 93 column 34: a type signature cannot have a where clause
+|===
+
+No CI job or recipe checks these files.
+
 === Outstanding (future work, not blocking)
 
 [width="100%",cols="46%,25%,29%",options="header",]

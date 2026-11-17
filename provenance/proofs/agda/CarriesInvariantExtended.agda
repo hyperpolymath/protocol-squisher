@@ -1,7 +1,7 @@
 -- SPDX-License-Identifier: MPL-2.0
 -- SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
 
-{-# OPTIONS --safe --without-K #-}
+{-# OPTIONS --safe --without-K --cubical-compatible #-}
 
 -- PQ1: CarriesInvariant extended to ALL 13 analyzers.
 --
