@@ -156,12 +156,14 @@ wheelbarrow-worst Wheelbarrow = Wheelbarrow≤Wheelbarrow
 
 -- SUMMARY:
 -- ========
--- Wheelbarrow-class transport is:
---   1. Required for narrowing conversions (narrowing-is-wheelbarrow)
---   2. Cannot be lossless (narrowing-not-lossless)
---   3. Requires JSON fallback (wheelbarrow-needs-fallback)
---   4. Worst transport class (wheelbarrow-worst)
---   5. Has potential data loss (wheelbarrow-lossy)
---
--- This proves that protocol-squisher's Wheelbarrow classification is
--- necessary and that direct conversions are impossible for these cases.
+-- What this module proves (scoped 2026-11-18):
+--   1. Every Narrowing pair is classified Wheelbarrow
+--      (narrowing-is-wheelbarrow).
+--   2. For a narrowing pair, the constant-zero map is not Lossless
+--      (narrowing-not-lossless). This is one map, not every conversion.
+--   3. A Wheelbarrow pair is neither identical nor a SafeWidening
+--      (wheelbarrow-needs-fallback, wheelbarrow-lossy). This excludes the
+--      two lossless direct conversions the model knows; it does not show
+--      that every direct cast is lossy or that JSON fallback is required
+--      (u8 → i16 is Wheelbarrow, yet a direct cast keeps every value).
+--   4. Wheelbarrow is the worst transport class (wheelbarrow-worst).
