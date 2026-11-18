@@ -1,7 +1,7 @@
 -- SPDX-License-Identifier: MPL-2.0
 -- SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
 
-{-# OPTIONS --safe --without-K #-}
+{-# OPTIONS --safe --without-K --cubical-compatible #-}
 
 -- PQ1: CarriesInvariant extended to ALL 13 analyzers.
 --
@@ -29,6 +29,9 @@ open import CarriesInvariant using (protocol-squisher-invariant; ConversionStrat
 open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂; ∃)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 open import Data.Nat using (ℕ)
+open import Data.Maybe using (Maybe; just)
+open import Data.Empty using (⊥-elim)
+open import Relation.Nullary using (yes; no)
 
 -- ─── The 13 analyzers ────────────────────────────────────────────────────────
 
@@ -149,8 +152,6 @@ extended-carries-invariant :
   ∃ (λ (strategy : ConversionStrategy
         (primitive-transport-class (format-to-ir src s) (format-to-ir tgt t))) →
     ∀ (x : Set) → ∃ (λ (y : Maybe Set) → Set))
-  where
-    open import Data.Maybe using (Maybe; just)
 extended-carries-invariant src tgt s t =
   protocol-squisher-invariant (format-to-ir src s) (format-to-ir tgt t)
 
@@ -164,21 +165,18 @@ rust-python-invariant : ∀ (s t : PrimitiveType) →
   ∃ (λ (strategy : ConversionStrategy
         (primitive-transport-class (format-to-ir Rust s) (format-to-ir Python t))) →
     ∀ (x : Set) → ∃ (λ (y : Maybe Set) → Set))
-  where open import Data.Maybe using (Maybe)
 rust-python-invariant = extended-carries-invariant Rust Python
 
 protobuf-avro-invariant : ∀ (s t : PrimitiveType) →
   ∃ (λ (strategy : ConversionStrategy
         (primitive-transport-class (format-to-ir Protobuf s) (format-to-ir Avro t))) →
     ∀ (x : Set) → ∃ (λ (y : Maybe Set) → Set))
-  where open import Data.Maybe using (Maybe)
 protobuf-avro-invariant = extended-carries-invariant Protobuf Avro
 
 graphql-toml-invariant : ∀ (s t : PrimitiveType) →
   ∃ (λ (strategy : ConversionStrategy
         (primitive-transport-class (format-to-ir GraphQL s) (format-to-ir TOML t))) →
     ∀ (x : Set) → ∃ (λ (y : Maybe Set) → Set))
-  where open import Data.Maybe using (Maybe)
 graphql-toml-invariant = extended-carries-invariant GraphQL TOML
 
 -- ─── Format coverage lemmas ──────────────────────────────────────────────────
@@ -221,14 +219,14 @@ python-covers-f64 = refl
 rust-rust-concorde : ∀ (t : PrimitiveType) →
   primitive-transport-class (format-to-ir Rust t) (format-to-ir Rust t) ≡ Concorde
 rust-rust-concorde t with t ≟Type t
-... | refl = refl
+... | yes _ = refl
+... | no t≢t = ⊥-elim (t≢t refl)
 
 -- When Python maps I8 → I64 and Rust leaves I64 as I64, the transport
 -- class is Concorde (identical IR types after mapping).
 python-i8-to-rust-i64-concorde :
   primitive-transport-class (format-to-ir Python I8) (format-to-ir Rust I64) ≡ Concorde
-python-i8-to-rust-i64-concorde with I64 ≟Type I64
-... | refl = refl
+python-i8-to-rust-i64-concorde = refl
 
 -- Summary
 -- =======

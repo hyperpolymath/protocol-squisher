@@ -1,23 +1,28 @@
 -- SPDX-License-Identifier: MPL-2.0
 -- SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
 
-{-# OPTIONS --safe --without-K #-}
+{-# OPTIONS --safe --without-K --cubical-compatible #-}
 
 -- PQ4: Adapter synthesis correctness.
 --
 -- The adapter synthesis algorithm takes two format schemas and produces
 -- an adapter that translates every field from the source schema to the
--- target schema.  This module proves:
+-- target schema.  What this module proves is narrower (scoped 2026-11-18):
 --
---   1. Synthesis is total — every (source, target) schema pair yields
---      an adapter (synthesis-total).
---   2. The synthesized adapter satisfies the CarriesInvariant — no
---      field is silently dropped (synthesis-preserves-carries).
---   3. The declared transport class of the synthesized adapter is
---      correct — it equals the worst per-field class
+--   1. For every field list a SynthesizedAdapter record exists
+--      (synthesis-total). Its `adapter` component is a placeholder unit
+--      identity adapter, the same for every list. It is NOT derived from
+--      the fields, so this does not prove field preservation.
+--   2. Every field has a conversion strategy for its transport class
+--      (synthesis-preserves-carries). This is per-field classification,
+--      not a proof that the adapter moves the field's data.
+--   3. Every field's class is ≤ the list's worst class
 --      (synthesis-transport-class-correct).
---   4. Synthesized adapters compose — the composition of two correct
---      adapters is itself correct (synthesis-composition).
+--   4. Schema adapters compose (synthesis-composition, from
+--      CarriesInvariant.adapter-composition).
+--
+-- Open: derive the source and target schemas and the adapter from the
+-- field list, and prove that the adapter preserves each field.
 --
 -- Proof strategy:
 --   Fields are modelled as PrimitiveType pairs (src-field, tgt-field).
@@ -36,6 +41,7 @@ open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂; ∃)
 open import Data.Maybe using (Maybe; just; nothing)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong)
 open import Data.Nat using (ℕ)
+open import Data.Unit using (⊤)
 
 -- ─── Field-level transport class ─────────────────────────────────────────────
 
@@ -60,6 +66,11 @@ data FieldList : Set where
   []     : FieldList
   _∷_    : FieldSpec → FieldList → FieldList
 
+-- Membership of a field in a field list.
+data _∈F_ (f : FieldSpec) : FieldList → Set where
+  here  : ∀ {fs} → f ∈F (f ∷ fs)
+  there : ∀ {g fs} → f ∈F fs → f ∈F (g ∷ fs)
+
 -- The overall transport class for a list of fields is the worst per-field class.
 fields-transport-class : FieldList → TransportClass
 fields-transport-class []       = Concorde       -- no fields: trivially Concorde
@@ -74,7 +85,8 @@ fields-transport-class (f ∷ fs) =
 record SynthesizedAdapter (fields : FieldList) : Set₁ where
   constructor mkSynth
   field
-    -- The underlying Schema adapter (carries all data through)
+    -- A Schema adapter. Nothing here ties it to `fields`; synthesis-total
+    -- fills it with a placeholder unit identity adapter.
     adapter : Σ Schema (λ src → Σ Schema (λ tgt → Adapter src tgt))
     -- Every field has a strategy
     field-strategies : ∀ (f : FieldSpec) →
@@ -82,8 +94,10 @@ record SynthesizedAdapter (fields : FieldList) : Set₁ where
       ∃ (λ (strategy : ConversionStrategy
               (primitive-transport-class (FieldSpec.src-type f) (FieldSpec.tgt-type f))) →
         ∀ (x : Set) → ∃ (λ (y : Maybe Set) → Set))
-    -- The declared transport class equals the worst field class
-    class-correct : ∀ (f : FieldSpec) →
+    -- Every field of the list has a class ≤ the declared (worst) class.
+    -- (Restated 2026-11-18: it quantified over ALL FieldSpecs, which is false
+    -- for a field outside the list, e.g. any Wheelbarrow field against [].)
+    class-correct : ∀ (f : FieldSpec) → f ∈F fields →
       field-transport-class f ≤TransportClass fields-transport-class fields
 
 -- ─── Synthesis is total ───────────────────────────────────────────────────────
@@ -138,26 +152,60 @@ field-class-le-overall : ∀ (f : FieldSpec) (fs : FieldList) →
 field-class-le-overall f fs =
   worst-class-mono-left (field-transport-class f) (fields-transport-class fs)
 
--- THEOREM (PQ4-a): Synthesis is total.
--- For any field list, a SynthesizedAdapter exists.
+-- ≤TransportClass is transitive.
+≤TC-trans : ∀ {a b c : TransportClass} →
+  a ≤TransportClass b → b ≤TransportClass c → a ≤TransportClass c
+≤TC-trans Concorde≤Concorde Concorde≤Concorde = Concorde≤Concorde
+≤TC-trans Concorde≤Concorde Concorde≤Business = Concorde≤Business
+≤TC-trans Concorde≤Concorde Concorde≤Economy = Concorde≤Economy
+≤TC-trans Concorde≤Concorde Concorde≤Wheelbarrow = Concorde≤Wheelbarrow
+≤TC-trans Concorde≤Business Business≤Business = Concorde≤Business
+≤TC-trans Concorde≤Business Business≤Economy = Concorde≤Economy
+≤TC-trans Concorde≤Business Business≤Wheelbarrow = Concorde≤Wheelbarrow
+≤TC-trans Concorde≤Economy Economy≤Economy = Concorde≤Economy
+≤TC-trans Concorde≤Economy Economy≤Wheelbarrow = Concorde≤Wheelbarrow
+≤TC-trans Concorde≤Wheelbarrow Wheelbarrow≤Wheelbarrow = Concorde≤Wheelbarrow
+≤TC-trans Business≤Business Business≤Business = Business≤Business
+≤TC-trans Business≤Business Business≤Economy = Business≤Economy
+≤TC-trans Business≤Business Business≤Wheelbarrow = Business≤Wheelbarrow
+≤TC-trans Business≤Economy Economy≤Economy = Business≤Economy
+≤TC-trans Business≤Economy Economy≤Wheelbarrow = Business≤Wheelbarrow
+≤TC-trans Business≤Wheelbarrow Wheelbarrow≤Wheelbarrow = Business≤Wheelbarrow
+≤TC-trans Economy≤Economy Economy≤Economy = Economy≤Economy
+≤TC-trans Economy≤Economy Economy≤Wheelbarrow = Economy≤Wheelbarrow
+≤TC-trans Economy≤Wheelbarrow Wheelbarrow≤Wheelbarrow = Economy≤Wheelbarrow
+≤TC-trans Wheelbarrow≤Wheelbarrow Wheelbarrow≤Wheelbarrow = Wheelbarrow≤Wheelbarrow
+
+-- LEMMA: the class of every field in a list is ≤ the list's overall class.
+member-class-le-overall : ∀ {f fs} → f ∈F fs →
+  field-transport-class f ≤TransportClass fields-transport-class fs
+member-class-le-overall {f} {.f ∷ fs} here =
+  worst-class-mono-left (field-transport-class f) (fields-transport-class fs)
+member-class-le-overall {f} {g ∷ fs} (there m) =
+  ≤TC-trans (member-class-le-overall m)
+    (worst-class-mono-right (field-transport-class g) (fields-transport-class fs))
+
+-- THEOREM (PQ4-a): For any field list, a SynthesizedAdapter record exists.
+-- The adapter component is a unit identity adapter, identical for every
+-- list (including []), so this is NOT a proof of field-preserving synthesis.
 synthesis-total : ∀ (fields : FieldList) → SynthesizedAdapter fields
 synthesis-total fields = mkSynth
   -- adapter: use the generic Schema-level compilation-implies-transport
-  (mkSchema (λ _ → Set) (λ _ → Set) ,
-   mkSchema (λ _ → Set) (λ _ → Set) ,
+  (mkSchema ⊤ (λ _ → ⊤) ,
+   mkSchema ⊤ (λ _ → ⊤) ,
    mkAdapter (λ x → just x) (λ x v → x , refl , v))
   -- field-strategies: every field has a strategy via field-has-strategy
   (λ f _ → field-has-strategy f)
   -- class-correct: every field class ≤ overall class
-  (λ f → field-class-le-overall f fields)
+  (λ f m → member-class-le-overall m)
   where
     open import CarriesInvariant using (mkSchema; mkAdapter)
 
 -- ─── Synthesis preserves CarriesInvariant ─────────────────────────────────────
 
--- THEOREM (PQ4-b): The synthesized adapter carries all data.
--- For every field f in the source, the SynthesizedAdapter has a strategy
--- that produces a value at the target.
+-- THEOREM (PQ4-b): Every field has a conversion strategy for its transport
+-- class. This classifies fields; it does not show that the synthesized
+-- adapter moves any field's data.
 synthesis-preserves-carries : ∀ (fields : FieldList) →
   ∀ (f : FieldSpec) →
   ∃ (λ (strategy : ConversionStrategy
@@ -167,8 +215,9 @@ synthesis-preserves-carries fields f = field-has-strategy f
 
 -- ─── Transport class correctness ─────────────────────────────────────────────
 
--- THEOREM (PQ4-c): The overall transport class of a synthesized adapter is
--- the worst class across all its fields.
+-- THEOREM (PQ4-c): The class of a field f is ≤ the transport class of the
+-- list f ∷ fields. It bounds the head field only; it says nothing about the
+-- class of any synthesized adapter.
 synthesis-transport-class-correct : ∀ (fields : FieldList) →
   ∀ (f : FieldSpec) →
   field-transport-class f ≤TransportClass fields-transport-class (f ∷ fields)
@@ -190,11 +239,11 @@ synthesis-composition = adapter-composition
 
 -- ─── End-to-end synthesis theorem ────────────────────────────────────────────
 
--- THEOREM (PQ4-complete): For any source and target format (modelled as
--- FieldLists), there exists a SynthesizedAdapter that:
---   1. Is total (always produces output)
---   2. Preserves all fields (CarriesInvariant)
---   3. Reports the correct transport class
+-- THEOREM (PQ4-complete): For any source field list there is a
+-- SynthesizedAdapter record (PQ4-a) and every field has a conversion
+-- strategy (PQ4-b). It does NOT prove that the adapter preserves the
+-- fields: the adapter is the placeholder from PQ4-a, and tgt-fields is
+-- unused.
 
 synthesis-end-to-end : ∀ (src-fields tgt-fields : FieldList) →
   ∃ (λ (sa : SynthesizedAdapter src-fields) →
@@ -208,9 +257,10 @@ synthesis-end-to-end src-fields tgt-fields =
 
 -- Summary
 -- =======
--- PQ4 PROVEN: Adapter synthesis is correct.
+-- PQ4 is PARTLY proved (scoped 2026-11-18).
 --
---   1. Total: every (src-fields, tgt-fields) pair yields an adapter.
---   2. Carries: synthesized adapter preserves all fields (no silent drops).
---   3. Class-correct: declared transport class = worst per-field class.
---   4. Composable: two correct adapters compose to a correct adapter.
+--   Proved: every field has a strategy; every field's class is ≤ the
+--   list's worst class; Schema adapters compose; a SynthesizedAdapter
+--   record exists for every list.
+--   Not proved: that a synthesized adapter preserves the fields. The
+--   record's adapter is a placeholder unrelated to the field list.

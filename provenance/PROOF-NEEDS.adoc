@@ -1,37 +1,103 @@
 == PROOF-NEEDS.md — protocol-squisher
 
-=== Current State — 2026-04-11 (ALL PROOFS COMPLETE)
+=== Current State — 2026-11-18
 
 * **src/abi/*.idr**: YES — `+Types.idr+`, `+Layout.idr+`,
 `+Foreign.idr+`
 * *Dangerous patterns*: 0 in all proof and ABI code
 * *LOC*: ~87,800 (Rust)
-* *Proofs*: 8/8 theorems verified across Agda + Lean + Coq + Isabelle +
-Z3 + Idris2
+* *Proofs*: 10 of 10 Agda modules under `proofs/agda/` type-check under
+`--safe --without-K --cubical-compatible` (receipt below). The Idris2, Lean,
+Coq, Isabelle and Z3 artefacts were not re-checked in the 2026-11-18 pass, so
+they carry no current receipt. The earlier "ALL PROOFS COMPLETE" and
+"8/8 theorems verified" claims are withdrawn: on 2026-11-17, 9 of the 10 Agda
+modules did not type-check.
 * *ABI layer*: Complete Idris2 ABI; 0 `+unwrap()+` calls (audit complete
 2026-02-04)
 
-=== Completed Proofs (2026-04-11)
+=== Proof inventory
 
 [width="100%",cols="38%,36%,26%",options="header",]
 |===
 |Component |Proof File |Status
 |CarriesInvariant — all 13 analyzers
-|`+proofs/agda/CarriesInvariantExtended.agda+` |✓ Done
+|`+proofs/agda/CarriesInvariantExtended.agda+` |proven (Agda, 2026-11-18)
 
-|Adapter synthesis correctness |`+proofs/agda/AdapterSynthesis.agda+` |✓
-Done
+|Adapter synthesis correctness |`+proofs/agda/AdapterSynthesis.agda+` |partial
+(Agda, 2026-11-18): per-field strategies, class bounds and composition are
+proved; field preservation is not (the synthesized adapter is a
+placeholder). `class-correct` restated, see below
 
 |Business class loss documentation
-|`+proofs/agda/BusinessClassLoss.agda+` |✓ Done
+|`+proofs/agda/BusinessClassLoss.agda+` |proven (Agda, 2026-11-18)
 
-|Unwrap-free audit — 29 crates |`+proofs/idris2/NoPanics.idr+` |✓ Done
+|Unwrap-free audit — 29 crates |`+proofs/idris2/NoPanics.idr+` |not
+re-checked 2026-11-18
 
-|Buffer overflow freedom |`+proofs/idris2/BufferSafety.idr+` |✓ Done
+|Buffer overflow freedom |`+proofs/idris2/BufferSafety.idr+` |not re-checked
+2026-11-18
 
 |Tropical adapter path optimality
-|`+proofs/tropical/TropicalAdapterPath.lean+` |✓ Done
+|`+proofs/tropical/TropicalAdapterPath.lean+` |not re-checked 2026-11-18
 |===
+
+=== Agda check receipt (2026-11-18, Agda 2.8.0.2, agda-stdlib v2.3)
+
+Each module was checked from a clean state (no `.agdai` files) in
+`proofs/agda/` with:
+
+----
+agda --library-file=<file listing standard-library.agda-lib v2.3> \
+     -l standard-library -i . <Module>.agda
+----
+
+Every file declares `{-# OPTIONS --safe --without-K --cubical-compatible #-}`
+(PROOF-POLICY §2.1). No postulate, `TERMINATING` pragma or escape hatch is
+used. Agda prints `UnsupportedIndexedMatch` warnings for matches on `Dec`
+(`yes`/`no`); these are warnings about Cubical transport, not errors.
+
+[width="100%",cols="40%,15%,45%",options="header",]
+|===
+|File |Status |Notes
+|`Types.agda` |checks (exit 0) |`Container₁ : Container IrType → IrType` (was a negative occurrence); `_≟Type_` is now a real `Dec` decidable equality; `primitive-transport-class` is defined from it and an explicit widening table (`find-widening`)
+|`Echo.agda` |checks (exit 0) |
+|`ConcordeSafety.agda` |checks (exit 0) |`concorde-safe` restated (below)
+|`ContainerPropagation.agda` |checks (exit 0) |`worst-class-assoc` proved by all 64 cases
+|`WheelbarrowNecessity.agda` |checks (exit 0) |`wheelbarrow-needs-fallback` restated (below)
+|`CarriesInvariant.agda` |checks (exit 0) |`compilation-implies-transport` restated (below)
+|`CarriesInvariantExtended.agda` |checks (exit 0) |
+|`AdapterSynthesis.agda` |checks (exit 0) |`class-correct` restated (below)
+|`BusinessClassLoss.agda` |checks (exit 0) |Business ⇒ SafeWidening proved for all pairs, not 54 listed cases
+|`OptimizationSoundness.agda` |checks (exit 0) |
+|===
+
+Statements changed on 2026-11-18, because the old ones were false or did not
+type-check:
+
+* `wheelbarrow-needs-fallback` claimed every Wheelbarrow pair narrows or
+changes signedness. String → Bool and Bool → F32 are counterexamples. It now
+states that a Wheelbarrow pair is neither identical nor a safe widening.
+* `compilation-implies-transport` claimed an adapter exists between any two
+schemas. That fails for an empty target schema. It now takes a
+validity-preserving map as a hypothesis.
+* `class-correct` (in `SynthesizedAdapter`) quantified over every field. It
+is now stated for fields in the list (`f ∈F fields`) and proved by induction.
+* `concorde-safe` claimed every function `Set → Set` is lossless. It now
+states that the identity conversion Concorde uses is lossless.
+* `transitive-transport` dropped an ill-sorted `Set`-valued component.
+It still returns the a → c strategy.
+
+What remains weak: several statements in `CarriesInvariant.agda` and
+`AdapterSynthesis.agda` (`concorde-always-succeeds`,
+`protocol-squisher-invariant`, `synthesis-total`,
+`synthesis-preserves-carries`, `synthesis-end-to-end`) only assert that a
+strategy or a placeholder adapter exists. They do not relate it to real data.
+In particular PQ4 does not prove field preservation: the synthesized
+adapter is the same unit identity adapter for every field list.
+`wheelbarrow-needs-fallback` proves only that a Wheelbarrow pair is neither
+identical nor a safe widening; it does not show that a direct cast is lossy.
+
+No CI job or recipe checks these files.
 
 === Outstanding (future work, not blocking)
 

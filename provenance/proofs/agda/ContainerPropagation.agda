@@ -1,7 +1,7 @@
 -- SPDX-License-Identifier: MPL-2.0
 -- SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
 
-{-# OPTIONS --safe --without-K #-}
+{-# OPTIONS --safe --without-K --cubical-compatible #-}
 
 module ContainerPropagation where
 
@@ -31,19 +31,70 @@ vec-min-business {s} {t} = refl
 
 worst-class-assoc : ∀ (a b c : TransportClass) →
   worst-class (worst-class a b) c ≡ worst-class a (worst-class b c)
-worst-class-assoc Concorde b c = refl
-worst-class-assoc Business Concorde c = refl
-worst-class-assoc Business Business c = refl
-worst-class-assoc Business Economy c = refl
-worst-class-assoc Business Wheelbarrow c = refl
-worst-class-assoc Economy Concorde c = refl
+worst-class-assoc Concorde Concorde Concorde = refl
+worst-class-assoc Concorde Concorde Business = refl
+worst-class-assoc Concorde Concorde Economy = refl
+worst-class-assoc Concorde Concorde Wheelbarrow = refl
+worst-class-assoc Concorde Business Concorde = refl
+worst-class-assoc Concorde Business Business = refl
+worst-class-assoc Concorde Business Economy = refl
+worst-class-assoc Concorde Business Wheelbarrow = refl
+worst-class-assoc Concorde Economy Concorde = refl
+worst-class-assoc Concorde Economy Business = refl
+worst-class-assoc Concorde Economy Economy = refl
+worst-class-assoc Concorde Economy Wheelbarrow = refl
+worst-class-assoc Concorde Wheelbarrow Concorde = refl
+worst-class-assoc Concorde Wheelbarrow Business = refl
+worst-class-assoc Concorde Wheelbarrow Economy = refl
+worst-class-assoc Concorde Wheelbarrow Wheelbarrow = refl
+worst-class-assoc Business Concorde Concorde = refl
+worst-class-assoc Business Concorde Business = refl
+worst-class-assoc Business Concorde Economy = refl
+worst-class-assoc Business Concorde Wheelbarrow = refl
+worst-class-assoc Business Business Concorde = refl
+worst-class-assoc Business Business Business = refl
+worst-class-assoc Business Business Economy = refl
+worst-class-assoc Business Business Wheelbarrow = refl
+worst-class-assoc Business Economy Concorde = refl
+worst-class-assoc Business Economy Business = refl
+worst-class-assoc Business Economy Economy = refl
+worst-class-assoc Business Economy Wheelbarrow = refl
+worst-class-assoc Business Wheelbarrow Concorde = refl
+worst-class-assoc Business Wheelbarrow Business = refl
+worst-class-assoc Business Wheelbarrow Economy = refl
+worst-class-assoc Business Wheelbarrow Wheelbarrow = refl
+worst-class-assoc Economy Concorde Concorde = refl
+worst-class-assoc Economy Concorde Business = refl
+worst-class-assoc Economy Concorde Economy = refl
+worst-class-assoc Economy Concorde Wheelbarrow = refl
 worst-class-assoc Economy Business Concorde = refl
 worst-class-assoc Economy Business Business = refl
 worst-class-assoc Economy Business Economy = refl
 worst-class-assoc Economy Business Wheelbarrow = refl
-worst-class-assoc Economy Economy c = refl
-worst-class-assoc Economy Wheelbarrow c = refl
-worst-class-assoc Wheelbarrow b c = refl
+worst-class-assoc Economy Economy Concorde = refl
+worst-class-assoc Economy Economy Business = refl
+worst-class-assoc Economy Economy Economy = refl
+worst-class-assoc Economy Economy Wheelbarrow = refl
+worst-class-assoc Economy Wheelbarrow Concorde = refl
+worst-class-assoc Economy Wheelbarrow Business = refl
+worst-class-assoc Economy Wheelbarrow Economy = refl
+worst-class-assoc Economy Wheelbarrow Wheelbarrow = refl
+worst-class-assoc Wheelbarrow Concorde Concorde = refl
+worst-class-assoc Wheelbarrow Concorde Business = refl
+worst-class-assoc Wheelbarrow Concorde Economy = refl
+worst-class-assoc Wheelbarrow Concorde Wheelbarrow = refl
+worst-class-assoc Wheelbarrow Business Concorde = refl
+worst-class-assoc Wheelbarrow Business Business = refl
+worst-class-assoc Wheelbarrow Business Economy = refl
+worst-class-assoc Wheelbarrow Business Wheelbarrow = refl
+worst-class-assoc Wheelbarrow Economy Concorde = refl
+worst-class-assoc Wheelbarrow Economy Business = refl
+worst-class-assoc Wheelbarrow Economy Economy = refl
+worst-class-assoc Wheelbarrow Economy Wheelbarrow = refl
+worst-class-assoc Wheelbarrow Wheelbarrow Concorde = refl
+worst-class-assoc Wheelbarrow Wheelbarrow Business = refl
+worst-class-assoc Wheelbarrow Wheelbarrow Economy = refl
+worst-class-assoc Wheelbarrow Wheelbarrow Wheelbarrow = refl
 
 -- THEOREM 4: Worst-class is commutative
 

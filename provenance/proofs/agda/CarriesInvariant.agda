@@ -1,7 +1,7 @@
 -- SPDX-License-Identifier: MPL-2.0
 -- SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
 
-{-# OPTIONS --safe --without-K #-}
+{-# OPTIONS --safe --without-K --cubical-compatible #-}
 
 module CarriesInvariant where
 
@@ -61,7 +61,7 @@ concorde-always-succeeds : ∀ {s t : PrimitiveType} →
   ∀ (x : Set) → ∃ (λ (y : Set) → Maybe Set)
 concorde-always-succeeds {s} {t} prf x =
   -- For identical types, conversion is identity (always succeeds)
-  let s≡t = concorde-exact-match prf in
+  let s≡t = concorde-exact-match {s} {t} prf in
   x , just x
 
 -- THEOREM 4: Business conversion may narrow but always produces a result
@@ -146,23 +146,20 @@ protocol-squisher-invariant s t =
   strategy , λ x → just x , x
 
 -- THEOREM 8: Compilation implies transportability
--- If schemas type-check, adapter exists
+-- A total, validity-preserving map between two schemas yields an adapter.
+--
+-- Restated 2026-11-18. The earlier statement claimed an adapter exists for
+-- ANY two schemas. That is false: no adapter reaches a schema whose type is
+-- empty while the source has a valid value. Its proof did not type-check
+-- (it returned a source value as a target value). The hypothesis below is
+-- what "it compiles" supplies: a typed map that preserves validity.
 
 compilation-implies-transport : ∀ (source target : Schema) →
-  ∃ (λ (adapter : Adapter source target) → Set₁)
-compilation-implies-transport source target =
-  -- Every schema pair can be connected via adapter
-  -- (even if using Wheelbarrow/JSON fallback)
-  mkAdapter convert-fn preserves-validity-fn , Set
-  where
-    convert-fn : Schema.types source → Maybe (Schema.types target)
-    convert-fn x = just x  -- Simplified: actual impl would analyze types
-
-    preserves-validity-fn : ∀ x →
-      Schema.valid source x →
-      ∃ (λ y → convert-fn x ≡ just y × Schema.valid target y)
-    preserves-validity-fn x valid-source =
-      x , refl , valid-source  -- Simplified
+  (f : Schema.types source → Schema.types target) →
+  (∀ x → Schema.valid source x → Schema.valid target (f x)) →
+  Adapter source target
+compilation-implies-transport source target f f-valid =
+  mkAdapter (λ x → just (f x)) (λ x vx → f x , refl , f-valid x vx)
 
 -- THEOREM 9: No gaps in coverage
 -- Every type pair maps to exactly one transport class
@@ -202,12 +199,9 @@ adapter-composition {A} {B} {C} ab bc = mkAdapter compose-fn compose-valid
 -- If A can transport to B, and B to C, then A can transport to C
 
 transitive-transport : ∀ (a b c : PrimitiveType) →
-  let ab-class = primitive-transport-class a b in
-  let bc-class = primitive-transport-class b c in
-  let ac-class = primitive-transport-class a c in
-  ∃ (λ (strategy : ConversionStrategy ac-class) → Set)
+  ConversionStrategy (primitive-transport-class a c)
 transitive-transport a b c =
-  transport-class-has-strategy (primitive-transport-class a c) , Set
+  transport-class-has-strategy (primitive-transport-class a c)
 
 -- SUMMARY:
 -- ========
