@@ -36,6 +36,7 @@ open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂; ∃)
 open import Data.Maybe using (Maybe; just; nothing)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong)
 open import Data.Nat using (ℕ)
+open import Data.Unit using (⊤)
 
 -- ─── Field-level transport class ─────────────────────────────────────────────
 
@@ -60,6 +61,11 @@ data FieldList : Set where
   []     : FieldList
   _∷_    : FieldSpec → FieldList → FieldList
 
+-- Membership of a field in a field list.
+data _∈F_ (f : FieldSpec) : FieldList → Set where
+  here  : ∀ {fs} → f ∈F (f ∷ fs)
+  there : ∀ {g fs} → f ∈F fs → f ∈F (g ∷ fs)
+
 -- The overall transport class for a list of fields is the worst per-field class.
 fields-transport-class : FieldList → TransportClass
 fields-transport-class []       = Concorde       -- no fields: trivially Concorde
@@ -82,8 +88,10 @@ record SynthesizedAdapter (fields : FieldList) : Set₁ where
       ∃ (λ (strategy : ConversionStrategy
               (primitive-transport-class (FieldSpec.src-type f) (FieldSpec.tgt-type f))) →
         ∀ (x : Set) → ∃ (λ (y : Maybe Set) → Set))
-    -- The declared transport class equals the worst field class
-    class-correct : ∀ (f : FieldSpec) →
+    -- Every field of the list has a class ≤ the declared (worst) class.
+    -- (Restated 2026-11-18: it quantified over ALL FieldSpecs, which is false
+    -- for a field outside the list, e.g. any Wheelbarrow field against [].)
+    class-correct : ∀ (f : FieldSpec) → f ∈F fields →
       field-transport-class f ≤TransportClass fields-transport-class fields
 
 -- ─── Synthesis is total ───────────────────────────────────────────────────────
@@ -138,18 +146,51 @@ field-class-le-overall : ∀ (f : FieldSpec) (fs : FieldList) →
 field-class-le-overall f fs =
   worst-class-mono-left (field-transport-class f) (fields-transport-class fs)
 
+-- ≤TransportClass is transitive.
+≤TC-trans : ∀ {a b c : TransportClass} →
+  a ≤TransportClass b → b ≤TransportClass c → a ≤TransportClass c
+≤TC-trans Concorde≤Concorde Concorde≤Concorde = Concorde≤Concorde
+≤TC-trans Concorde≤Concorde Concorde≤Business = Concorde≤Business
+≤TC-trans Concorde≤Concorde Concorde≤Economy = Concorde≤Economy
+≤TC-trans Concorde≤Concorde Concorde≤Wheelbarrow = Concorde≤Wheelbarrow
+≤TC-trans Concorde≤Business Business≤Business = Concorde≤Business
+≤TC-trans Concorde≤Business Business≤Economy = Concorde≤Economy
+≤TC-trans Concorde≤Business Business≤Wheelbarrow = Concorde≤Wheelbarrow
+≤TC-trans Concorde≤Economy Economy≤Economy = Concorde≤Economy
+≤TC-trans Concorde≤Economy Economy≤Wheelbarrow = Concorde≤Wheelbarrow
+≤TC-trans Concorde≤Wheelbarrow Wheelbarrow≤Wheelbarrow = Concorde≤Wheelbarrow
+≤TC-trans Business≤Business Business≤Business = Business≤Business
+≤TC-trans Business≤Business Business≤Economy = Business≤Economy
+≤TC-trans Business≤Business Business≤Wheelbarrow = Business≤Wheelbarrow
+≤TC-trans Business≤Economy Economy≤Economy = Business≤Economy
+≤TC-trans Business≤Economy Economy≤Wheelbarrow = Business≤Wheelbarrow
+≤TC-trans Business≤Wheelbarrow Wheelbarrow≤Wheelbarrow = Business≤Wheelbarrow
+≤TC-trans Economy≤Economy Economy≤Economy = Economy≤Economy
+≤TC-trans Economy≤Economy Economy≤Wheelbarrow = Economy≤Wheelbarrow
+≤TC-trans Economy≤Wheelbarrow Wheelbarrow≤Wheelbarrow = Economy≤Wheelbarrow
+≤TC-trans Wheelbarrow≤Wheelbarrow Wheelbarrow≤Wheelbarrow = Wheelbarrow≤Wheelbarrow
+
+-- LEMMA: the class of every field in a list is ≤ the list's overall class.
+member-class-le-overall : ∀ {f fs} → f ∈F fs →
+  field-transport-class f ≤TransportClass fields-transport-class fs
+member-class-le-overall {f} {.f ∷ fs} here =
+  worst-class-mono-left (field-transport-class f) (fields-transport-class fs)
+member-class-le-overall {f} {g ∷ fs} (there m) =
+  ≤TC-trans (member-class-le-overall m)
+    (worst-class-mono-right (field-transport-class g) (fields-transport-class fs))
+
 -- THEOREM (PQ4-a): Synthesis is total.
 -- For any field list, a SynthesizedAdapter exists.
 synthesis-total : ∀ (fields : FieldList) → SynthesizedAdapter fields
 synthesis-total fields = mkSynth
   -- adapter: use the generic Schema-level compilation-implies-transport
-  (mkSchema (λ _ → Set) (λ _ → Set) ,
-   mkSchema (λ _ → Set) (λ _ → Set) ,
+  (mkSchema ⊤ (λ _ → ⊤) ,
+   mkSchema ⊤ (λ _ → ⊤) ,
    mkAdapter (λ x → just x) (λ x v → x , refl , v))
   -- field-strategies: every field has a strategy via field-has-strategy
   (λ f _ → field-has-strategy f)
   -- class-correct: every field class ≤ overall class
-  (λ f → field-class-le-overall f fields)
+  (λ f m → member-class-le-overall m)
   where
     open import CarriesInvariant using (mkSchema; mkAdapter)
 

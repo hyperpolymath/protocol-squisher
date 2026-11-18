@@ -9,7 +9,8 @@ open import Types
 open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂; ∃; ∄)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; _≢_)
-open import Relation.Nullary using (¬_)
+open import Relation.Nullary using (¬_; yes; no)
+open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Nat using (ℕ; _≤_; _<_; _>_)
 open import Data.Nat.Properties using (<-trans; ≤-trans; <⇒≢)
 
@@ -78,72 +79,67 @@ narrowing-is-wheelbarrow (narrow U8→U32) = refl
 narrowing-is-wheelbarrow (narrow U8→U64) = refl
 narrowing-is-wheelbarrow (narrow U8→U128) = refl
 
+-- Every safe widening is classified Business, never Wheelbarrow.
+safe-widen-not-wheelbarrow : ∀ {s t} → SafeWidening s t →
+  primitive-transport-class s t ≡ Wheelbarrow → ⊥
+safe-widen-not-wheelbarrow I8→I16 ()
+safe-widen-not-wheelbarrow I8→I32 ()
+safe-widen-not-wheelbarrow I8→I64 ()
+safe-widen-not-wheelbarrow I8→I128 ()
+safe-widen-not-wheelbarrow I16→I32 ()
+safe-widen-not-wheelbarrow I16→I64 ()
+safe-widen-not-wheelbarrow I16→I128 ()
+safe-widen-not-wheelbarrow I32→I64 ()
+safe-widen-not-wheelbarrow I32→I128 ()
+safe-widen-not-wheelbarrow I64→I128 ()
+safe-widen-not-wheelbarrow U8→U16 ()
+safe-widen-not-wheelbarrow U8→U32 ()
+safe-widen-not-wheelbarrow U8→U64 ()
+safe-widen-not-wheelbarrow U8→U128 ()
+safe-widen-not-wheelbarrow U16→U32 ()
+safe-widen-not-wheelbarrow U16→U64 ()
+safe-widen-not-wheelbarrow U16→U128 ()
+safe-widen-not-wheelbarrow U32→U64 ()
+safe-widen-not-wheelbarrow U32→U128 ()
+safe-widen-not-wheelbarrow U64→U128 ()
+safe-widen-not-wheelbarrow F32→F64 ()
+
+-- Identical types are classified Concorde, never Wheelbarrow.
+identical-not-wheelbarrow : ∀ {s t} → s ≡ t →
+  primitive-transport-class s t ≡ Wheelbarrow → ⊥
+identical-not-wheelbarrow {s} {t} s≡t prf with s ≟Type t
+... | yes _ = Concorde≢Wheelbarrow prf
+  where
+    Concorde≢Wheelbarrow : Concorde ≡ Wheelbarrow → ⊥
+    Concorde≢Wheelbarrow ()
+... | no s≢t = s≢t s≡t
+
 -- THEOREM 3: Wheelbarrow implies potential data loss
--- When transport class is Wheelbarrow, the conversion may lose data
+-- A Wheelbarrow pair is neither identical nor a safe widening, so neither
+-- of the two lossless direct conversions applies.
 
 wheelbarrow-lossy : ∀ {s t : PrimitiveType} →
   primitive-transport-class s t ≡ Wheelbarrow →
-  ¬ (s ≡ t ∨ SafeWidening s t)
-  where
-    _∨_ : Set → Set → Set
-    A ∨ B = Σ Bool (λ b → if b then A else B)
-      where
-        if_then_else_ : Bool → Set → Set → Set
-        if true then A else B = A
-        if false then A else B = B
-
-wheelbarrow-lossy {s} {t} prf (false , safe-widen) =
-  -- If it's Wheelbarrow, it can't be safe widening (each widening gives Business)
-  ⊥-elim (safe-widen-not-wheelbarrow safe-widen prf)
-  where
-    safe-widen-not-wheelbarrow : ∀ {s t} → SafeWidening s t →
-      primitive-transport-class s t ≡ Wheelbarrow → ⊥
-    safe-widen-not-wheelbarrow I8→I16 ()
-    safe-widen-not-wheelbarrow I8→I32 ()
-    safe-widen-not-wheelbarrow I8→I64 ()
-    safe-widen-not-wheelbarrow I8→I128 ()
-    safe-widen-not-wheelbarrow I16→I32 ()
-    safe-widen-not-wheelbarrow I16→I64 ()
-    safe-widen-not-wheelbarrow I16→I128 ()
-    safe-widen-not-wheelbarrow I32→I64 ()
-    safe-widen-not-wheelbarrow I32→I128 ()
-    safe-widen-not-wheelbarrow I64→I128 ()
-    safe-widen-not-wheelbarrow U8→U16 ()
-    safe-widen-not-wheelbarrow U8→U32 ()
-    safe-widen-not-wheelbarrow U8→U64 ()
-    safe-widen-not-wheelbarrow U8→U128 ()
-    safe-widen-not-wheelbarrow U16→U32 ()
-    safe-widen-not-wheelbarrow U16→U64 ()
-    safe-widen-not-wheelbarrow U16→U128 ()
-    safe-widen-not-wheelbarrow U32→U64 ()
-    safe-widen-not-wheelbarrow U32→U128 ()
-    safe-widen-not-wheelbarrow U64→U128 ()
-    safe-widen-not-wheelbarrow F32→F64 ()
-
-wheelbarrow-lossy {s} {t} prf (true , identical) =
-  -- If it's Wheelbarrow, types can't be identical
-  ⊥-elim (wheelbarrow≢concorde identical prf)
-  where
-    wheelbarrow≢concorde : s ≡ t → primitive-transport-class s t ≡ Wheelbarrow → ⊥
-    wheelbarrow≢concorde refl wheelbarrow-prf with s ≟Type s
-    wheelbarrow≢concorde refl () | refl
+  ¬ (s ≡ t ⊎ SafeWidening s t)
+wheelbarrow-lossy prf (inj₁ s≡t) = identical-not-wheelbarrow s≡t prf
+wheelbarrow-lossy prf (inj₂ w)   = safe-widen-not-wheelbarrow w prf
 
 -- THEOREM 4: JSON fallback necessary for Wheelbarrow
--- Wheelbarrow-class conversions require serialization (cannot be direct cast)
+-- A Wheelbarrow pair admits no direct cast: the types differ and the pair
+-- is not a safe widening, so the only strategy left is the JSON fallback.
+--
+-- Restated 2026-11-18. The earlier statement claimed every Wheelbarrow pair
+-- either narrows (sizeof t < sizeof s) or changes signedness. That is false:
+-- String → Bool and Bool → F32 are Wheelbarrow, keep signedness (Neither)
+-- and do not narrow. Its proof covered two pairs and closed the rest with an
+-- invalid absurd pattern. This statement is the true one.
 
 wheelbarrow-needs-fallback : ∀ {s t : PrimitiveType} →
   primitive-transport-class s t ≡ Wheelbarrow →
-  sizeof t < sizeof s ∨ signedness s ≢ signedness t
-  where
-    _∨_ = Data.Sum._⊎_
-    _≢_ = _≢_
-
-wheelbarrow-needs-fallback {I64} {I32} refl =
-  Data.Sum.inj₁ (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s Data.Nat.z≤n))))))))))))))))))))))))))))))))
-wheelbarrow-needs-fallback {F64} {F32} refl =
-  Data.Sum.inj₁ (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s (Data.Nat.s≤s Data.Nat.z≤n))))))))))))))))))))))))))))))))
--- More cases for other Wheelbarrow conversions...
-wheelbarrow-needs-fallback {_} {_} ()  -- Catches non-Wheelbarrow cases
+  ¬ (s ≡ t) × ¬ (SafeWidening s t)
+wheelbarrow-needs-fallback prf =
+  (λ s≡t → identical-not-wheelbarrow s≡t prf) ,
+  (λ w → safe-widen-not-wheelbarrow w prf)
 
 -- COROLLARY: Wheelbarrow is worst transport class
 -- Wheelbarrow has highest overhead and lowest fidelity
