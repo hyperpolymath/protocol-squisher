@@ -23,8 +23,10 @@ modules did not type-check.
 |CarriesInvariant — all 13 analyzers
 |`+proofs/agda/CarriesInvariantExtended.agda+` |proven (Agda, 2026-11-18)
 
-|Adapter synthesis correctness |`+proofs/agda/AdapterSynthesis.agda+` |proven
-(Agda, 2026-11-18); `class-correct` restated, see below
+|Adapter synthesis correctness |`+proofs/agda/AdapterSynthesis.agda+` |partial
+(Agda, 2026-11-18): per-field strategies, class bounds and composition are
+proved; field preservation is not (the synthesized adapter is a
+placeholder). `class-correct` restated, see below
 
 |Business class loss documentation
 |`+proofs/agda/BusinessClassLoss.agda+` |proven (Agda, 2026-11-18)

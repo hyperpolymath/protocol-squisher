@@ -215,8 +215,9 @@ synthesis-preserves-carries fields f = field-has-strategy f
 
 -- ─── Transport class correctness ─────────────────────────────────────────────
 
--- THEOREM (PQ4-c): The overall transport class of a synthesized adapter is
--- the worst class across all its fields.
+-- THEOREM (PQ4-c): The class of a field f is ≤ the transport class of the
+-- list f ∷ fields. It bounds the head field only; it says nothing about the
+-- class of any synthesized adapter.
 synthesis-transport-class-correct : ∀ (fields : FieldList) →
   ∀ (f : FieldSpec) →
   field-transport-class f ≤TransportClass fields-transport-class (f ∷ fields)
