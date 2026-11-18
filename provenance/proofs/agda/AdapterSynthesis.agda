@@ -7,17 +7,22 @@
 --
 -- The adapter synthesis algorithm takes two format schemas and produces
 -- an adapter that translates every field from the source schema to the
--- target schema.  This module proves:
+-- target schema.  What this module proves is narrower (scoped 2026-11-18):
 --
---   1. Synthesis is total — every (source, target) schema pair yields
---      an adapter (synthesis-total).
---   2. The synthesized adapter satisfies the CarriesInvariant — no
---      field is silently dropped (synthesis-preserves-carries).
---   3. The declared transport class of the synthesized adapter is
---      correct — it equals the worst per-field class
+--   1. For every field list a SynthesizedAdapter record exists
+--      (synthesis-total). Its `adapter` component is a placeholder unit
+--      identity adapter, the same for every list. It is NOT derived from
+--      the fields, so this does not prove field preservation.
+--   2. Every field has a conversion strategy for its transport class
+--      (synthesis-preserves-carries). This is per-field classification,
+--      not a proof that the adapter moves the field's data.
+--   3. Every field's class is ≤ the list's worst class
 --      (synthesis-transport-class-correct).
---   4. Synthesized adapters compose — the composition of two correct
---      adapters is itself correct (synthesis-composition).
+--   4. Schema adapters compose (synthesis-composition, from
+--      CarriesInvariant.adapter-composition).
+--
+-- Open: derive the source and target schemas and the adapter from the
+-- field list, and prove that the adapter preserves each field.
 --
 -- Proof strategy:
 --   Fields are modelled as PrimitiveType pairs (src-field, tgt-field).
@@ -80,7 +85,8 @@ fields-transport-class (f ∷ fs) =
 record SynthesizedAdapter (fields : FieldList) : Set₁ where
   constructor mkSynth
   field
-    -- The underlying Schema adapter (carries all data through)
+    -- A Schema adapter. Nothing here ties it to `fields`; synthesis-total
+    -- fills it with a placeholder unit identity adapter.
     adapter : Σ Schema (λ src → Σ Schema (λ tgt → Adapter src tgt))
     -- Every field has a strategy
     field-strategies : ∀ (f : FieldSpec) →
@@ -179,8 +185,9 @@ member-class-le-overall {f} {g ∷ fs} (there m) =
   ≤TC-trans (member-class-le-overall m)
     (worst-class-mono-right (field-transport-class g) (fields-transport-class fs))
 
--- THEOREM (PQ4-a): Synthesis is total.
--- For any field list, a SynthesizedAdapter exists.
+-- THEOREM (PQ4-a): For any field list, a SynthesizedAdapter record exists.
+-- The adapter component is a unit identity adapter, identical for every
+-- list (including []), so this is NOT a proof of field-preserving synthesis.
 synthesis-total : ∀ (fields : FieldList) → SynthesizedAdapter fields
 synthesis-total fields = mkSynth
   -- adapter: use the generic Schema-level compilation-implies-transport
@@ -196,9 +203,9 @@ synthesis-total fields = mkSynth
 
 -- ─── Synthesis preserves CarriesInvariant ─────────────────────────────────────
 
--- THEOREM (PQ4-b): The synthesized adapter carries all data.
--- For every field f in the source, the SynthesizedAdapter has a strategy
--- that produces a value at the target.
+-- THEOREM (PQ4-b): Every field has a conversion strategy for its transport
+-- class. This classifies fields; it does not show that the synthesized
+-- adapter moves any field's data.
 synthesis-preserves-carries : ∀ (fields : FieldList) →
   ∀ (f : FieldSpec) →
   ∃ (λ (strategy : ConversionStrategy
@@ -231,11 +238,11 @@ synthesis-composition = adapter-composition
 
 -- ─── End-to-end synthesis theorem ────────────────────────────────────────────
 
--- THEOREM (PQ4-complete): For any source and target format (modelled as
--- FieldLists), there exists a SynthesizedAdapter that:
---   1. Is total (always produces output)
---   2. Preserves all fields (CarriesInvariant)
---   3. Reports the correct transport class
+-- THEOREM (PQ4-complete): For any source field list there is a
+-- SynthesizedAdapter record (PQ4-a) and every field has a conversion
+-- strategy (PQ4-b). It does NOT prove that the adapter preserves the
+-- fields: the adapter is the placeholder from PQ4-a, and tgt-fields is
+-- unused.
 
 synthesis-end-to-end : ∀ (src-fields tgt-fields : FieldList) →
   ∃ (λ (sa : SynthesizedAdapter src-fields) →
@@ -249,9 +256,10 @@ synthesis-end-to-end src-fields tgt-fields =
 
 -- Summary
 -- =======
--- PQ4 PROVEN: Adapter synthesis is correct.
+-- PQ4 is PARTLY proved (scoped 2026-11-18).
 --
---   1. Total: every (src-fields, tgt-fields) pair yields an adapter.
---   2. Carries: synthesized adapter preserves all fields (no silent drops).
---   3. Class-correct: declared transport class = worst per-field class.
---   4. Composable: two correct adapters compose to a correct adapter.
+--   Proved: every field has a strategy; every field's class is ≤ the
+--   list's worst class; Schema adapters compose; a SynthesizedAdapter
+--   record exists for every list.
+--   Not proved: that a synthesized adapter preserves the fields. The
+--   record's adapter is a placeholder unrelated to the field list.

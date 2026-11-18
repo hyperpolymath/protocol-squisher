@@ -124,9 +124,12 @@ wheelbarrow-lossy : ∀ {s t : PrimitiveType} →
 wheelbarrow-lossy prf (inj₁ s≡t) = identical-not-wheelbarrow s≡t prf
 wheelbarrow-lossy prf (inj₂ w)   = safe-widen-not-wheelbarrow w prf
 
--- THEOREM 4: JSON fallback necessary for Wheelbarrow
--- A Wheelbarrow pair admits no direct cast: the types differ and the pair
--- is not a safe widening, so the only strategy left is the JSON fallback.
+-- THEOREM 4: Wheelbarrow excludes both lossless direct conversions
+-- For a Wheelbarrow pair the types differ and no SafeWidening constructor
+-- applies. That is all this proves. It does not show that every direct cast
+-- is impossible or lossy: u8 → i16, for instance, is Wheelbarrow here only
+-- because the widening table excludes cross-signedness pairs, yet a direct
+-- cast preserves every u8 value.
 --
 -- Restated 2026-11-18. The earlier statement claimed every Wheelbarrow pair
 -- either narrows (sizeof t < sizeof s) or changes signedness. That is false:

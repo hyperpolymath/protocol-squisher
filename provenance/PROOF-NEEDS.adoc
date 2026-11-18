@@ -87,8 +87,13 @@ It still returns the a → c strategy.
 
 What remains weak: several statements in `CarriesInvariant.agda` and
 `AdapterSynthesis.agda` (`concorde-always-succeeds`,
-`protocol-squisher-invariant`, `synthesis-total`) only assert that a strategy
-or a placeholder adapter exists. They do not relate it to real data.
+`protocol-squisher-invariant`, `synthesis-total`,
+`synthesis-preserves-carries`, `synthesis-end-to-end`) only assert that a
+strategy or a placeholder adapter exists. They do not relate it to real data.
+In particular PQ4 does not prove field preservation: the synthesized
+adapter is the same unit identity adapter for every field list.
+`wheelbarrow-needs-fallback` proves only that a Wheelbarrow pair is neither
+identical nor a safe widening; it does not show that a direct cast is lossy.
 
 No CI job or recipe checks these files.
 
