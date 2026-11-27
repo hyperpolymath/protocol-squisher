@@ -38,10 +38,12 @@ description = "Install pinned JS dev tools (Prettier) from bun.lock"
 run = "bun install --frozen-lockfile"
 
 [tasks.build]
-run = "cargo build --release"
+dir = "provenance"
+run = "cargo build --workspace --release"
 
 [tasks.test]
-run = "cargo test"
+dir = "provenance"
+run = "cargo test --workspace"
 
 [tasks.lint]
 depends = ["setup"]
