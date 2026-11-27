@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MPL-2.0
+# package.json is JCS-canonical (LANGUAGE-POLICY §1.4); Prettier must not reformat it.
+package.json
+# Committed docs and data that are not Prettier-formatted; keep them byte-stable rather than reformat them.
+.github/CONTRIBUTING.md
+.github/PROVEN-INTEGRATION.md
+.github/label-classifier.json
+provenance/.well-known/groove/manifest.json
+provenance/benches/BASELINE-v1.0.0.json
+provenance/docs/samples/github_api.json
